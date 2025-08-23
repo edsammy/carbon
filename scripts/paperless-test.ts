@@ -11,10 +11,10 @@ import {
   getOrderLocationId,
   getPaperlessParts,
   insertOrderLines,
-} from "../packages/integrations/src/paperless-parts/lib/index";
-import { OrderSchema } from "../packages/integrations/src/paperless-parts/lib/schemas";
+} from "../packages/ee/src/paperless-parts/lib/index";
+import { OrderSchema } from "../packages/ee/src/paperless-parts/lib/schemas";
 const orderNumber = 695;
-const apiKey = "7fb257095cc635004ecb149c0978c2010f44b99e";
+const apiKey = "**************************";
 const companyId = "XnwmVKtf9NGwjkco3NoSTu";
 
 dotenv.config();
