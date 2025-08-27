@@ -8,8 +8,8 @@ INSERT INTO "materialType" ("id", "name", "code", "materialSubstanceId", "materi
   ('galvannealed-steel-plate', 'Galvannealed', 'GN', 'steel', 'plate', null);
 
 
-UPDATE "material" SET "materialTypeId" = 'hrpo-steel-plate' WHERE "id" = 'pickled-oiled-steel-plate';
-UPDATE "material" SET "materialTypeId" = 'hrpo-stainless-sheet' WHERE "id" = 'pickled-stainless-plate';
+UPDATE "material" SET "materialTypeId" = 'hrpo-steel-plate' WHERE "materialTypeId" = 'pickled-oiled-steel-plate';
+UPDATE "material" SET "materialTypeId" = 'hrpo-stainless-sheet' WHERE "materialTypeId" = 'pickled-stainless-plate';
 
 DELETE FROM "materialType" WHERE "id" = 'pickled-oiled-steel-plate';
 DELETE FROM "materialType" WHERE "id" = 'pickled-stainless-plate';
