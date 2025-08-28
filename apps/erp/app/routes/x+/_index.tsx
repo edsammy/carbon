@@ -38,17 +38,15 @@ export default function AppIndexRoute() {
     <div className="p-8 w-full flex flex-col h-[calc(100dvh-var(--header-height)*2)] bg-muted">
       <Heading size="h3">Hello, {user.firstName}</Heading>
       <Subheading>{formatter.format(date)}</Subheading>
-      <div className="flex flex-col flex-grow items-center justify-center gap-3 p-8">
-        <img
-          src={logo}
-          alt="Carbon"
-          className="max-w-lg -mt-[var(--header-height)]"
-        />
-        {!hasCustomLogo && permissions.can("update", "settings") && (
-          <Button asChild size="sm" variant="secondary">
-            <Link to={path.to.logos}>Update Logo</Link>
-          </Button>
-        )}
+      <div className="flex flex-col flex-grow items-center justify-center p-8">
+        <div className="flex flex-col items-center justify-center gap-3  -mt-[var(--header-height)] ml-0 md:-ml-[30px]">
+          <img src={logo} alt="Carbon" className="max-w-full lg:max-w-lg" />
+          {!hasCustomLogo && permissions.can("update", "settings") && (
+            <Button asChild size="sm" variant="secondary">
+              <Link to={path.to.logos}>Update Logo</Link>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
