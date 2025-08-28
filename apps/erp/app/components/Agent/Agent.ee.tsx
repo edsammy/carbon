@@ -49,7 +49,7 @@ const providerMetadata = {
 
 const shortcut: ShortcutDefinition = {
   key: "I",
-  modifiers: ["meta"],
+  modifiers: ["mod"],
 };
 
 const getInitialPrompt = (): LanguageModelV1Prompt => [

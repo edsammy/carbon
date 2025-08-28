@@ -70,7 +70,7 @@ type SearchResult = {
 
 const shortcut: ShortcutDefinition = {
   key: "K",
-  modifiers: ["meta"],
+  modifiers: ["mod"],
 };
 
 const SearchModal = ({
@@ -174,7 +174,7 @@ const SearchModal = ({
         className="rounded-lg translate-y-0 p-0 h-[343px]"
         withCloseButton={false}
       >
-        <Command className="rounded-lg border shadow-md">
+        <Command>
           <CommandInput
             placeholder="Type a command or search..."
             value={input}
