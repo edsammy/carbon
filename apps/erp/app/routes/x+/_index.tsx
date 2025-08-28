@@ -35,7 +35,7 @@ export default function AppIndexRoute() {
         <img
           src={logo}
           alt="Carbon"
-          className="max-w-lg w-full -mt-[var(--header-height)]"
+          className="max-w-lg -mt-[var(--header-height)]"
         />
       </div>
     </div>
