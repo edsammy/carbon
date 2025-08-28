@@ -2707,12 +2707,27 @@ export async function upsertSalesOrder(
     salesOrder.exchangeRateUpdatedAt = new Date().toISOString();
   }
 
+  const { requestedDate, promisedDate, ...orderData } = salesOrder;
+
   const order = await client
     .from("salesOrder")
-    .insert([{ ...salesOrder, opportunityId: opportunity.data?.id }])
+    .insert([{ ...orderData, opportunityId: opportunity.data?.id }])
     .select("id, salesOrderId");
 
-  if (order.error) return order;
+  if (order.error) {
+    return order;
+  }
+
+  if (!order.data || order.data.length === 0) {
+    return {
+      error: {
+        message: "Sales order insert returned no data",
+        details:
+          "The insert operation completed but returned an empty result set",
+      } as PostgrestError,
+      data: null,
+    };
+  }
 
   const salesOrderId = order.data[0].id;
 
@@ -2722,6 +2737,8 @@ export async function upsertSalesOrder(
         id: salesOrderId,
         locationId: locationId,
         shippingMethodId: shippingMethodId,
+        receiptRequestedDate: requestedDate,
+        receiptPromisedDate: promisedDate,
         shippingTermId: shippingTermId,
         companyId: salesOrder.companyId,
       },
@@ -2740,7 +2757,7 @@ export async function upsertSalesOrder(
 
   if (shipment.error) {
     await deleteSalesOrder(client, salesOrderId);
-    return payment;
+    return shipment;
   }
   if (payment.error) {
     await deleteSalesOrder(client, salesOrderId);

@@ -61,7 +61,10 @@ const SalesOrderProperties = () => {
   );
 
   const onUpdate = useCallback(
-    (field: keyof SalesOrder, value: string | null) => {
+    (
+      field: keyof SalesOrder | "receiptRequestedDate" | "receiptPromisedDate",
+      value: string | null
+    ) => {
       if (value === routeData?.salesOrder[field]) {
         return;
       }
@@ -301,6 +304,45 @@ const SalesOrderProperties = () => {
           inline
           onChange={(date) => {
             onUpdate("orderDate", date);
+          }}
+        />
+      </ValidatedForm>
+
+      <ValidatedForm
+        defaultValues={{
+          receiptRequestedDate:
+            routeData?.salesOrder?.receiptRequestedDate ?? "",
+        }}
+        validator={z.object({
+          receiptRequestedDate: z.string(),
+        })}
+        className="w-full"
+      >
+        <DatePicker
+          name="receiptRequestedDate"
+          label="Requested Date"
+          inline
+          onChange={(date) => {
+            onUpdate("receiptRequestedDate", date);
+          }}
+        />
+      </ValidatedForm>
+
+      <ValidatedForm
+        defaultValues={{
+          receiptPromisedDate: routeData?.salesOrder?.receiptPromisedDate ?? "",
+        }}
+        validator={z.object({
+          receiptPromisedDate: z.string(),
+        })}
+        className="w-full"
+      >
+        <DatePicker
+          name="receiptPromisedDate"
+          label="Promised Date"
+          inline
+          onChange={(date) => {
+            onUpdate("receiptPromisedDate", date);
           }}
         />
       </ValidatedForm>

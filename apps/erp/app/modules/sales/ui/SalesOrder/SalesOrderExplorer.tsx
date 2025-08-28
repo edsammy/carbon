@@ -132,6 +132,10 @@ export default function SalesOrderExplorer() {
     locationId:
       salesOrderData?.salesOrder?.locationId ?? defaults.locationId ?? "",
     taxPercent: salesOrderData?.customer?.taxPercent ?? 0,
+    promisedDate:
+      salesOrderData?.salesOrder?.receiptPromisedDate ??
+      salesOrderData?.salesOrder?.receiptRequestedDate ??
+      "",
     shippingCost: 0,
   };
 

@@ -178,9 +178,16 @@ const SalesOrderForm = ({ initialValues }: SalesOrderFormProps) => {
                 )}
 
               <DatePicker
-                name="orderDate"
-                label="Order Date"
-                helperText="This is typically the date the purchase order was  received from the customer"
+                name="requestedDate"
+                label="Requested Date"
+                helperText="The date the customer expects to receive the goods"
+                isDisabled={isCustomer}
+              />
+
+              <DatePicker
+                name="promisedDate"
+                label="Promised Date"
+                helperText="The date the customer expects to receive the goods"
                 isDisabled={isCustomer}
               />
 

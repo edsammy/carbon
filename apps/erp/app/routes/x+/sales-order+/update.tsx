@@ -87,6 +87,7 @@ export async function action({ request }: ActionFunctionArgs) {
     case "customerEngineeringContactId":
     case "customerLocationId":
     case "customerReference":
+
     case "exchangeRate":
     case "expirationDate":
     case "locationId":
@@ -95,6 +96,18 @@ export async function action({ request }: ActionFunctionArgs) {
       return json(
         await client
           .from("salesOrder")
+          .update({
+            [field]: value ? value : null,
+            updatedBy: userId,
+            updatedAt: new Date().toISOString(),
+          })
+          .in("id", ids as string[])
+      );
+    case "receiptPromisedDate":
+    case "receiptRequestedDate":
+      return json(
+        await client
+          .from("salesOrderShipment")
           .update({
             [field]: value ? value : null,
             updatedBy: userId,
