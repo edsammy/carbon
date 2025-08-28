@@ -121,8 +121,9 @@ serve(async (req: Request) => {
           (purchaseOrder.data?.exchangeRate ?? 1);
 
         const totalLinesCost = receiptLines.data.reduce((acc, receiptLine) => {
+          const safeReceivedQuantity = isNaN(receiptLine.receivedQuantity) || receiptLine.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
           const lineCost =
-            Math.abs(receiptLine.receivedQuantity ?? 0) *
+            Math.abs(safeReceivedQuantity) *
             (receiptLine.unitPrice ?? 0);
           return acc + lineCost;
         }, 0);
@@ -172,9 +173,10 @@ serve(async (req: Request) => {
                 ]?.toString()
             );
 
+            const safeReceivedQuantity = isNaN(receiptLine?.receivedQuantity) || receiptLine?.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
             const quantity = receiptLine?.requiresSerialTracking
               ? 1
-              : receiptLine?.receivedQuantity ?? itemTracking.quantity;
+              : safeReceivedQuantity || itemTracking.quantity;
 
             acc[itemTracking.id] = {
               status: "Available",
@@ -202,7 +204,8 @@ serve(async (req: Request) => {
               ) {
                 const recivedQuantityInPurchaseUnit =
                   receiptLines.reduce((acc, receiptLine) => {
-                    return acc + (receiptLine.receivedQuantity ?? 0);
+                    const safeReceivedQuantity = isNaN(receiptLine.receivedQuantity) || receiptLine.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
+                    return acc + safeReceivedQuantity;
                   }, 0) / (receiptLines[0].conversionFactor ?? 1);
 
                 const receivedComplete =
@@ -239,7 +242,8 @@ serve(async (req: Request) => {
           ) {
             const recivedQuantityInPurchaseUnit =
               receiptLines.reduce((acc, receiptLine) => {
-                return acc + (receiptLine.receivedQuantity ?? 0);
+                const safeReceivedQuantity = isNaN(receiptLine.receivedQuantity) || receiptLine.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
+                return acc + safeReceivedQuantity;
               }, 0) / (receiptLines[0].conversionFactor ?? 1);
 
             const newQuantityReceived =
@@ -438,10 +442,11 @@ serve(async (req: Request) => {
             (purchaseOrderLine?.quantityInvoiced ?? 0) *
             (purchaseOrderLine?.conversionFactor ?? 1);
 
+          const safeReceiptLineQuantity = isNaN(receiptLine.receivedQuantity) || receiptLine.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
           const quantityToReverse = Math.max(
             0,
             Math.min(
-              Math.abs(receiptLine.receivedQuantity ?? 0),
+              Math.abs(safeReceiptLineQuantity),
               quantityInvoiced - quantityReceived
             )
           );
@@ -657,7 +662,7 @@ serve(async (req: Request) => {
             });
           }
 
-          const receivedQuantity = receiptLine.receivedQuantity ?? 0;
+          const receivedQuantity = isNaN(receiptLine.receivedQuantity) || receiptLine.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
           const isNegativeReceipt = receivedQuantity < 0;
           const absReceivedQuantity = Math.abs(receivedQuantity);
 
@@ -798,9 +803,8 @@ serve(async (req: Request) => {
                 ] === receiptLine.id
             );
 
-            const absReceivedQuantity = Math.abs(
-              receiptLine.receivedQuantity || 0
-            );
+            const safeReceiptLineQuantity = isNaN(receiptLine.receivedQuantity) || receiptLine.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
+            const absReceivedQuantity = Math.abs(safeReceiptLineQuantity);
             const entryType =
               receivedQuantity < 0 ? "Negative Adjmt." : "Positive Adjmt.";
             const quantityPerEntry = receivedQuantity < 0 ? -1 : 1;
@@ -1058,7 +1062,7 @@ serve(async (req: Request) => {
 
           if (!warehouseTransferLine) continue;
 
-          const receivedQuantity = receiptLine.receivedQuantity ?? 0;
+          const receivedQuantity = isNaN(receiptLine.receivedQuantity) || receiptLine.receivedQuantity == null ? 0 : receiptLine.receivedQuantity;
           if (receivedQuantity === 0) continue;
 
           // Update warehouse transfer line received quantity

@@ -27,8 +27,6 @@ export default function AppIndexRoute() {
     logo = mode === "dark" ? "/carbon-word-dark.svg" : "/carbon-word-light.svg";
   }
 
-  console.log({ logo });
-
   return (
     <div className="p-8 w-full flex flex-col h-[calc(100dvh-var(--header-height)*2)] bg-muted">
       <Heading size="h3">Hello, {user.firstName}</Heading>

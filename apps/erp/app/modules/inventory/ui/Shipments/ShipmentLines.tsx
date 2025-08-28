@@ -422,25 +422,27 @@ function ShipmentLineItem({
               <NumberField
                 value={line.shippedQuantity || 0}
                 onChange={(value) => {
+                  // Default to 0 if value is NaN, null, or undefined
+                  const safeValue = isNaN(value) || value == null ? 0 : value;
                   onUpdate({
                     lineId: line.id!,
                     field: "shippedQuantity",
-                    value,
+                    value: safeValue,
                   });
                   // Adjust serial numbers array size while preserving existing values
-                  if (value > serialNumbers.length) {
+                  if (safeValue > serialNumbers.length) {
                     onSerialNumbersChange([
                       ...serialNumbers,
                       ...Array.from(
-                        { length: value - serialNumbers.length },
+                        { length: safeValue - serialNumbers.length },
                         (_, i) => ({
                           index: i,
                           id: "",
                         })
                       ),
                     ]);
-                  } else if (value < serialNumbers.length) {
-                    onSerialNumbersChange(serialNumbers.slice(0, value));
+                  } else if (safeValue < serialNumbers.length) {
+                    onSerialNumbersChange(serialNumbers.slice(0, safeValue));
                   }
                 }}
               >

@@ -253,8 +253,8 @@ serve(async (req: Request) => {
             items.data.find((item) => item.id === shipmentLine.itemId)
               ?.itemTrackingType ?? "Inventory";
 
-          // Default shippedQuantity to 0 if not defined
-          const shippedQuantity = shipmentLine.shippedQuantity ?? 0;
+          // Default shippedQuantity to 0 if not defined or NaN
+          const shippedQuantity = isNaN(shipmentLine.shippedQuantity) || shipmentLine.shippedQuantity == null ? 0 : shipmentLine.shippedQuantity;
 
           if (itemTrackingType === "Inventory") {
             itemLedgerInserts.push({
@@ -353,7 +353,8 @@ serve(async (req: Request) => {
           ) {
             const shippedQuantity = shipmentLines.reduce(
               (acc, shipmentLine) => {
-                return acc + (shipmentLine.shippedQuantity ?? 0);
+                const safeShippedQuantity = isNaN(shipmentLine.shippedQuantity) || shipmentLine.shippedQuantity == null ? 0 : shipmentLine.shippedQuantity;
+                return acc + safeShippedQuantity;
               },
               0
             );
@@ -849,7 +850,8 @@ serve(async (req: Request) => {
           ) {
             const shippedQuantity = shipmentLines.reduce(
               (acc, shipmentLine) => {
-                return acc + (shipmentLine.shippedQuantity ?? 0);
+                const safeShippedQuantity = isNaN(shipmentLine.shippedQuantity) || shipmentLine.shippedQuantity == null ? 0 : shipmentLine.shippedQuantity;
+                return acc + safeShippedQuantity;
               },
               0
             );
@@ -1178,7 +1180,7 @@ serve(async (req: Request) => {
 
           if (!warehouseTransferLine) continue;
 
-          const shippedQuantity = shipmentLine.shippedQuantity ?? 0;
+          const shippedQuantity = isNaN(shipmentLine.shippedQuantity) || shipmentLine.shippedQuantity == null ? 0 : shipmentLine.shippedQuantity;
 
           // Update warehouse transfer line shipped quantity
           const newShippedQuantity =

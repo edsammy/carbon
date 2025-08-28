@@ -384,25 +384,27 @@ function ReceiptLineItem({
               <NumberField
                 value={line.receivedQuantity ?? 0}
                 onChange={(value) => {
+                  // Default to 0 if value is NaN, null, or undefined
+                  const safeValue = isNaN(value) || value == null ? 0 : value;
                   onUpdate({
                     lineId: line.id!,
                     field: "receivedQuantity",
-                    value,
+                    value: safeValue,
                   });
                   // Adjust serial numbers array size while preserving existing values
-                  if (value > serialNumbers.length) {
+                  if (safeValue > serialNumbers.length) {
                     onSerialNumbersChange([
                       ...serialNumbers,
                       ...Array.from(
-                        { length: value - serialNumbers.length },
+                        { length: safeValue - serialNumbers.length },
                         () => ({
                           index: serialNumbers.length,
                           number: "",
                         })
                       ),
                     ]);
-                  } else if (value < serialNumbers.length) {
-                    onSerialNumbersChange(serialNumbers.slice(0, value));
+                  } else if (safeValue < serialNumbers.length) {
+                    onSerialNumbersChange(serialNumbers.slice(0, safeValue));
                   }
                 }}
               >
