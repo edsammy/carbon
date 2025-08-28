@@ -1,6 +1,7 @@
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
   Heading,
@@ -80,6 +81,9 @@ export default function LogosRoute() {
               <CardTitle className="flex items-center gap-2">
                 <LuSun /> Mark Light Mode
               </CardTitle>
+              <CardDescription>
+                Used in the navigation and on documents like sales orders
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <CompanyLogoForm company={company} mode="light" icon />
@@ -90,6 +94,9 @@ export default function LogosRoute() {
               <CardTitle className="flex items-center gap-2">
                 <LuMoon /> Mark Dark Mode
               </CardTitle>
+              <CardDescription>
+                Used in the navigation in dark mode
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <CompanyLogoForm company={company} mode="dark" icon />
@@ -101,6 +108,9 @@ export default function LogosRoute() {
             <CardTitle className="flex items-center gap-2">
               <LuSun /> Wordmark Light Mode
             </CardTitle>
+            <CardDescription>
+              Used on the home screen and digital quotes
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <CompanyLogoForm company={company} mode="light" icon={false} />
@@ -111,6 +121,9 @@ export default function LogosRoute() {
             <CardTitle className="flex items-center gap-2">
               <LuMoon /> Wordmark Dark Mode
             </CardTitle>
+            <CardDescription>
+              Used on the home screen in dark mode
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <CompanyLogoForm company={company} mode="dark" icon={false} />
