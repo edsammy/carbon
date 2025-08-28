@@ -311,7 +311,6 @@ const PurchaseOrderProperties = () => {
           name="orderDate"
           label="Order Date"
           inline
-          isDisabled={isDisabled}
           onChange={(date) => {
             onUpdate("orderDate", date);
           }}

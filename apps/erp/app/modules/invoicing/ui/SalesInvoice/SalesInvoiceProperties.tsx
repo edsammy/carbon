@@ -300,7 +300,6 @@ const SalesInvoiceProperties = () => {
           name="dateIssued"
           label="Date Issued"
           inline
-          isDisabled={isDisabled}
           onChange={(date) => {
             onUpdate("dateIssued", date);
           }}
@@ -320,7 +319,6 @@ const SalesInvoiceProperties = () => {
           name="dateDue"
           label="Date Due"
           inline
-          isDisabled={isDisabled}
           onChange={(date) => {
             onUpdate("dateDue", date);
           }}

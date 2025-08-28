@@ -281,7 +281,6 @@ const SalesRFQProperties = () => {
           name="rfqDate"
           label="RFQ Date"
           inline
-          isDisabled={isDisabled}
           onChange={(date) => {
             onUpdate("rfqDate", date);
           }}
@@ -301,7 +300,6 @@ const SalesRFQProperties = () => {
           name="expirationDate"
           label="Expiration Date"
           inline
-          isDisabled={isDisabled}
           onChange={(date) => {
             onUpdate("expirationDate", date);
           }}

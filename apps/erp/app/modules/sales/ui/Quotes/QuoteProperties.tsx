@@ -296,7 +296,6 @@ const QuoteProperties = () => {
           name="expirationDate"
           label="Expiration Date"
           inline
-          isDisabled={isDisabled}
           onChange={(date) => {
             onUpdate("expirationDate", date);
           }}
@@ -316,7 +315,6 @@ const QuoteProperties = () => {
           name="dueDate"
           label="Due Date"
           inline
-          isDisabled={isDisabled}
           onChange={(date) => {
             onUpdate("dueDate", date);
           }}
