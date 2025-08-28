@@ -407,13 +407,13 @@ export const itemPurchasingValidator = z.object({
 export const itemUnitSalePriceValidator = z.object({
   itemId: z.string().min(1, { message: "Item ID is required" }),
   unitSalePrice: zfd.numeric(z.number().min(0)),
-  currencyCode: z.string().min(1, { message: "Currency is required" }),
-  salesUnitOfMeasureCode: z
-    .string()
-    .min(1, { message: "Unit of Measure is required" }),
-  salesBlocked: zfd.checkbox(),
-  priceIncludesTax: zfd.checkbox(),
-  allowInvoiceDiscount: zfd.checkbox(),
+  // currencyCode: z.string().min(1, { message: "Currency is required" }),
+  // salesUnitOfMeasureCode: z
+  //   .string()
+  //   .min(1, { message: "Unit of Measure is required" }),
+  // salesBlocked: zfd.checkbox(),
+  // priceIncludesTax: zfd.checkbox(),
+  // allowInvoiceDiscount: zfd.checkbox(),
 });
 
 export const materialDimensionValidator = z.object({

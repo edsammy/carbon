@@ -12,8 +12,9 @@ import {
   itemUnitSalePriceValidator,
   upsertItemUnitSalePrice,
 } from "~/modules/items";
+import { ItemSalePriceForm } from "~/modules/items/ui/Item";
 import CustomerParts from "~/modules/items/ui/Item/CustomerParts";
-import { setCustomFields } from "~/utils/form";
+import { getCustomFields, setCustomFields } from "~/utils/form";
 import { path } from "~/utils/path";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -88,21 +89,22 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function PartSalesRoute() {
-  const { customerParts, itemId } = useLoaderData<typeof loader>();
+  const { customerParts, partUnitSalePrice, itemId } =
+    useLoaderData<typeof loader>();
 
-  // const initialValues = {
-  //   ...partUnitSalePrice,
-  //   salesUnitOfMeasureCode: partUnitSalePrice?.salesUnitOfMeasureCode ?? "",
-  //   ...getCustomFields(partUnitSalePrice.customFields),
-  //   itemId: itemId,
-  // };
+  const initialValues = {
+    ...partUnitSalePrice,
+    salesUnitOfMeasureCode: partUnitSalePrice?.salesUnitOfMeasureCode ?? "",
+    ...getCustomFields(partUnitSalePrice.customFields),
+    itemId: itemId,
+  };
 
   return (
     <VStack spacing={2} className="p-2">
-      {/* <ItemSalePriceForm
+      <ItemSalePriceForm
         key={initialValues.itemId}
         initialValues={initialValues}
-      /> */}
+      />
       {customerParts ? (
         <CustomerParts customerParts={customerParts} itemId={itemId} />
       ) : null}

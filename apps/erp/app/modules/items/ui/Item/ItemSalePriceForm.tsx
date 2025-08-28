@@ -6,18 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@carbon/react";
-import { useState } from "react";
 import type { z } from "zod";
-import {
-  Boolean,
-  Currency,
-  CustomFormFields,
-  Hidden,
-  Number,
-  Submit,
-  UnitOfMeasure,
-} from "~/components/Form";
-import { usePermissions } from "~/hooks";
+import { CustomFormFields, Hidden, Number, Submit } from "~/components/Form";
+import { usePermissions, useUser } from "~/hooks";
 import { itemUnitSalePriceValidator } from "../../items.models";
 
 type ItemSalePriceFormProps = {
@@ -26,7 +17,7 @@ type ItemSalePriceFormProps = {
 
 const ItemSalePriceForm = ({ initialValues }: ItemSalePriceFormProps) => {
   const permissions = usePermissions();
-  const [currency, setCurrency] = useState(initialValues.currencyCode);
+  const { company } = useUser();
 
   return (
     <Card>
@@ -47,10 +38,10 @@ const ItemSalePriceForm = ({ initialValues }: ItemSalePriceFormProps) => {
               minValue={0}
               formatOptions={{
                 style: "currency",
-                currency,
+                currency: company?.baseCurrencyCode ?? "USD",
               }}
             />
-            <Currency
+            {/* <Currency
               name="currencyCode"
               label="Currency"
               onChange={(newValue) => {
@@ -68,7 +59,7 @@ const ItemSalePriceForm = ({ initialValues }: ItemSalePriceFormProps) => {
             <Boolean
               name="allowInvoiceDiscount"
               label="Allow Invoice Discount"
-            />
+            /> */}
             <CustomFormFields table="partUnitSalePrice" />
           </div>
         </CardContent>
