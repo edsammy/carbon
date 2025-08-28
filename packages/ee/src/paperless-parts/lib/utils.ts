@@ -1,4 +1,5 @@
-import { openai } from "@ai-sdk/openai/edge";
+import { generateObject } from "@ai-sdk/core";
+import { openai } from "@ai-sdk/openai";
 import type { Database } from "@carbon/database";
 import {
   getMaterialDescription,
@@ -8,7 +9,6 @@ import {
   textToTiptap,
 } from "@carbon/utils";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { generateObject } from "ai";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { PaperlessPartsClient, QuoteCostingVariable } from "./client";
