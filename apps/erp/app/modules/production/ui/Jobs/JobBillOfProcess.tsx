@@ -1061,7 +1061,7 @@ function AttributesForm({
       className="flex flex-col gap-6"
       isLoading={fetcher.state !== "idle"}
     >
-      <div className="p-6 border rounded-lg mb-6">
+      <div className="p-6 border rounded-lg bg-card mb-6">
         <ValidatedForm
           action={path.to.newJobOperationAttribute}
           method="post"
@@ -1174,7 +1174,7 @@ function AttributesForm({
               isDisabled={isDisabled || fetcher.state !== "idle"}
               isLoading={fetcher.state !== "idle"}
             >
-              Add Step
+              Save Step
             </Submit>
           </VStack>
         </ValidatedForm>
@@ -1611,7 +1611,7 @@ function ParametersForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="p-6 border rounded-lg">
+      <div className="p-6 border rounded-lg bg-card">
         <ValidatedForm
           action={path.to.newJobOperationParameter}
           method="post"
@@ -2847,7 +2847,7 @@ function ToolsForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="p-6 border rounded-lg">
+      <div className="p-6 border rounded-lg bg-card">
         <ValidatedForm
           action={path.to.newJobOperationTool}
           method="post"
@@ -2874,7 +2874,7 @@ function ToolsForm({
               isDisabled={isDisabled || fetcher.state !== "idle"}
               isLoading={fetcher.state !== "idle"}
             >
-              Add New
+              Save Tool
             </Submit>
           </VStack>
         </ValidatedForm>

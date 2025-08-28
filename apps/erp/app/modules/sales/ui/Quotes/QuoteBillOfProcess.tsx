@@ -895,7 +895,7 @@ function AttributesForm({
       isLoading={fetcher.state !== "idle"}
       // this is a hack to re-render the editor component when the form is submitted with the default values
     >
-      <div className="p-6 border rounded-lg mb-6">
+      <div className="p-6 border rounded-lg bg-card mb-6">
         <ValidatedForm
           action={path.to.newQuoteOperationAttribute}
           method="post"
@@ -1009,14 +1009,14 @@ function AttributesForm({
               isDisabled={isDisabled || fetcher.state !== "idle"}
               isLoading={fetcher.state !== "idle"}
             >
-              Add Step
+              Save Step
             </Submit>
           </VStack>
         </ValidatedForm>
       </div>
 
       {attributes.length > 0 && (
-        <div className="border rounded-lg">
+        <div className="border bg-card rounded-lg">
           {[...attributes]
             .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
             .map((a, index) => (
@@ -1378,7 +1378,7 @@ function ParametersForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="p-6 border rounded-lg">
+      <div className="p-6 border rounded-lg bg-card">
         <ValidatedForm
           action={path.to.newQuoteOperationParameter}
           method="post"
@@ -1415,7 +1415,7 @@ function ParametersForm({
       </div>
 
       {parameters.length > 0 && (
-        <div className="border rounded-lg">
+        <div className="border bg-card rounded-lg">
           {[...parameters]
             .sort((a, b) =>
               String(a.id ?? "").localeCompare(String(b.id ?? ""))
@@ -2482,7 +2482,7 @@ function ToolsForm({
               isDisabled={isDisabled || fetcher.state !== "idle"}
               isLoading={fetcher.state !== "idle"}
             >
-              Add New
+              Save Tool
             </Submit>
           </VStack>
         </ValidatedForm>
