@@ -175,14 +175,18 @@ type JobBillOfProcessProps = {
 
 function makeItems(
   operations: Operation[],
-  tags: { name: string }[]
+  tags: { name: string }[],
+  temporaryItems: TemporaryItems
 ): ItemWithData[] {
-  return operations.map((operation) => makeItem(operation, tags));
+  return operations.map((operation) =>
+    makeItem(operation, tags, temporaryItems)
+  );
 }
 
 function makeItem(
   operation: Operation,
-  tags: { name: string }[]
+  tags: { name: string }[],
+  temporaryItems: TemporaryItems
 ): ItemWithData {
   return {
     id: operation.id!,
@@ -230,7 +234,7 @@ function makeItem(
         )}
       </HStack>
     ),
-    footer: isTemporaryId(operation.id ?? "") ? null : (
+    footer: temporaryItems[operation.id!] ? null : (
       <HStack className="w-full justify-between">
         <HStack>
           <JobOperationStatus operation={operation} />
@@ -251,7 +255,7 @@ function makeItem(
 
 const initialOperation: Omit<
   Operation,
-  "jobMakeMethodId" | "order" | "jobOperationTool"
+  "jobMakeMethodId" | "order" | "jobOperationTool" | "id"
 > = {
   assignee: null,
   description: "",
@@ -407,7 +411,7 @@ const JobBillOfProcess = ({
     (a, b) => (orderState[a.id!] ?? a.order) - (orderState[b.id!] ?? b.order)
   );
 
-  const items = makeItems(operations, tags).map((item) => ({
+  const items = makeItems(operations, tags, temporaryItems).map((item) => ({
     ...item,
     checked: checkedState[item.id] ?? false,
   }));
@@ -425,7 +429,7 @@ const JobBillOfProcess = ({
   };
 
   const onAddItem = () => {
-    const temporaryId = Math.random().toString(16).slice(2);
+    const operationId = nanoid();
 
     let newOrder = 1;
     if (operations.length) {
@@ -434,16 +438,16 @@ const JobBillOfProcess = ({
 
     const newOperation: Operation = {
       ...initialOperation,
-      id: temporaryId,
+      id: operationId,
       order: newOrder,
       jobMakeMethodId,
     };
 
     setTemporaryItems((prev) => ({
       ...prev,
-      [temporaryId]: newOperation,
+      [operationId]: newOperation,
     }));
-    setSelectedItemId(temporaryId);
+    setSelectedItemId(operationId);
   };
 
   const onRemoveItem = async (id: string) => {
@@ -452,7 +456,7 @@ const JobBillOfProcess = ({
     const operation = operationsById.get(id);
     if (!operation) return;
 
-    if (isTemporaryId(id)) {
+    if (temporaryItems[id]) {
       setTemporaryItems((prev) => {
         const { [id]: _, ...rest } = prev;
         return rest;
@@ -484,7 +488,7 @@ const JobBillOfProcess = ({
       },
     }));
     const updates = newItems.reduce<Record<string, number>>((acc, item) => {
-      if (!isTemporaryId(item.id)) {
+      if (!temporaryItems[item.id]) {
         acc[item.id] = item.data.order;
       }
       return acc;
@@ -516,7 +520,7 @@ const JobBillOfProcess = ({
 
   const onUpdateWorkInstruction = useDebounce(
     async (content: JSONContent) => {
-      if (selectedItemId !== null && !isTemporaryId(selectedItemId))
+      if (selectedItemId !== null && !temporaryItems[selectedItemId])
         await carbon
           ?.from("jobOperation")
           .update({
@@ -562,7 +566,7 @@ const JobBillOfProcess = ({
       carbon &&
       accessToken &&
       selectedItemId &&
-      !isTemporaryId(selectedItemId)
+      !temporaryItems[selectedItemId]
     ) {
       carbon.realtime.setAuth(accessToken);
 
@@ -704,8 +708,9 @@ const JobBillOfProcess = ({
                 locationId={locationId}
                 workInstruction={workInstructions[item.id] ?? {}}
                 setWorkInstructions={setWorkInstructions}
-                setSelectedItemId={setSelectedItemId}
                 setTemporaryItems={setTemporaryItems}
+                setSelectedItemId={setSelectedItemId}
+                temporaryItems={temporaryItems}
               />
             </motion.div>
           </div>
@@ -714,7 +719,8 @@ const JobBillOfProcess = ({
       {
         id: 1,
         label: "Instructions",
-        disabled: item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems || item.data.operationType === "Outside",
         content: (
           <div className="flex flex-col">
             <div>
@@ -750,7 +756,8 @@ const JobBillOfProcess = ({
       },
       {
         id: 2,
-        disabled: item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems || item.data.operationType === "Outside",
         label: (
           <span className="flex items-center gap-2">
             <span>Params</span>
@@ -763,15 +770,17 @@ const JobBillOfProcess = ({
               parameters={parameters}
               operationId={item.id!}
               isDisabled={
-                selectedItemId === null || isTemporaryId(selectedItemId!)
+                selectedItemId === null || !!temporaryItems[selectedItemId]
               }
+              temporaryItems={temporaryItems}
             />
           </div>
         ),
       },
       {
         id: 3,
-        disabled: item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems || item.data.operationType === "Outside",
         label: (
           <span className="flex items-center gap-2">
             <span>Steps</span>
@@ -784,15 +793,17 @@ const JobBillOfProcess = ({
               attributes={attributes}
               operationId={item.id!}
               isDisabled={
-                selectedItemId === null || isTemporaryId(selectedItemId!)
+                selectedItemId === null || !!temporaryItems[selectedItemId]
               }
+              temporaryItems={temporaryItems}
             />
           </div>
         ),
       },
       {
         id: 4,
-        disabled: item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems || item.data.operationType === "Outside",
         label: (
           <span className="flex items-center gap-2">
             <span>Tools</span>
@@ -805,15 +816,17 @@ const JobBillOfProcess = ({
               tools={tools}
               operationId={item.id!}
               isDisabled={
-                selectedItemId === null || isTemporaryId(selectedItemId!)
+                selectedItemId === null || !!temporaryItems[selectedItemId]
               }
+              temporaryItems={temporaryItems}
             />
           </div>
         ),
       },
       {
         id: 5,
-        disabled: item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems || item.data.operationType === "Outside",
         label: "Events",
         content: (
           <div className="flex w-full flex-col pr-2 py-6 min-h-[300px]">
@@ -839,7 +852,8 @@ const JobBillOfProcess = ({
       },
       {
         id: 6,
-        disabled: item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems || item.data.operationType === "Outside",
         label: "Chat",
         content: <OperationChat jobOperationId={item.id} />,
       },
@@ -978,17 +992,16 @@ const JobBillOfProcess = ({
 
 export default JobBillOfProcess;
 
-function isTemporaryId(id: string) {
-  return id.length < 20;
-}
 function AttributesForm({
   operationId,
   isDisabled,
   attributes,
+  temporaryItems,
 }: {
   operationId: string;
   isDisabled: boolean;
   attributes: JobOperationAttribute[];
+  temporaryItems: TemporaryItems;
 }) {
   const fetcher = useFetcher<typeof newJobOperationParameterAction>();
   const [type, setType] = useState<OperationAttribute["type"]>("Task");
@@ -1031,7 +1044,7 @@ function AttributesForm({
     return getPrivateUrl(result.data.path);
   };
 
-  if (isDisabled && isTemporaryId(operationId)) {
+  if (isDisabled && temporaryItems[operationId]) {
     return (
       <Alert className="max-w-[420px] mx-auto my-8">
         <LuTriangleAlert />
@@ -1575,14 +1588,16 @@ function ParametersForm({
   operationId,
   isDisabled,
   parameters,
+  temporaryItems,
 }: {
   operationId: string;
   isDisabled: boolean;
   parameters: OperationParameter[];
+  temporaryItems: TemporaryItems;
 }) {
   const fetcher = useFetcher<typeof newJobOperationParameterAction>();
 
-  if (isDisabled && isTemporaryId(operationId)) {
+  if (isDisabled && temporaryItems[operationId]) {
     return (
       <Alert className="max-w-[420px] mx-auto my-8">
         <LuTriangleAlert />
@@ -1789,6 +1804,7 @@ function OperationForm({
   setWorkInstructions,
   setTemporaryItems,
   setSelectedItemId,
+  temporaryItems,
 }: {
   item: ItemWithData;
   isDisabled: boolean;
@@ -1798,41 +1814,25 @@ function OperationForm({
   setWorkInstructions: Dispatch<SetStateAction<PendingWorkInstructions>>;
   setTemporaryItems: Dispatch<SetStateAction<TemporaryItems>>;
   setSelectedItemId: Dispatch<SetStateAction<string | null>>;
+  temporaryItems: TemporaryItems;
 }) {
   const { jobId } = useParams();
-  const { id: userId, company } = useUser();
+  const { company } = useUser();
   if (!jobId) throw new Error("jobId not found");
 
   const fetcher = useFetcher<{ id: string }>();
   const { carbon } = useCarbon();
-  const addingWorkInstruction = useRef(false);
   const baseCurrency = company?.baseCurrencyCode ?? "USD";
 
   useEffect(() => {
-    // replace the temporary id with the actual id
     if (fetcher.data && fetcher.data.id) {
-      if (isTemporaryId(item.id) && carbon && !addingWorkInstruction.current) {
-        setSelectedItemId(null);
-        // Clear temporary item after successful save
-        setTemporaryItems((prev) => {
-          const { [item.id]: _, ...rest } = prev;
-          return rest;
-        });
-      } else {
-        setSelectedItemId(null);
-      }
+      // Clear temporary item after successful save
+      setTemporaryItems((prev) => {
+        const { [item.id]: _, ...rest } = prev;
+        return rest;
+      });
     }
-  }, [
-    item.id,
-    fetcher.data,
-    setSelectedItemId,
-    item.data.workInstruction,
-    carbon,
-    userId,
-    workInstruction,
-    setWorkInstructions,
-    setTemporaryItems,
-  ]);
+  }, [item.id, fetcher.data, setTemporaryItems]);
 
   const machineDisclosure = useDisclosure();
   const laborDisclosure = useDisclosure();
@@ -1997,7 +1997,7 @@ function OperationForm({
   return (
     <ValidatedForm
       action={
-        isTemporaryId(item.id)
+        temporaryItems[item.id]
           ? path.to.newJobOperation(jobId)
           : path.to.jobOperation(jobId, item.id!)
       }
@@ -2010,11 +2010,6 @@ function OperationForm({
       }
       className="w-full flex flex-col gap-y-4"
       fetcher={fetcher}
-      onSubmit={() => {
-        if (!isTemporaryId(item.id)) {
-          setSelectedItemId(null);
-        }
-      }}
     >
       <div>
         <Hidden name="id" />
@@ -2522,7 +2517,7 @@ function OperationForm({
                   }));
                 }}
               />
-              {!isTemporaryId(item.id) && processData.procedureId && (
+              {!temporaryItems[item.id] && processData.procedureId && (
                 <div className="flex flex-col gap-2 w-auto">
                   {procedureWasChanged && (
                     <span className="text-sm text-muted-foreground">
@@ -2829,14 +2824,16 @@ function ToolsForm({
   operationId,
   isDisabled,
   tools,
+  temporaryItems,
 }: {
   operationId: string;
   isDisabled: boolean;
   tools: OperationTool[];
+  temporaryItems: TemporaryItems;
 }) {
   const fetcher = useFetcher<typeof newJobOperationToolAction>();
 
-  if (isDisabled && isTemporaryId(operationId)) {
+  if (isDisabled && temporaryItems[operationId]) {
     return (
       <Alert className="max-w-[420px] mx-auto my-8">
         <LuTriangleAlert />

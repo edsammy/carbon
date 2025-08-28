@@ -289,7 +289,7 @@ export const quoteMaterialValidator = z
 
 export const quoteOperationValidator = z
   .object({
-    id: zfd.text(z.string().optional()),
+    id: z.string().min(1, { message: "Operation ID is required" }),
     quoteMakeMethodId: z
       .string()
       .min(1, { message: "Quote Make Method is required" }),

@@ -1,9 +1,11 @@
-import { Heading, cn } from "@carbon/react";
+import { Button, Heading, cn } from "@carbon/react";
 import { useMode } from "@carbon/remix";
 import { getLocalTimeZone } from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
+import { Link } from "@remix-run/react";
 import { useMemo, type ComponentProps } from "react";
-import { useUser } from "~/hooks";
+import { usePermissions, useUser } from "~/hooks";
+import { path } from "~/utils/path";
 
 export default function AppIndexRoute() {
   const user = useUser();
@@ -22,21 +24,31 @@ export default function AppIndexRoute() {
 
   const { company } = useUser();
   const mode = useMode();
+  const permissions = usePermissions();
   let logo = mode === "dark" ? company?.logoDark : company?.logoLight;
+  let hasCustomLogo = !!logo;
   if (!logo) {
-    logo = mode === "dark" ? "/carbon-word-dark.svg" : "/carbon-word-light.svg";
+    logo =
+      mode === "dark"
+        ? "/carbon-word-only-dark.svg"
+        : "/carbon-word-only-light.svg";
   }
 
   return (
     <div className="p-8 w-full flex flex-col h-[calc(100dvh-var(--header-height)*2)] bg-muted">
       <Heading size="h3">Hello, {user.firstName}</Heading>
       <Subheading>{formatter.format(date)}</Subheading>
-      <div className="flex flex-col flex-grow items-center justify-center p-8">
+      <div className="flex flex-col flex-grow items-center justify-center gap-3 p-8">
         <img
           src={logo}
           alt="Carbon"
           className="max-w-lg -mt-[var(--header-height)]"
         />
+        {!hasCustomLogo && permissions.can("update", "settings") && (
+          <Button asChild size="sm" variant="secondary">
+            <Link to={path.to.logos}>Update Logo</Link>
+          </Button>
+        )}
       </div>
     </div>
   );

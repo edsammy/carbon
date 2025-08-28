@@ -182,7 +182,7 @@ export const salesOrderToJobValidator = baseJobValidator
   );
 
 export const baseJobOperationValidator = z.object({
-  id: zfd.text(z.string().optional()),
+  id: z.string().min(1, { message: "Operation ID is required" }),
   jobMakeMethodId: z
     .string()
     .min(1, { message: "Quote Make Method is required" }),

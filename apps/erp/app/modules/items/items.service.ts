@@ -2403,6 +2403,11 @@ export async function upsertMethodOperation(
         createdBy: string;
         customFields?: Json;
       })
+    | (z.infer<typeof methodOperationValidator> & {
+        companyId: string;
+        createdBy: string;
+        customFields?: Json;
+      })
     | (Omit<z.infer<typeof methodOperationValidator>, "id"> & {
         id: string;
         updatedBy: string;

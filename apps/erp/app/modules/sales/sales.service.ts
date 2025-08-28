@@ -2394,6 +2394,13 @@ export async function upsertQuoteOperation(
         createdBy: string;
         customFields?: Json;
       })
+    | (z.infer<typeof quoteOperationValidator> & {
+        quoteId: string;
+        quoteLineId: string;
+        companyId: string;
+        createdBy: string;
+        customFields?: Json;
+      })
     | (Omit<z.infer<typeof quoteOperationValidator>, "id"> & {
         id: string;
         quoteId: string;
@@ -2402,17 +2409,17 @@ export async function upsertQuoteOperation(
         customFields?: Json;
       })
 ) {
-  if ("id" in operation) {
+  if ("createdBy" in operation) {
     return client
       .from("quoteOperation")
-      .update(sanitize(operation))
-      .eq("id", operation.id)
+      .insert([operation])
       .select("id")
       .single();
   }
   return client
     .from("quoteOperation")
-    .insert([operation])
+    .update(sanitize(operation))
+    .eq("id", operation.id)
     .select("id")
     .single();
 }

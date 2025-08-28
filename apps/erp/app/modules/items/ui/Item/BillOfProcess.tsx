@@ -167,7 +167,10 @@ type TemporaryItems = {
   [key: string]: Operation;
 };
 
-const initialOperation: Omit<Operation, "makeMethodId" | "order" | "tools"> = {
+const initialOperation: Omit<
+  Operation,
+  "makeMethodId" | "order" | "tools" | "id"
+> = {
   description: "",
   laborTime: 0,
   laborUnit: "Minutes/Piece",
@@ -285,7 +288,7 @@ const BillOfProcess = ({
 
   const onUpdateWorkInstruction = useDebounce(
     async (id: string, content: JSONContent) => {
-      if (!isTemporaryId(id)) {
+      if (!temporaryItems[id]) {
         await carbon
           ?.from("methodOperation")
           .update({
@@ -341,11 +344,11 @@ const BillOfProcess = ({
     // Update order state immediately
     setOrderState(newOrderState);
 
-    // Only send non-temporary items to the server
+    // Only send saved items to the server (exclude temporary items)
     const updates = Object.entries(newOrderState).reduce<
       Record<string, number>
     >((acc, [id, order]) => {
-      if (!isTemporaryId(id)) {
+      if (!temporaryItems[id]) {
         acc[id] = order;
       }
       return acc;
@@ -368,7 +371,7 @@ const BillOfProcess = ({
   );
 
   const onAddItem = () => {
-    const temporaryId = Math.random().toString(16).slice(2);
+    const operationId = nanoid();
 
     let newOrder = 1;
     if (operations.length) {
@@ -377,16 +380,16 @@ const BillOfProcess = ({
 
     const newOperation: Operation = {
       ...initialOperation,
-      id: temporaryId,
+      id: operationId,
       order: newOrder,
       makeMethodId,
     };
 
     setTemporaryItems((prev) => ({
       ...prev,
-      [temporaryId]: newOperation,
+      [operationId]: newOperation,
     }));
-    setSelectedItemId(temporaryId);
+    setSelectedItemId(operationId);
   };
 
   const onRemoveItem = async (id: string) => {
@@ -395,7 +398,8 @@ const BillOfProcess = ({
     const operation = operationsById.get(id);
     if (!operation) return;
 
-    if (isTemporaryId(id)) {
+    // Check if this is a temporary item (exists in temporaryItems state)
+    if (temporaryItems[id]) {
       setTemporaryItems((prev) => {
         const { [id]: _, ...rest } = prev;
         return rest;
@@ -464,6 +468,7 @@ const BillOfProcess = ({
                 item={item}
                 rulesByField={rulesByField}
                 workInstruction={workInstructions[item.id] ?? {}}
+                temporaryItems={temporaryItems}
                 onConfigure={onConfigure}
                 setSelectedItemId={setSelectedItemId}
                 setTemporaryItems={setTemporaryItems}
@@ -492,7 +497,10 @@ const BillOfProcess = ({
             )}
           </span>
         ),
-        disabled: hasProcedure || item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems ||
+          hasProcedure ||
+          item.data.operationType === "Outside",
         content: (
           <div className="flex flex-col">
             <div>
@@ -528,7 +536,10 @@ const BillOfProcess = ({
       },
       {
         id: 2,
-        disabled: hasProcedure || item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems ||
+          hasProcedure ||
+          item.data.operationType === "Outside",
         label: (
           <span className="flex items-center gap-2">
             <span>Parameters</span>
@@ -554,10 +565,11 @@ const BillOfProcess = ({
             <ParametersForm
               parameters={parameters}
               operationId={item.id!}
+              temporaryItems={temporaryItems}
               isDisabled={
                 isReadOnly ||
                 selectedItemId === null ||
-                isTemporaryId(selectedItemId!)
+                (selectedItemId !== null && !!temporaryItems[selectedItemId])
               }
               configurable={configurable}
               rulesByField={rulesByField}
@@ -568,7 +580,10 @@ const BillOfProcess = ({
       },
       {
         id: 3,
-        disabled: hasProcedure || item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems ||
+          hasProcedure ||
+          item.data.operationType === "Outside",
         label: (
           <span className="flex items-center gap-2">
             <span>Steps</span>
@@ -594,10 +609,11 @@ const BillOfProcess = ({
             <AttributesForm
               attributes={attributes}
               operationId={item.id!}
+              temporaryItems={temporaryItems}
               isDisabled={
                 isReadOnly ||
                 selectedItemId === null ||
-                isTemporaryId(selectedItemId!)
+                (selectedItemId !== null && !!temporaryItems[selectedItemId])
               }
               configurable={configurable}
               rulesByField={rulesByField}
@@ -608,7 +624,8 @@ const BillOfProcess = ({
       },
       {
         id: 4,
-        disabled: item.data.operationType === "Outside",
+        disabled:
+          item.id in temporaryItems || item.data.operationType === "Outside",
         label: (
           <span className="flex items-center gap-2">
             <span>Tools</span>
@@ -620,10 +637,11 @@ const BillOfProcess = ({
             <ToolsForm
               tools={tools}
               operationId={item.id!}
+              temporaryItems={temporaryItems}
               isDisabled={
                 isReadOnly ||
                 selectedItemId === null ||
-                isTemporaryId(selectedItemId!)
+                (selectedItemId !== null && !!temporaryItems[selectedItemId])
               }
             />
           </div>
@@ -818,16 +836,13 @@ const BillOfProcess = ({
 
 export default BillOfProcess;
 
-function isTemporaryId(id: string) {
-  return id.length < 20;
-}
-
 type OperationFormProps = {
   configurable: boolean;
   isReadOnly: boolean;
   item: ItemWithData;
   rulesByField: Map<string, ConfigurationRule>;
   workInstruction: JSONContent;
+  temporaryItems: TemporaryItems;
   onConfigure: (configuration: Configuration) => void;
   setSelectedItemId: Dispatch<SetStateAction<string | null>>;
   setTemporaryItems: Dispatch<SetStateAction<TemporaryItems>>;
@@ -840,58 +855,28 @@ function OperationForm({
   item,
   rulesByField,
   workInstruction,
+  temporaryItems,
   onConfigure,
   setSelectedItemId,
   setWorkInstructions,
   setTemporaryItems,
 }: OperationFormProps) {
   const methodOperationFetcher = useFetcher<{ id: string }>();
-  const { id: userId, company } = useUser();
+  const { company } = useUser();
   const { carbon } = useCarbon();
 
-  const addingWorkInstruction = useRef(false);
   const baseCurrency = company?.baseCurrencyCode ?? "USD";
 
   useEffect(() => {
-    // replace the temporary id with the actual id
+    // Remove from temporary items after successful submission
     if (methodOperationFetcher.data && methodOperationFetcher.data.id) {
-      if (isTemporaryId(item.id) && carbon && !addingWorkInstruction.current) {
-        addingWorkInstruction.current = true;
-        carbon
-          .from("methodOperation")
-          .update({
-            workInstruction: workInstruction,
-            createdAt: today(getLocalTimeZone()).toString(),
-            updatedBy: userId,
-          })
-          .eq("id", methodOperationFetcher.data.id)
-          .then(() => {
-            setWorkInstructions((prev) => ({
-              ...prev,
-              [methodOperationFetcher.data?.id!]: workInstruction,
-            }));
-            setSelectedItemId(null);
-            // Clear temporary item after successful save
-            setTemporaryItems((prev) => {
-              const { [item.id]: _, ...rest } = prev;
-              return rest;
-            });
-            addingWorkInstruction.current = false;
-          });
-      } else {
-        setSelectedItemId(null);
-      }
+      // Clear temporary item after successful save
+      setTemporaryItems((prev) => {
+        const { [item.id]: _, ...rest } = prev;
+        return rest;
+      });
     }
-  }, [
-    item.id,
-    methodOperationFetcher.data,
-    setSelectedItemId,
-    carbon,
-    userId,
-    workInstruction,
-    setTemporaryItems,
-    setWorkInstructions,
-  ]);
+  }, [item.id, methodOperationFetcher.data, setTemporaryItems]);
 
   const machineDisclosure = useDisclosure();
   const laborDisclosure = useDisclosure();
@@ -999,7 +984,7 @@ function OperationForm({
   return (
     <ValidatedForm
       action={
-        isTemporaryId(item.id)
+        temporaryItems[item.id]
           ? path.to.newMethodOperation
           : path.to.methodOperation(item.id!)
       }
@@ -1008,11 +993,6 @@ function OperationForm({
       validator={methodOperationValidator}
       className="w-full flex flex-col gap-y-4"
       fetcher={methodOperationFetcher}
-      onSubmit={() => {
-        if (!isTemporaryId(item.id)) {
-          setSelectedItemId(null);
-        }
-      }}
     >
       <div>
         <Hidden name="id" />
@@ -1026,7 +1006,7 @@ function OperationForm({
           label="Process"
           isConfigured={rulesByField.has(key("processId"))}
           onConfigure={
-            configurable && !isTemporaryId(item.id)
+            configurable && !temporaryItems[item.id]
               ? () => {
                   onConfigure({
                     label: "Process",
@@ -1063,7 +1043,7 @@ function OperationForm({
           }}
           isConfigured={rulesByField.has(key("operationOrder"))}
           onConfigure={
-            configurable && !isTemporaryId(item.id)
+            configurable && !temporaryItems[item.id]
               ? () => {
                   onConfigure({
                     label: "Operation Order",
@@ -1100,7 +1080,7 @@ function OperationForm({
           }}
           isConfigured={rulesByField.has(key("operationType"))}
           onConfigure={
-            configurable && !isTemporaryId(item.id)
+            configurable && !temporaryItems[item.id]
               ? () => {
                   onConfigure({
                     label: "Operation Type",
@@ -1127,7 +1107,7 @@ function OperationForm({
           className="col-span-2"
           isConfigured={rulesByField.has(key("description"))}
           onConfigure={
-            configurable && !isTemporaryId(item.id)
+            configurable && !temporaryItems[item.id]
               ? () => {
                   onConfigure({
                     label: "Description",
@@ -1205,7 +1185,7 @@ function OperationForm({
               processId={processData.processId}
               isConfigured={rulesByField.has(key("workCenterId"))}
               onConfigure={
-                configurable && !isTemporaryId(item.id)
+                configurable && !temporaryItems[item.id]
                   ? () => {
                       onConfigure({
                         label: "Work Center",
@@ -1297,7 +1277,7 @@ function OperationForm({
                 }
                 isConfigured={rulesByField.has(key("setupTime"))}
                 onConfigure={
-                  configurable && !isTemporaryId(item.id)
+                  configurable && !temporaryItems[item.id]
                     ? () => {
                         onConfigure({
                           label: "Setup Time",
@@ -1325,7 +1305,7 @@ function OperationForm({
                 }}
                 isConfigured={rulesByField.has(key("setupUnit"))}
                 onConfigure={
-                  configurable && !isTemporaryId(item.id)
+                  configurable && !temporaryItems[item.id]
                     ? () => {
                         onConfigure({
                           label: "Setup Unit",
@@ -1408,7 +1388,7 @@ function OperationForm({
                 }
                 isConfigured={rulesByField.has(key("laborTime"))}
                 onConfigure={
-                  configurable && !isTemporaryId(item.id)
+                  configurable && !temporaryItems[item.id]
                     ? () => {
                         onConfigure({
                           label: "Labor Time",
@@ -1436,7 +1416,7 @@ function OperationForm({
                 }}
                 isConfigured={rulesByField.has(key("laborUnit"))}
                 onConfigure={
-                  configurable && !isTemporaryId(item.id)
+                  configurable && !temporaryItems[item.id]
                     ? () => {
                         onConfigure({
                           label: "Labor Unit",
@@ -1520,7 +1500,7 @@ function OperationForm({
                 }
                 isConfigured={rulesByField.has(key("machineTime"))}
                 onConfigure={
-                  configurable && !isTemporaryId(item.id)
+                  configurable && !temporaryItems[item.id]
                     ? () => {
                         onConfigure({
                           label: "Machine Time",
@@ -1548,7 +1528,7 @@ function OperationForm({
                 }}
                 isConfigured={rulesByField.has(key("machineUnit"))}
                 onConfigure={
-                  configurable && !isTemporaryId(item.id)
+                  configurable && !temporaryItems[item.id]
                     ? () => {
                         onConfigure({
                           label: "Machine Unit",
@@ -1614,7 +1594,7 @@ function OperationForm({
                 value={processData.procedureId}
                 isConfigured={rulesByField.has(key("procedureId"))}
                 onConfigure={
-                  configurable && !isTemporaryId(item.id)
+                  configurable && !temporaryItems[item.id]
                     ? () => {
                         onConfigure({
                           label: "Procedure",
@@ -1664,6 +1644,7 @@ function AttributesForm({
   configurable,
   isDisabled,
   attributes,
+  temporaryItems,
   rulesByField,
   onConfigure,
 }: {
@@ -1671,6 +1652,7 @@ function AttributesForm({
   configurable: boolean;
   isDisabled: boolean;
   attributes: OperationAttribute[];
+  temporaryItems: TemporaryItems;
   rulesByField: Map<string, ConfigurationRule>;
   onConfigure?: (c: Configuration) => void;
 }) {
@@ -1715,7 +1697,7 @@ function AttributesForm({
     return getPrivateUrl(result.data.path);
   };
 
-  if (isDisabled && isTemporaryId(operationId)) {
+  if (isDisabled && temporaryItems[operationId]) {
     return (
       <Alert className="max-w-[420px] mx-auto my-8">
         <LuTriangleAlert />
@@ -2283,6 +2265,7 @@ function ParametersForm({
   configurable,
   isDisabled,
   parameters,
+  temporaryItems,
   rulesByField,
   onConfigure,
 }: {
@@ -2290,12 +2273,13 @@ function ParametersForm({
   configurable: boolean;
   isDisabled: boolean;
   parameters: OperationParameter[];
+  temporaryItems: TemporaryItems;
   rulesByField: Map<string, ConfigurationRule>;
   onConfigure?: (c: Configuration) => void;
 }) {
   const fetcher = useFetcher<typeof newMethodOperationParameterAction>();
 
-  if (isDisabled && isTemporaryId(operationId)) {
+  if (isDisabled && temporaryItems[operationId]) {
     return (
       <Alert className="max-w-[420px] mx-auto my-8">
         <LuTriangleAlert />
@@ -2566,14 +2550,16 @@ function ToolsForm({
   operationId,
   isDisabled,
   tools,
+  temporaryItems,
 }: {
   operationId: string;
   isDisabled: boolean;
   tools: OperationTool[];
+  temporaryItems: TemporaryItems;
 }) {
   const fetcher = useFetcher<typeof newMethodOperationToolAction>();
 
-  if (isDisabled && isTemporaryId(operationId)) {
+  if (isDisabled && temporaryItems[operationId]) {
     return (
       <Alert className="max-w-[420px] mx-auto my-8">
         <LuTriangleAlert />

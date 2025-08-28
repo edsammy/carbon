@@ -29,10 +29,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
-  const { id, ...data } = validation.data;
-
   const insertQuoteOperation = await upsertQuoteOperation(client, {
-    ...data,
+    ...validation.data,
     quoteId,
     quoteLineId: lineId,
     companyId,

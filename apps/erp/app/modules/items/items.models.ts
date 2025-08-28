@@ -216,7 +216,7 @@ export const methodMaterialValidator = z.object({
 
 export const methodOperationValidator = z
   .object({
-    id: zfd.text(z.string().optional()),
+    id: z.string().min(1, { message: "Operation ID is required" }),
     makeMethodId: z.string().min(0, { message: "Make method is required" }),
     order: zfd.numeric(z.number().min(0)),
     operationOrder: z.enum(methodOperationOrders, {
