@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai/edge";
 import type { Database } from "@carbon/database";
 import {
   getMaterialDescription,
@@ -1116,7 +1116,7 @@ export async function getCustomerIdAndContactId(
   } else {
     // If the quote contact does not have an account, first search for existing accounts
     // in Paperless Parts by name before creating a new one
-    const customerName = `${contact.first_name} ${contact.last_name}`;
+    const customerName = `${contact.first_name} ${contact.last_name}`.trim();
 
     // Search for existing accounts in Paperless Parts by name
     const existingAccountsResponse = await paperless.accounts.listAccounts({
@@ -1132,7 +1132,8 @@ export async function getCustomerIdAndContactId(
     ) {
       // Look for an exact name match
       existingPaperlessAccount = existingAccountsResponse.data.find(
-        (account) => account.name === customerName
+        (account) =>
+          account.name?.trim().toLowerCase() === customerName.toLowerCase()
       );
     }
 
