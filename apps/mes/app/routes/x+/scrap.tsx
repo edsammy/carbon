@@ -18,8 +18,10 @@ export async function action({ request }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
+  const { trackedEntityId, trackingType, ...data } = validation.data;
+
   const insertScrap = await insertScrapQuantity(client, {
-    ...validation.data,
+    ...data,
     companyId,
     createdBy: userId,
   });

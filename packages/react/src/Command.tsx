@@ -204,7 +204,7 @@ const commandTriggerVariants = cva(
 );
 
 export const multiSelectTriggerVariants = cva(
-  "w-full justify-between font-normal",
+  "w-full justify-between font-normal hover:scale-100 focus-visible:scale-100",
   {
     variants: {
       size: {
