@@ -989,11 +989,6 @@ serve(async (req: Request) => {
           if (invoiceShipments && invoiceShipments.length > 0) {
             for (const shipment of invoiceShipments) {
               await trx
-                .deleteFrom("shipmentLine")
-                .where("shipmentId", "=", shipment.id)
-                .execute();
-
-              await trx
                 .updateTable("shipment")
                 .set({
                   invoiced: false,
