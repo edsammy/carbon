@@ -1,7 +1,13 @@
 import {
   Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuIcon,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   HStack,
   Heading,
+  IconButton,
   SplitButton,
   useDisclosure,
 } from "@carbon/react";
@@ -10,14 +16,17 @@ import { Link, useParams } from "@remix-run/react";
 import {
   LuCheckCheck,
   LuCreditCard,
+  LuEllipsisVertical,
   LuQrCode,
   LuShoppingCart,
+  LuTrash,
   LuTruck,
 } from "react-icons/lu";
 
 import { usePermissions, useRouteData } from "~/hooks";
 import type { ItemTracking, Receipt, ReceiptLine } from "~/modules/inventory";
 import { ReceiptPostModal, ReceiptStatus } from "~/modules/inventory";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import { path } from "~/utils/path";
 
 const ReceiptHeader = () => {
@@ -34,6 +43,7 @@ const ReceiptHeader = () => {
 
   const permissions = usePermissions();
   const postModal = useDisclosure();
+  const deleteModal = useDisclosure();
 
   const canPost =
     routeData.receiptLines.length > 0 &&
@@ -68,6 +78,28 @@ const ReceiptHeader = () => {
                 <span>{routeData?.receipt?.receiptId}</span>
               </Heading>
             </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <IconButton
+                  aria-label="More options"
+                  icon={<LuEllipsisVertical />}
+                  variant="ghost"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  disabled={
+                    !permissions.can("delete", "inventory") ||
+                    !permissions.is("employee")
+                  }
+                  destructive
+                  onClick={deleteModal.onOpen}
+                >
+                  <DropdownMenuIcon icon={<LuTrash />} />
+                  Delete Receipt
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <ReceiptStatus status={routeData?.receipt?.status} />
           </HStack>
           <HStack>
@@ -105,6 +137,21 @@ const ReceiptHeader = () => {
       </div>
 
       {postModal.isOpen && <ReceiptPostModal onClose={postModal.onClose} />}
+      {deleteModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deleteReceipt(receiptId)}
+          isOpen={deleteModal.isOpen}
+          name={routeData?.receipt?.receiptId ?? "receipt"}
+          text={`Are you sure you want to delete ${routeData?.receipt
+            ?.receiptId}? This cannot be undone.`}
+          onCancel={() => {
+            deleteModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteModal.onClose();
+          }}
+        />
+      )}
     </>
   );
 };

@@ -43,9 +43,11 @@ import {
   LuPanelLeft,
   LuPanelRight,
   LuShare,
+  LuTrash,
   LuTrophy,
 } from "react-icons/lu";
 import { usePanels } from "~/components/Layout";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 
 import { useEffect, useState } from "react";
 import { usePermissions, useRouteData } from "~/hooks";
@@ -84,6 +86,7 @@ const QuoteHeader = () => {
   const convertToOrderModal = useDisclosure();
   const shareModal = useDisclosure();
   const createRevisionModal = useDisclosure();
+  const deleteQuoteModal = useDisclosure();
 
   const [asRevision, setAsRevision] = useState(false);
 
@@ -140,6 +143,17 @@ const QuoteHeader = () => {
                 >
                   <DropdownMenuIcon icon={<LuGitBranchPlus />} />
                   Create Quote Revision
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={
+                    !permissions.can("delete", "sales") ||
+                    !permissions.is("employee")
+                  }
+                  destructive
+                  onClick={deleteQuoteModal.onOpen}
+                >
+                  <DropdownMenuIcon icon={<LuTrash />} />
+                  Delete Quote
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -363,6 +377,21 @@ const QuoteHeader = () => {
         lines={eligibleLines ?? []}
         pricing={routeData?.prices ?? []}
       />
+      {deleteQuoteModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deleteQuote(quoteId)}
+          isOpen={deleteQuoteModal.isOpen}
+          name={routeData?.quote?.quoteId!}
+          text={`Are you sure you want to delete ${routeData?.quote
+            ?.quoteId!}? This cannot be undone.`}
+          onCancel={() => {
+            deleteQuoteModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteQuoteModal.onClose();
+          }}
+        />
+      )}
     </>
   );
 };

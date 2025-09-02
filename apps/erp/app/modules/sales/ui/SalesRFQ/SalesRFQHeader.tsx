@@ -3,6 +3,11 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuIcon,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   HStack,
   Heading,
   IconButton,
@@ -29,15 +34,18 @@ import { useEffect, useState } from "react";
 import {
   LuCircleCheck,
   LuCircleX,
+  LuEllipsisVertical,
   LuLoaderCircle,
   LuPanelLeft,
   LuPanelRight,
+  LuTrash,
   LuTriangleAlert,
 } from "react-icons/lu";
 import { RiProgress4Line } from "react-icons/ri";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
 import { usePanels } from "~/components/Layout";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import { usePermissions, useRouteData, useUser } from "~/hooks";
 import { path } from "~/utils/path";
 import type { Opportunity, SalesRFQ, SalesRFQLine } from "../../types";
@@ -50,6 +58,7 @@ const SalesRFQHeader = () => {
   const convertToQuoteModal = useDisclosure();
   const requiresCustomerAlert = useDisclosure();
   const noQuoteReasonModal = useDisclosure();
+  const deleteRFQModal = useDisclosure();
   const { toggleExplorer, toggleProperties } = usePanels();
 
   const permissions = usePermissions();
@@ -79,6 +88,28 @@ const SalesRFQHeader = () => {
               <span>{routeData?.rfqSummary?.rfqId}</span>
             </Heading>
           </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                aria-label="More options"
+                icon={<LuEllipsisVertical />}
+                variant="ghost"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                disabled={
+                  !permissions.can("delete", "sales") ||
+                  !permissions.is("employee")
+                }
+                destructive
+                onClick={deleteRFQModal.onOpen}
+              >
+                <DropdownMenuIcon icon={<LuTrash />} />
+                Delete RFQ
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <SalesRFQStatus status={routeData?.rfqSummary?.status} />
         </HStack>
         <HStack>
@@ -247,6 +278,21 @@ const SalesRFQHeader = () => {
           fetcher={statusFetcher}
           rfqId={rfqId}
           onClose={noQuoteReasonModal.onClose}
+        />
+      )}
+      {deleteRFQModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deleteSalesRfq(rfqId)}
+          isOpen={deleteRFQModal.isOpen}
+          name={routeData?.rfqSummary?.rfqId!}
+          text={`Are you sure you want to delete ${routeData?.rfqSummary
+            ?.rfqId!}? This cannot be undone.`}
+          onCancel={() => {
+            deleteRFQModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteRFQModal.onClose();
+          }}
         />
       )}
     </div>

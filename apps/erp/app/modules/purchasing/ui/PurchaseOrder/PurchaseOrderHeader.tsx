@@ -21,16 +21,19 @@ import {
   LuCirclePlus,
   LuCircleStop,
   LuCreditCard,
+  LuEllipsisVertical,
   LuEye,
   LuFile,
   LuHandCoins,
   LuLoaderCircle,
   LuPanelLeft,
   LuPanelRight,
+  LuTrash,
   LuTruck,
 } from "react-icons/lu";
 
 import { usePanels } from "~/components/Layout";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import { usePermissions, useRouteData } from "~/hooks";
 import { path } from "~/utils/path";
 import type { PurchaseOrder, PurchaseOrderLine } from "../../types";
@@ -69,6 +72,7 @@ const PurchaseOrderHeader = () => {
   );
 
   const finalizeDisclosure = useDisclosure();
+  const deleteModal = useDisclosure();
 
   const isOutsideProcessing =
     routeData?.purchaseOrder?.purchaseOrderType === "Outside Processing";
@@ -98,6 +102,28 @@ const PurchaseOrderHeader = () => {
                 {routeData?.purchaseOrder?.purchaseOrderId}
               </Heading>
             </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <IconButton
+                  aria-label="More options"
+                  icon={<LuEllipsisVertical />}
+                  variant="ghost"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  disabled={
+                    !permissions.can("delete", "purchasing") ||
+                    !permissions.is("employee")
+                  }
+                  destructive
+                  onClick={deleteModal.onOpen}
+                >
+                  <DropdownMenuIcon icon={<LuTrash />} />
+                  Delete Purchase Order
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <PurchasingStatus status={routeData?.purchaseOrder?.status} />
             {routeData?.purchaseOrder?.purchaseOrderType ===
               "Outside Processing" && (
@@ -419,6 +445,21 @@ const PurchaseOrderHeader = () => {
         <PurchaseOrderFinalizeModal
           purchaseOrder={routeData?.purchaseOrder}
           onClose={finalizeDisclosure.onClose}
+        />
+      )}
+      {deleteModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deletePurchaseOrder(orderId)}
+          isOpen={deleteModal.isOpen}
+          name={routeData?.purchaseOrder?.purchaseOrderId ?? "purchase order"}
+          text={`Are you sure you want to delete ${routeData?.purchaseOrder
+            ?.purchaseOrderId}? This cannot be undone.`}
+          onCancel={() => {
+            deleteModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteModal.onClose();
+          }}
         />
       )}
     </>

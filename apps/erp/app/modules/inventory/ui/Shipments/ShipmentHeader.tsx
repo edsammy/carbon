@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
   HStack,
   Heading,
+  IconButton,
   SplitButton,
   useDisclosure,
 } from "@carbon/react";
@@ -18,13 +19,16 @@ import {
   LuChevronDown,
   LuCirclePlus,
   LuCreditCard,
+  LuEllipsisVertical,
   LuQrCode,
   LuShoppingCart,
   LuTicketX,
+  LuTrash,
   LuTruck,
 } from "react-icons/lu";
 import { usePermissions, useRouteData } from "~/hooks";
 import type { ItemTracking, Shipment, ShipmentLine } from "~/modules/inventory";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 
 import type { TrackedEntityAttributes } from "@carbon/utils";
 import { labelSizes } from "@carbon/utils";
@@ -55,6 +59,7 @@ const ShipmentHeader = () => {
   const permissions = usePermissions();
   const postModal = useDisclosure();
   const voidModal = useDisclosure();
+  const deleteModal = useDisclosure();
   const navigate = useNavigate();
 
   const canPost =
@@ -105,6 +110,28 @@ const ShipmentHeader = () => {
                 <span>{routeData?.shipment?.shipmentId}</span>
               </Heading>
             </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <IconButton
+                  aria-label="More options"
+                  icon={<LuEllipsisVertical />}
+                  variant="ghost"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  disabled={
+                    !permissions.can("delete", "inventory") ||
+                    !permissions.is("employee")
+                  }
+                  destructive
+                  onClick={deleteModal.onOpen}
+                >
+                  <DropdownMenuIcon icon={<LuTrash />} />
+                  Delete Shipment
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <ShipmentStatus
               status={routeData?.shipment?.status}
               invoiced={routeData?.shipment?.invoiced}
@@ -346,6 +373,21 @@ const ShipmentHeader = () => {
 
       {postModal.isOpen && <ShipmentPostModal onClose={postModal.onClose} />}
       {voidModal.isOpen && <ShipmentVoidModal onClose={voidModal.onClose} />}
+      {deleteModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deleteShipment(shipmentId)}
+          isOpen={deleteModal.isOpen}
+          name={routeData?.shipment?.shipmentId ?? "shipment"}
+          text={`Are you sure you want to delete ${routeData?.shipment
+            ?.shipmentId}? This cannot be undone.`}
+          onCancel={() => {
+            deleteModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteModal.onClose();
+          }}
+        />
+      )}
     </>
   );
 };

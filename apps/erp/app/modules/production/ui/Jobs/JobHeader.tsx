@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -47,6 +48,7 @@ import {
   LuCirclePlay,
   LuCircleStop,
   LuClock,
+  LuEllipsisVertical,
   LuHardHat,
   LuList,
   LuLoaderCircle,
@@ -57,11 +59,13 @@ import {
   LuShoppingCart,
   LuSquareSigma,
   LuTable,
+  LuTrash,
   LuTriangleAlert,
 } from "react-icons/lu";
 import { RiProgress8Line } from "react-icons/ri";
 import { Location, Shelf } from "~/components/Form";
 import { usePanels } from "~/components/Layout";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import Select from "~/components/Select";
 import SupplierAvatar from "~/components/SupplierAvatar";
 import { useOptimisticLocation, usePermissions, useRouteData } from "~/hooks";
@@ -82,6 +86,7 @@ const JobHeader = () => {
   const releaseModal = useDisclosure();
   const cancelModal = useDisclosure();
   const completeModal = useDisclosure();
+  const deleteJobModal = useDisclosure();
 
   const routeData = useRouteData<{ job: Job }>(path.to.job(jobId));
 
@@ -128,6 +133,28 @@ const JobHeader = () => {
               <span>{routeData?.job?.jobId}</span>
             </Heading>
           </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                aria-label="More options"
+                icon={<LuEllipsisVertical />}
+                variant="ghost"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                disabled={
+                  !permissions.can("delete", "production") ||
+                  !permissions.is("employee")
+                }
+                destructive
+                onClick={deleteJobModal.onOpen}
+              >
+                <DropdownMenuIcon icon={<LuTrash />} />
+                Delete Job
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <JobStatus status={routeData?.job?.status} />
           {["Draft", "Planned", "In Progress", "Ready", "Paused"].includes(
             routeData?.job?.status ?? ""
@@ -351,6 +378,21 @@ const JobHeader = () => {
           job={routeData?.job}
           onClose={completeModal.onClose}
           fetcher={statusFetcher}
+        />
+      )}
+      {deleteJobModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deleteJob(jobId)}
+          isOpen={deleteJobModal.isOpen}
+          name={routeData?.job?.jobId!}
+          text={`Are you sure you want to delete ${routeData?.job
+            ?.jobId!}? This cannot be undone.`}
+          onCancel={() => {
+            deleteJobModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteJobModal.onClose();
+          }}
         />
       )}
     </>

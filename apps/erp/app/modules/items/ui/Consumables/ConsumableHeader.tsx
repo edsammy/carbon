@@ -1,8 +1,22 @@
-import { Copy, HStack, Heading, VStack } from "@carbon/react";
+import {
+  Copy,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuIcon,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  HStack,
+  Heading,
+  IconButton,
+  VStack,
+  useDisclosure,
+} from "@carbon/react";
 
 import { Link, useParams } from "@remix-run/react";
+import { LuEllipsisVertical, LuTrash } from "react-icons/lu";
 import { DetailsTopbar } from "~/components/Layout";
-import { useRouteData } from "~/hooks";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
+import { usePermissions, useRouteData } from "~/hooks";
 import { path } from "~/utils/path";
 import type { Consumable } from "../../types";
 import { useConsumableNavigation } from "./useConsumableNavigation";
@@ -11,6 +25,9 @@ const ConsumableHeader = () => {
   const links = useConsumableNavigation();
   const { itemId } = useParams();
   if (!itemId) throw new Error("itemId not found");
+
+  const permissions = usePermissions();
+  const deleteModal = useDisclosure();
 
   const routeData = useRouteData<{ consumableSummary: Consumable }>(
     path.to.consumable(itemId)
@@ -25,6 +42,28 @@ const ConsumableHeader = () => {
               {routeData?.consumableSummary?.readableIdWithRevision}
             </Heading>
           </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                aria-label="More options"
+                icon={<LuEllipsisVertical />}
+                variant="ghost"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                disabled={
+                  !permissions.can("delete", "parts") ||
+                  !permissions.is("employee")
+                }
+                destructive
+                onClick={deleteModal.onOpen}
+              >
+                <DropdownMenuIcon icon={<LuTrash />} />
+                Delete Consumable
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Copy
             text={routeData?.consumableSummary?.readableIdWithRevision ?? ""}
           />
@@ -33,6 +72,22 @@ const ConsumableHeader = () => {
       <VStack spacing={0} className="flex-shrink justify-center items-end">
         <DetailsTopbar links={links} />
       </VStack>
+      {deleteModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deleteItem(itemId)}
+          isOpen={deleteModal.isOpen}
+          name={
+            routeData?.consumableSummary?.readableIdWithRevision ?? "consumable"
+          }
+          text={`Are you sure you want to delete ${routeData?.consumableSummary?.readableIdWithRevision}? This cannot be undone.`}
+          onCancel={() => {
+            deleteModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteModal.onClose();
+          }}
+        />
+      )}
     </div>
   );
 };

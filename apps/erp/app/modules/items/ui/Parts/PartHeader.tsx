@@ -1,8 +1,22 @@
-import { Copy, HStack, Heading, VStack } from "@carbon/react";
+import {
+  Copy,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuIcon,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  HStack,
+  Heading,
+  IconButton,
+  VStack,
+  useDisclosure,
+} from "@carbon/react";
 
 import { Link, useParams } from "@remix-run/react";
+import { LuEllipsisVertical, LuTrash } from "react-icons/lu";
 import { DetailsTopbar } from "~/components/Layout";
-import { useRouteData } from "~/hooks";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
+import { usePermissions, useRouteData } from "~/hooks";
 import { path } from "~/utils/path";
 import type { PartSummary } from "../../types";
 import { usePartNavigation } from "./usePartNavigation";
@@ -11,6 +25,9 @@ const PartHeader = () => {
   const links = usePartNavigation();
   const { itemId } = useParams();
   if (!itemId) throw new Error("itemId not found");
+
+  const permissions = usePermissions();
+  const deleteModal = useDisclosure();
 
   const routeData = useRouteData<{ partSummary: PartSummary }>(
     path.to.part(itemId)
@@ -26,12 +43,49 @@ const PartHeader = () => {
               <span>{routeData?.partSummary?.readableIdWithRevision}</span>
             </Heading>
           </Link>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                aria-label="More options"
+                icon={<LuEllipsisVertical />}
+                variant="ghost"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                disabled={
+                  !permissions.can("delete", "parts") ||
+                  !permissions.is("employee")
+                }
+                destructive
+                onClick={deleteModal.onOpen}
+              >
+                <DropdownMenuIcon icon={<LuTrash />} />
+                Delete Part
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Copy text={routeData?.partSummary?.readableIdWithRevision ?? ""} />
         </HStack>
       </VStack>
       <VStack spacing={0} className="flex-shrink justify-center items-end">
         <DetailsTopbar links={links} />
       </VStack>
+      {deleteModal.isOpen && (
+        <ConfirmDelete
+          action={path.to.deleteItem(itemId)}
+          isOpen={deleteModal.isOpen}
+          name={routeData?.partSummary?.readableIdWithRevision ?? "part"}
+          text={`Are you sure you want to delete ${routeData?.partSummary?.readableIdWithRevision}? This cannot be undone.`}
+          onCancel={() => {
+            deleteModal.onClose();
+          }}
+          onSubmit={() => {
+            deleteModal.onClose();
+          }}
+        />
+      )}
     </div>
   );
 };
