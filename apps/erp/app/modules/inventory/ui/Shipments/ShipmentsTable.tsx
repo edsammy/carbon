@@ -138,7 +138,12 @@ const ShipmentsTable = memo(({ data, count }: ShipmentsTableProps) => {
         header: "Status",
         cell: (item) => {
           const status = item.getValue<(typeof shipmentStatusType)[number]>();
-          return <ShipmentStatus status={status} />;
+          return (
+            <ShipmentStatus
+              status={status}
+              invoiced={item.row.original.invoiced}
+            />
+          );
         },
         meta: {
           filter: {

@@ -431,10 +431,8 @@ function ReceiptLineItem({
               </label>
               <HStack className="justify-center">
                 <span className="text-sm py-1.5">
-                  {isReadOnly
-                    ? (line.outstandingQuantity ?? 0) -
-                      (line.receivedQuantity ?? 0)
-                    : line.outstandingQuantity ?? 0}
+                  {(line.outstandingQuantity ?? 0) -
+                    (line.receivedQuantity ?? 0)}
                 </span>
 
                 {(line.receivedQuantity ?? 0) >
