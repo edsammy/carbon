@@ -6,7 +6,7 @@
 
 ## Setup
 
-The integration involved two parts.
+The integration requires two steps:
 
 1. Enabling the integration in Carbon
 2. Generating an API Key for the Radan client
