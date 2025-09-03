@@ -749,7 +749,7 @@ serve(async (req: Request) => {
           await trx
             .updateTable("salesInvoice")
             .set({
-              datePaid: today, // TODO: remove this once we have payments working
+              dateIssued: today,
               postingDate: today,
               status: "Submitted",
             })
