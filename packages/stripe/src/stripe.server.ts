@@ -3,6 +3,7 @@ import {
   getAppUrl,
   getCarbonServiceRole,
   STRIPE_BYPASS_COMPANY_IDS,
+  STRIPE_SECRET_KEY,
 } from "@carbon/auth";
 import type { Database } from "@carbon/database";
 import { redis } from "@carbon/kv";
@@ -13,14 +14,12 @@ import { tasks } from "@trigger.dev/sdk/v3";
 import { Stripe } from "stripe";
 import { z } from "zod";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("process.env.STRIPE_SECRET_KEY not defined");
-}
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-06-30.basil",
-  typescript: true,
-});
+export const stripe = STRIPE_SECRET_KEY
+  ? new Stripe(STRIPE_SECRET_KEY, {
+      apiVersion: "2025-06-30.basil",
+      typescript: true,
+    })
+  : null;
 
 const KvStripeCustomerSchema = z.object({
   subscriptionId: z.string(),
@@ -81,6 +80,10 @@ export async function createStripeCustomer({
   email: string;
   name?: string | null;
 }) {
+  if (!stripe) {
+    throw new Error("Stripe is not initialized");
+  }
+
   try {
     const customer = await stripe.customers.create(
       {
@@ -182,6 +185,10 @@ function getStripeWebhookEvent({
   body: string;
   signature: string;
 }) {
+  if (!stripe) {
+    throw new Error("Stripe is not initialized");
+  }
+
   try {
     const event = stripe.webhooks.constructEvent(
       body,
@@ -260,6 +267,10 @@ export async function getBillingPortalRedirectUrl({
 }: {
   companyId: string;
 }) {
+  if (!stripe) {
+    throw new Error("Stripe is not initialized");
+  }
+
   if (CarbonEdition !== Edition.Cloud) {
     return getAppUrl();
   }
@@ -405,6 +416,10 @@ async function sendNewCustomerNotification(
   companyId: string,
   email?: string
 ) {
+  if (!stripe) {
+    throw new Error("Stripe is not initialized");
+  }
+
   const slackClient = getSlackClient();
   const subscriptions = await stripe.subscriptions.list({
     customer: customerId,
@@ -446,6 +461,10 @@ export async function syncStripeDataToKV(
   customerId: string,
   companyIdFromMetadata?: string
 ) {
+  if (!stripe) {
+    throw new Error("Stripe is not initialized");
+  }
+
   const key = `stripe:customer:${customerId}`;
   let companyId = companyIdFromMetadata;
   const serviceRole = getCarbonServiceRole();
@@ -552,13 +571,17 @@ export async function updateActiveUsers({
   subscriptionId: string;
   activeUsers: number;
 }) {
+  if (!stripe) {
+    throw new Error("Stripe is not initialized");
+  }
+
   await stripe.subscriptionItems.update(subscriptionId, {
     quantity: activeUsers,
   });
 }
 
 export async function updateSubscriptionQuantityForCompany(companyId: string) {
-  if (CarbonEdition !== Edition.Cloud) {
+  if (CarbonEdition !== Edition.Cloud || !stripe) {
     return;
   }
 
