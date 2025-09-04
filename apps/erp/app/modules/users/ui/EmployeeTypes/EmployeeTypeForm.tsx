@@ -94,13 +94,12 @@ const EmployeeTypeForm = ({ initialValues }: EmployeeTypeFormProps) => {
                 {Object.entries(permissions)
                   .sort((a, b) => a[0].localeCompare(b[0]))
                   .map(([module, data], index) => (
-                    <div key={index}>
-                      <PermissionCheckboxes
-                        module={module}
-                        permissions={data.permission}
-                        updatePermissions={updatePermissions}
-                      />
-                    </div>
+                    <PermissionCheckboxes
+                      key={index}
+                      module={module}
+                      permissions={data.permission}
+                      updatePermissions={updatePermissions}
+                    />
                   ))}
               </VStack>
             </VStack>
