@@ -31,13 +31,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     getPermissionsByEmployeeType(client, employeeTypeId),
   ]);
 
-  if (employeeType?.data?.protected) {
-    throw redirect(
-      path.to.employeeTypes,
-      await flash(request, error(null, "Cannot edit a protected employee type"))
-    );
-  }
-
   return json({
     employeeType: employeeType?.data,
     employeeTypePermissions: makeCompanyPermissionsFromEmployeeType(

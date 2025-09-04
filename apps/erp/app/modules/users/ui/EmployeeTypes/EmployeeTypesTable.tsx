@@ -25,20 +25,12 @@ const EmployeeTypesTable = memo(({ data, count }: EmployeeTypesTableProps) => {
       {
         accessorKey: "name",
         header: "Employee Type",
-        cell: ({ row, getValue }) =>
-          row.original.protected ? (
-            <Enumerable
-              value={row.original.name}
-              className="cursor-not-allowed"
-            />
-          ) : (
-            <Hyperlink to={row.original.id}>
-              <Enumerable
-                value={row.original.name}
-                className="cursor-pointer"
-              />
-            </Hyperlink>
-          ),
+        cell: ({ row, getValue }) => (
+          <Hyperlink to={row.original.id}>
+            <Enumerable value={row.original.name} className="cursor-pointer" />
+          </Hyperlink>
+        ),
+
         meta: {
           icon: <LuUsers />,
         },
@@ -61,7 +53,7 @@ const EmployeeTypesTable = memo(({ data, count }: EmployeeTypesTableProps) => {
             View Employees
           </MenuItem>
           <MenuItem
-            disabled={row.protected || !permissions.can("update", "users")}
+            disabled={!permissions.can("update", "users")}
             onClick={() => {
               navigate(`${path.to.employeeType(row.id)}?${params.toString()}`);
             }}
