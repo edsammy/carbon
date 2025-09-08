@@ -168,7 +168,7 @@ export default function IssueNewRoute() {
     approvalRequirements: [],
     customerId: customerId ?? "",
     investigationTypeIds: [],
-    itemId: "",
+    items: [],
     jobId: jobId ?? "",
     locationId: defaults.locationId ?? "",
     name: "",

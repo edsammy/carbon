@@ -195,6 +195,7 @@ const IssuesTable = memo(({ data, types, count }: IssuesTableProps) => {
           icon: <LuUser />,
         },
       },
+
       {
         id: "items",
         header: "Items",
@@ -237,6 +238,31 @@ const IssuesTable = memo(({ data, types, count }: IssuesTableProps) => {
         accessorKey: "closeDate",
         header: "Closed Date",
         cell: ({ row }) => formatDate(row.original.closeDate),
+        meta: {
+          icon: <LuCalendar />,
+        },
+      },
+      {
+        accessorKey: "createdBy",
+        header: "Created By",
+        cell: ({ row }) => (
+          <EmployeeAvatar employeeId={row.original.createdBy} />
+        ),
+        meta: {
+          filter: {
+            type: "static",
+            options: people.map((employee) => ({
+              value: employee.id,
+              label: employee.name,
+            })),
+          },
+          icon: <LuUser />,
+        },
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created At",
+        cell: (item) => formatDate(item.getValue<string>()),
         meta: {
           icon: <LuCalendar />,
         },

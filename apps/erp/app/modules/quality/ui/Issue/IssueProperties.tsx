@@ -19,7 +19,11 @@ import { useFetcher, useParams } from "@remix-run/react";
 import { useCallback, useEffect } from "react";
 import { LuCopy, LuKeySquare, LuLink } from "react-icons/lu";
 import { z } from "zod";
-import { Assignee, useOptimisticAssignment } from "~/components";
+import {
+  Assignee,
+  EmployeeAvatar,
+  useOptimisticAssignment,
+} from "~/components";
 import { Enumerable } from "~/components/Enumerable";
 import { Tags } from "~/components/Form";
 import CustomFormInlineFields from "~/components/Form/CustomFormInlineFields";
@@ -471,6 +475,14 @@ const IssueProperties = () => {
           }}
         />
       </ValidatedForm>
+
+      <VStack spacing={2}>
+        <h3 className="text-xs text-muted-foreground">Created By</h3>
+        <EmployeeAvatar
+          employeeId={routeData?.nonConformance?.createdBy!}
+          size="xxs"
+        />
+      </VStack>
 
       <ValidatedForm
         defaultValues={{

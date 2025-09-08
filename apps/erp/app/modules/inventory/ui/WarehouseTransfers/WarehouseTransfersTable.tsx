@@ -198,13 +198,12 @@ const WarehouseTransfersTable = memo(
               }}
             >
               <MenuIcon icon={<LuPencil />} />
-              {row.status === "Received" ? "View Transfer" : "Edit Transfer"}
+              {row.status !== "Draft" ? "View Transfer" : "Edit Transfer"}
             </MenuItem>
             <MenuItem
               disabled={
                 !permissions.can("delete", "inventory") ||
-                row.status === "In Transit" ||
-                row.status === "Received"
+                row.status === "Draft"
               }
               destructive
               onClick={() => {

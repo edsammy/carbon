@@ -102,7 +102,9 @@ export const issueAssociationValidator = z
     (data) => {
       // For types other than items, customer, supplier, or trackedEntity, lineId is required
       if (
-        !["items", "customers", "suppliers", "trackedEntities"].includes(data.type) &&
+        !["items", "customers", "suppliers", "trackedEntities"].includes(
+          data.type
+        ) &&
         !data.lineId
       ) {
         return false;
@@ -133,7 +135,7 @@ export const issueValidator = z.object({
   dueDate: zfd.text(z.string().optional()),
   closeDate: zfd.text(z.string().optional()),
   quantity: zfd.numeric(z.number().optional()),
-  itemId: zfd.text(z.string().optional()),
+  items: z.array(z.string()).optional(),
 });
 
 export const nonConformanceReviewerValidator = z.object({

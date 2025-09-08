@@ -21,12 +21,11 @@ import {
   CustomFormFields,
   Hidden,
   Input,
-  Item,
   Location,
   Submit,
 } from "~/components/Form";
 import { usePermissions } from "~/hooks";
-import type { MethodItemType } from "~/modules/shared";
+import { useItems } from "~/stores/items";
 import type { ListItem } from "~/types";
 import {
   issueValidator,
@@ -71,14 +70,14 @@ const IssueForm = ({
     approvalRequirements: initialValues.approvalRequirements ?? [],
   });
 
-  const [itemType, setItemType] = useState<string>("Item");
+  const [items] = useItems();
 
   const onWorkflowChange = (value: { value: string } | null) => {
     if (value) {
       const selectedWorkflow = nonConformanceWorkflows.find(
         (w) => w.id === value.value
       );
-      console.log(selectedWorkflow);
+
       if (selectedWorkflow) {
         setWorkflow({
           priority: selectedWorkflow.priority,
@@ -124,13 +123,14 @@ const IssueForm = ({
           <VStack spacing={4}>
             <div className="grid w-full gap-4 grid-cols-1 md:grid-cols-2">
               <Input name="name" label="Name" />
-              <Item
-                name="itemId"
-                label="Item"
-                type={itemType as MethodItemType}
-                onTypeChange={(value) => {
-                  setItemType(value as string);
-                }}
+              <MultiSelect
+                name="items"
+                label="Items"
+                options={items.map((item) => ({
+                  label: item.readableIdWithRevision,
+                  value: item.id,
+                  helper: item.name,
+                }))}
               />
             </div>
             <TextArea name="description" label="Description" />

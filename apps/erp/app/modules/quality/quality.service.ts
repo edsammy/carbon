@@ -1028,23 +1028,22 @@ export async function upsertIssue(
       })
 ) {
   if ("createdBy" in nonConformance) {
-    const { itemId, ...data } = nonConformance;
+    const { items, ...data } = nonConformance;
     const result = await client
       .from("nonConformance")
       .insert([data])
       .select("id")
       .single();
 
-    if (result.data?.id && itemId) {
-      const itemInsert = await client.from("nonConformanceItem").insert([
-        {
+    if (result.data?.id && items && items.length > 0) {
+      const itemInsert = await client.from("nonConformanceItem").insert(
+        items.map((item) => ({
           nonConformanceId: result.data.id,
-          itemId,
+          itemId: item,
           companyId: nonConformance.companyId,
           createdBy: nonConformance.createdBy,
-        },
-      ]);
-
+        }))
+      );
       if (itemInsert.error) {
         console.error(itemInsert);
       }
@@ -1052,7 +1051,7 @@ export async function upsertIssue(
 
     return result;
   } else {
-    const { itemId, ...data } = nonConformance;
+    const { items, ...data } = nonConformance;
     return client
       .from("nonConformance")
       .update(sanitize(data))
