@@ -1287,15 +1287,10 @@ export async function getCustomerIdAndContactId(
 
     const newCustomerContact = await carbon
       .from("customerContact")
-      .upsert(
-        {
-          customerId,
-          contactId: newContact.data.id,
-        },
-        {
-          onConflict: "customerId, contactId",
-        }
-      )
+      .insert({
+        customerId,
+        contactId: newContact.data.id,
+      })
       .select()
       .single();
 

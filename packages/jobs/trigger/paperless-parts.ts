@@ -115,7 +115,6 @@ export const paperlessPartsTask = task({
     console.info(
       `🔰 Paperless Parts webhook received: ${payload.payload.type}`
     );
-
     console.info(`📦 Payload:`, payload);
 
     const carbon = getCarbonServiceRole();
