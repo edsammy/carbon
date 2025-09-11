@@ -59,6 +59,7 @@ Features:
 - [ ] Accounting
 - [ ] Capacity Planning
 - [ ] Simulation
+- [ ] [Full Roadmap](https://github.com/orgs/crbnos/projects/1/views/1)
 
 Technical highlights:
 
