@@ -1257,35 +1257,54 @@ export async function getCustomerIdAndContactId(
     // If there is no matching contact in Carbon, we need to create a new contact in Carbon
     const newContact = await carbon
       .from("contact")
-      .insert({
-        companyId: company.id,
-        firstName: contact.first_name!,
-        lastName: contact.last_name!,
-        email: contact.email!,
-        externalId: {
-          paperlessPartsId: contact.id,
+      .upsert(
+        {
+          companyId: company.id,
+          firstName: contact.first_name!,
+          lastName: contact.last_name!,
+          email: contact.email!,
+          isCustomer: true,
+          externalId: {
+            paperlessPartsId: contact.id,
+          },
         },
-      })
+        {
+          onConflict: "companyId, email, isCustomer",
+        }
+      )
       .select()
       .single();
 
     if (newContact.error || !newContact.data) {
-      throw new Error("Failed to create contact in Carbon");
+      console.error(newContact);
+      return {
+        customerContactId: null,
+        customerId,
+      };
     }
 
     console.info("🔰 New Carbon contact created");
 
     const newCustomerContact = await carbon
       .from("customerContact")
-      .insert({
-        customerId,
-        contactId: newContact.data.id,
-      })
+      .upsert(
+        {
+          customerId,
+          contactId: newContact.data.id,
+        },
+        {
+          onConflict: "customerId, contactId",
+        }
+      )
       .select()
       .single();
 
     if (newCustomerContact.error || !newCustomerContact.data) {
-      throw new Error("Failed to create customer contact in Carbon");
+      console.error(newCustomerContact);
+      return {
+        customerContactId: null,
+        customerId,
+      };
     }
 
     console.info("🔰 Carbon customerContact created");
