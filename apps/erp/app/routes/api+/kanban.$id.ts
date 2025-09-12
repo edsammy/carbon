@@ -18,6 +18,10 @@ import {
 import { getNextSequence } from "~/modules/settings";
 import { path } from "~/utils/path";
 
+export const config = {
+  runtime: "nodejs",
+};
+
 async function createJob({
   client,
   args,
