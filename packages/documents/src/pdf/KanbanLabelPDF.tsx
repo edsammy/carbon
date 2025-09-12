@@ -97,8 +97,13 @@ const KanbanLabelPDF = ({ labels }: KanbanLabelPDFProps) => {
                         height: labelHeight,
                       }}
                     >
-                      {/* QR Code at the top */}
-                      <View style={tw("flex items-center justify-center mb-3")}>
+                      {/* QR Code and Thumbnail row */}
+                      <View
+                        style={tw(
+                          "flex flex-row items-center justify-center mb-3"
+                        )}
+                      >
+                        {/* QR Code */}
                         <Image
                           src={generateQRCode(label.id, qrCodeSize / 72)}
                           style={{
@@ -107,6 +112,19 @@ const KanbanLabelPDF = ({ labels }: KanbanLabelPDFProps) => {
                             objectFit: "contain",
                           }}
                         />
+
+                        {/* Thumbnail if available */}
+                        {label.thumbnail && (
+                          <Image
+                            src={label.thumbnail}
+                            style={{
+                              width: qrCodeSize,
+                              height: qrCodeSize,
+                              objectFit: "contain",
+                              marginLeft: 8,
+                            }}
+                          />
+                        )}
                       </View>
 
                       {/* Item Information */}
@@ -131,20 +149,6 @@ const KanbanLabelPDF = ({ labels }: KanbanLabelPDFProps) => {
                         >
                           {label.itemReadableId}
                         </Text>
-
-                        {/* Thumbnail if available */}
-                        {label.thumbnail && (
-                          <View style={tw("flex items-center mb-2")}>
-                            <Image
-                              src={label.thumbnail}
-                              style={{
-                                width: labelWidth * 0.3,
-                                height: labelHeight * 0.15,
-                                objectFit: "contain",
-                              }}
-                            />
-                          </View>
-                        )}
 
                         {/* Location and Shelf */}
                         <View
