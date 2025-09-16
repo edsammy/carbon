@@ -1,6 +1,7 @@
 import { useCarbon } from "@carbon/auth";
 import {
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -167,6 +168,7 @@ const SalesInvoiceHeader = () => {
                 <span>{routeData?.salesInvoice?.invoiceId}</span>
               </Heading>
             </Link>
+            <Copy text={routeData?.salesInvoice?.invoiceId ?? ""} />
             <SalesInvoiceStatus status={salesInvoice.status} />
           </HStack>
           <HStack>

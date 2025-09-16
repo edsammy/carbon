@@ -1,6 +1,7 @@
 import { useCarbon } from "@carbon/auth";
 import {
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -159,12 +160,14 @@ const PurchaseInvoiceHeader = () => {
                 <span>{routeData?.purchaseInvoice?.invoiceId}</span>
               </Heading>
             </Link>
+            <Copy text={routeData?.purchaseInvoice?.invoiceId ?? ""} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <IconButton
                   aria-label="More options"
                   icon={<LuEllipsisVertical />}
-                  variant="ghost"
+                  variant="secondary"
+                  size="sm"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -314,8 +317,7 @@ const PurchaseInvoiceHeader = () => {
           action={path.to.deletePurchaseInvoice(invoiceId)}
           isOpen={deleteModal.isOpen}
           name={routeData?.purchaseInvoice?.invoiceId ?? "purchase invoice"}
-          text={`Are you sure you want to delete ${routeData?.purchaseInvoice
-            ?.invoiceId}? This cannot be undone.`}
+          text={`Are you sure you want to delete ${routeData?.purchaseInvoice?.invoiceId}? This cannot be undone.`}
           onCancel={() => {
             deleteModal.onClose();
           }}

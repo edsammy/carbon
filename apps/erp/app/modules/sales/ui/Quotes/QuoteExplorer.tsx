@@ -321,7 +321,7 @@ function QuoteLineItem({
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
                         <DropdownMenuIcon icon={<LuDownload />} />
-                        Download
+                        Export
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent>
                         <DropdownMenuItem asChild>

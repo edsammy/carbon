@@ -1,5 +1,6 @@
 import {
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -23,10 +24,10 @@ import {
   LuTruck,
 } from "react-icons/lu";
 
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import { usePermissions, useRouteData } from "~/hooks";
 import type { ItemTracking, Receipt, ReceiptLine } from "~/modules/inventory";
 import { ReceiptPostModal, ReceiptStatus } from "~/modules/inventory";
-import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import { path } from "~/utils/path";
 
 const ReceiptHeader = () => {
@@ -78,12 +79,14 @@ const ReceiptHeader = () => {
                 <span>{routeData?.receipt?.receiptId}</span>
               </Heading>
             </Link>
+            <Copy text={routeData?.receipt?.receiptId ?? ""} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <IconButton
                   aria-label="More options"
                   icon={<LuEllipsisVertical />}
-                  variant="ghost"
+                  variant="secondary"
+                  size="sm"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -142,8 +145,7 @@ const ReceiptHeader = () => {
           action={path.to.deleteReceipt(receiptId)}
           isOpen={deleteModal.isOpen}
           name={routeData?.receipt?.receiptId ?? "receipt"}
-          text={`Are you sure you want to delete ${routeData?.receipt
-            ?.receiptId}? This cannot be undone.`}
+          text={`Are you sure you want to delete ${routeData?.receipt?.receiptId}? This cannot be undone.`}
           onCancel={() => {
             deleteModal.onClose();
           }}
@@ -166,7 +168,7 @@ function SourceDocumentLink({
   sourceDocumentReadableId?: string;
 }) {
   const permissions = usePermissions();
-  
+
   if (!sourceDocument || !sourceDocumentId || !sourceDocumentReadableId)
     return null;
   switch (sourceDocument) {

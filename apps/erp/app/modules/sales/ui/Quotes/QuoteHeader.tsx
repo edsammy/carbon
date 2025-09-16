@@ -117,12 +117,14 @@ const QuoteHeader = () => {
                 )}
               </Heading>
             </Link>
+            <Copy text={routeData?.quote?.quoteId ?? ""} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <IconButton
                   aria-label="More options"
                   icon={<LuEllipsisVertical />}
-                  variant="ghost"
+                  variant="secondary"
+                  size="sm"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>

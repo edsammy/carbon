@@ -43,13 +43,16 @@ const MaterialHeader = () => {
               <span>{routeData?.materialSummary?.readableIdWithRevision}</span>
             </Heading>
           </Link>
-
+          <Copy
+            text={routeData?.materialSummary?.readableIdWithRevision ?? ""}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton
                 aria-label="More options"
                 icon={<LuEllipsisVertical />}
-                variant="ghost"
+                variant="secondary"
+                size="sm"
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -66,9 +69,6 @@ const MaterialHeader = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Copy
-            text={routeData?.materialSummary?.readableIdWithRevision ?? ""}
-          />
         </HStack>
       </VStack>
       <VStack spacing={0} className="flex-shrink justify-center items-end">

@@ -1,6 +1,7 @@
 import {
   Badge,
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -102,12 +103,14 @@ const PurchaseOrderHeader = () => {
                 {routeData?.purchaseOrder?.purchaseOrderId}
               </Heading>
             </Link>
+            <Copy text={routeData?.purchaseOrder?.purchaseOrderId ?? ""} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <IconButton
                   aria-label="More options"
                   icon={<LuEllipsisVertical />}
-                  variant="ghost"
+                  variant="secondary"
+                  size="sm"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -452,8 +455,7 @@ const PurchaseOrderHeader = () => {
           action={path.to.deletePurchaseOrder(orderId)}
           isOpen={deleteModal.isOpen}
           name={routeData?.purchaseOrder?.purchaseOrderId ?? "purchase order"}
-          text={`Are you sure you want to delete ${routeData?.purchaseOrder
-            ?.purchaseOrderId}? This cannot be undone.`}
+          text={`Are you sure you want to delete ${routeData?.purchaseOrder?.purchaseOrderId}? This cannot be undone.`}
           onCancel={() => {
             deleteModal.onClose();
           }}

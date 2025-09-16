@@ -14,9 +14,7 @@ const inputSchema = z.object({
 });
 
 export async function action({ request, params }: ActionFunctionArgs) {
-  await requirePermissions(request, {
-    update: "settings",
-  });
+  await requirePermissions(request, {});
 
   const { table } = params;
   if (!table) {

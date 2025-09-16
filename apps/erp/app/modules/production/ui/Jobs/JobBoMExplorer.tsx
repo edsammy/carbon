@@ -24,7 +24,7 @@ import {
   LuBraces,
   LuChevronDown,
   LuChevronRight,
-  LuDownload,
+  LuEllipsisVertical,
   LuExternalLink,
   LuSearch,
   LuTable,
@@ -133,7 +133,8 @@ const JobBoMExplorer = ({ method }: JobBoMExplorerProps) => {
                   <IconButton
                     aria-label="Actions"
                     variant="ghost"
-                    icon={<LuDownload />}
+                    size="sm"
+                    icon={<LuEllipsisVertical />}
                   />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

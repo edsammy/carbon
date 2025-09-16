@@ -19,6 +19,7 @@ const importCsvValidator = z.object({
     "customerContact",
     "fixture",
     "material",
+    "methodMaterial",
     "part",
     "supplier",
     "supplierContact",
@@ -852,6 +853,10 @@ serve(async (req: Request) => {
           }
         });
 
+        break;
+      }
+      case "methodMaterial": {
+        throw new Error("Not implemented");
         break;
       }
       default: {

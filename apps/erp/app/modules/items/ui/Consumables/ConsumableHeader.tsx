@@ -42,12 +42,16 @@ const ConsumableHeader = () => {
               {routeData?.consumableSummary?.readableIdWithRevision}
             </Heading>
           </Link>
+          <Copy
+            text={routeData?.consumableSummary?.readableIdWithRevision ?? ""}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton
                 aria-label="More options"
                 icon={<LuEllipsisVertical />}
-                variant="ghost"
+                variant="secondary"
+                size="sm"
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -64,9 +68,6 @@ const ConsumableHeader = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Copy
-            text={routeData?.consumableSummary?.readableIdWithRevision ?? ""}
-          />
         </HStack>
       </VStack>
       <VStack spacing={0} className="flex-shrink justify-center items-end">

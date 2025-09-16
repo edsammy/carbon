@@ -1,5 +1,6 @@
 import {
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -26,9 +27,9 @@ import {
   LuTrash,
   LuTruck,
 } from "react-icons/lu";
+import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import { usePermissions, useRouteData } from "~/hooks";
 import type { ItemTracking, Shipment, ShipmentLine } from "~/modules/inventory";
-import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 
 import type { TrackedEntityAttributes } from "@carbon/utils";
 import { labelSizes } from "@carbon/utils";
@@ -110,12 +111,14 @@ const ShipmentHeader = () => {
                 <span>{routeData?.shipment?.shipmentId}</span>
               </Heading>
             </Link>
+            <Copy text={routeData?.shipment?.shipmentId ?? ""} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <IconButton
                   aria-label="More options"
                   icon={<LuEllipsisVertical />}
-                  variant="ghost"
+                  variant="secondary"
+                  size="sm"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -378,8 +381,7 @@ const ShipmentHeader = () => {
           action={path.to.deleteShipment(shipmentId)}
           isOpen={deleteModal.isOpen}
           name={routeData?.shipment?.shipmentId ?? "shipment"}
-          text={`Are you sure you want to delete ${routeData?.shipment
-            ?.shipmentId}? This cannot be undone.`}
+          text={`Are you sure you want to delete ${routeData?.shipment?.shipmentId}? This cannot be undone.`}
           onCancel={() => {
             deleteModal.onClose();
           }}

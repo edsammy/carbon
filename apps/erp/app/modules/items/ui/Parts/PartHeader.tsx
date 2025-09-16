@@ -43,13 +43,14 @@ const PartHeader = () => {
               <span>{routeData?.partSummary?.readableIdWithRevision}</span>
             </Heading>
           </Link>
-
+          <Copy text={routeData?.partSummary?.readableIdWithRevision ?? ""} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton
                 aria-label="More options"
                 icon={<LuEllipsisVertical />}
-                variant="ghost"
+                size="sm"
+                variant="secondary"
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -66,7 +67,6 @@ const PartHeader = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Copy text={routeData?.partSummary?.readableIdWithRevision ?? ""} />
         </HStack>
       </VStack>
       <VStack spacing={0} className="flex-shrink justify-center items-end">

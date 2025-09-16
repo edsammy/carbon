@@ -1,5 +1,6 @@
 import {
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -68,12 +69,14 @@ const SupplierQuoteHeader = () => {
                 <span>{routeData?.quote?.supplierQuoteId}</span>
               </Heading>
             </Link>
+            <Copy text={routeData?.quote?.supplierQuoteId ?? ""} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <IconButton
                   aria-label="More options"
                   icon={<LuEllipsisVertical />}
-                  variant="ghost"
+                  variant="secondary"
+                  size="sm"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -126,8 +129,7 @@ const SupplierQuoteHeader = () => {
           action={path.to.deleteSupplierQuote(id)}
           isOpen={deleteModal.isOpen}
           name={routeData?.quote?.supplierQuoteId ?? "supplier quote"}
-          text={`Are you sure you want to delete ${routeData?.quote
-            ?.supplierQuoteId}? This cannot be undone.`}
+          text={`Are you sure you want to delete ${routeData?.quote?.supplierQuoteId}? This cannot be undone.`}
           onCancel={() => {
             deleteModal.onClose();
           }}

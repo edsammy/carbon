@@ -30,7 +30,13 @@ import type {
 } from "@tanstack/react-table";
 import { useEffect, useState, type ReactNode } from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { LuCheck, LuFilePen, LuImport, LuLayers, LuLock } from "react-icons/lu";
+import {
+  LuCheck,
+  LuDownload,
+  LuFilePen,
+  LuLayers,
+  LuLock,
+} from "react-icons/lu";
 import { SearchFilter } from "~/components";
 import { ImportCSVModal } from "~/components/ImportCSVModal";
 import { CollapsibleSidebarTrigger } from "~/components/Layout/Navigation";
@@ -219,7 +225,7 @@ const TableHeader = <T extends object>({
                           setImportCSVTable(table);
                         }}
                       >
-                        <DropdownMenuIcon icon={<LuImport />} />
+                        <DropdownMenuIcon icon={<LuDownload />} />
                         Import {label} CSV
                       </DropdownMenuItem>
                     ))}

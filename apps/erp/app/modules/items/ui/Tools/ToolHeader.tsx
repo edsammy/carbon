@@ -41,12 +41,14 @@ const ToolHeader = () => {
               <span>{routeData?.toolSummary?.readableIdWithRevision}</span>
             </Heading>
           </Link>
+          <Copy text={routeData?.toolSummary?.readableIdWithRevision ?? ""} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton
                 aria-label="More options"
                 icon={<LuEllipsisVertical />}
-                variant="ghost"
+                variant="secondary"
+                size="sm"
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -63,7 +65,6 @@ const ToolHeader = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Copy text={routeData?.toolSummary?.readableIdWithRevision ?? ""} />
         </HStack>
       </VStack>
       <VStack spacing={0} className="flex-shrink justify-center items-end">

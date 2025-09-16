@@ -1,6 +1,7 @@
 import {
   Badge,
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -69,12 +70,14 @@ const ProcedureHeader = () => {
             <Badge variant="secondary">V{routeData?.procedure?.version}</Badge>
             <ProcedureStatus status={routeData?.procedure?.status} />
           </Heading>
+          <Copy text={routeData?.procedure?.name ?? ""} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton
                 aria-label="More options"
                 icon={<LuEllipsisVertical />}
-                variant="ghost"
+                variant="secondary"
+                size="sm"
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -161,8 +164,7 @@ const ProcedureHeader = () => {
           action={path.to.deleteProcedure(id)}
           isOpen={deleteDisclosure.isOpen}
           name={routeData?.procedure?.name ?? "procedure"}
-          text={`Are you sure you want to delete ${routeData?.procedure
-            ?.name}? This cannot be undone.`}
+          text={`Are you sure you want to delete ${routeData?.procedure?.name}? This cannot be undone.`}
           onCancel={() => {
             deleteDisclosure.onClose();
           }}

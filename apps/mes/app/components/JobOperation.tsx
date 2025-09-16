@@ -1529,7 +1529,7 @@ export const JobOperation = ({
                                   );
 
                                 return (
-                                  <div className="flex flex-col items-end justify-center gap-1 w-full px-4">
+                                  <div className="flex items-end justify-between gap-1 w-full px-4 pb-2 border-b">
                                     <div className="flex items-center gap-1">
                                       {showNavigation && !parentIsSerial && (
                                         <>

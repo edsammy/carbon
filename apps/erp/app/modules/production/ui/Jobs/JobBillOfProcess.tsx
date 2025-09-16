@@ -1016,6 +1016,8 @@ function StepsForm({
       .map((step) => step.id || "")
   );
 
+  const disclosure = useDisclosure();
+
   // Update sort order when steps change
   useEffect(() => {
     if (steps && steps.length > 0) {
@@ -1104,121 +1106,130 @@ function StepsForm({
       className="flex flex-col gap-6"
       isLoading={fetcher.state !== "idle"}
     >
-      <div className="p-6 border rounded-lg bg-card mb-6">
-        <ValidatedForm
-          action={path.to.newJobOperationStep}
-          method="post"
-          validator={operationStepValidator}
-          fetcher={fetcher}
-          resetAfterSubmit
-          defaultValues={{
-            id: undefined,
-            name: "",
-            description: "",
-            type: "Task",
-            unitOfMeasureCode: "",
-            minValue: 0,
-            maxValue: 0,
-            listValues: [],
-            sortOrder:
-              steps.reduce((acc, a) => Math.max(acc, a.sortOrder ?? 0), 0) + 1,
-            operationId,
-          }}
-          onSubmit={() => {
-            setType("Value");
-          }}
-          className="w-full"
-        >
-          <Hidden name="operationId" />
-          <Hidden name="sortOrder" />
-          <Hidden name="description" value={JSON.stringify(description)} />
-          <VStack spacing={4}>
-            <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-              <SelectControlled
-                name="type"
-                label="Type"
-                options={typeOptions}
-                value={type}
-                onChange={(option) => {
-                  if (option) {
-                    setType(option.value as OperationStep["type"]);
-                  }
-                }}
-              />
-              <Input name="name" label="Name" />
-            </div>
-
-            <VStack spacing={2} className="w-full col-span-2">
-              <Label>Description</Label>
-              <Editor
-                initialValue={description}
-                onUpload={onUploadImage}
-                onChange={(value) => {
-                  setDescription(value);
-                }}
-                className="[&_.is-empty]:text-muted-foreground min-h-[120px] p-4 rounded-lg border w-full"
-              />
-            </VStack>
-
-            {type === "Measurement" && (
+      {disclosure.isOpen ? (
+        <div className="p-6 border rounded-lg bg-card mb-6">
+          <ValidatedForm
+            action={path.to.newJobOperationStep}
+            method="post"
+            validator={operationStepValidator}
+            fetcher={fetcher}
+            resetAfterSubmit
+            defaultValues={{
+              id: undefined,
+              name: "",
+              description: "",
+              type: "Task",
+              unitOfMeasureCode: "",
+              minValue: 0,
+              maxValue: 0,
+              listValues: [],
+              sortOrder:
+                steps.reduce((acc, a) => Math.max(acc, a.sortOrder ?? 0), 0) +
+                1,
+              operationId,
+            }}
+            onSubmit={() => {
+              setType("Value");
+            }}
+            className="w-full"
+          >
+            <Hidden name="operationId" />
+            <Hidden name="sortOrder" />
+            <Hidden name="description" value={JSON.stringify(description)} />
+            <VStack spacing={4}>
               <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-                <UnitOfMeasure
-                  name="unitOfMeasureCode"
-                  label="Unit of Measure"
+                <SelectControlled
+                  name="type"
+                  label="Type"
+                  options={typeOptions}
+                  value={type}
+                  onChange={(option) => {
+                    if (option) {
+                      setType(option.value as OperationStep["type"]);
+                    }
+                  }}
                 />
-
-                <ToggleGroup
-                  type="multiple"
-                  value={numericControls}
-                  onValueChange={setNumericControls}
-                  className="justify-start items-start mt-6"
-                >
-                  <ToggleGroupItem size="sm" value="min">
-                    <LuMinimize2 className="mr-2" />
-                    Minimum
-                  </ToggleGroupItem>
-                  <ToggleGroupItem size="sm" value="max">
-                    <LuMaximize2 className="mr-2" />
-                    Maximum
-                  </ToggleGroupItem>
-                </ToggleGroup>
-
-                {numericControls.includes("min") && (
-                  <Number
-                    name="minValue"
-                    label="Minimum"
-                    formatOptions={{
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 10,
-                    }}
-                  />
-                )}
-                {numericControls.includes("max") && (
-                  <Number
-                    name="maxValue"
-                    label="Maximum"
-                    formatOptions={{
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 10,
-                    }}
-                  />
-                )}
+                <Input name="name" label="Name" />
               </div>
-            )}
-            {type === "List" && (
-              <ArrayInput name="listValues" label="List Options" />
-            )}
 
-            <Submit
-              leftIcon={<LuCirclePlus />}
-              isDisabled={isDisabled || fetcher.state !== "idle"}
-              isLoading={fetcher.state !== "idle"}
-            >
-              Save Step
-            </Submit>
-          </VStack>
-        </ValidatedForm>
-      </div>
+              <VStack spacing={2} className="w-full col-span-2">
+                <Label>Description</Label>
+                <Editor
+                  initialValue={description}
+                  onUpload={onUploadImage}
+                  onChange={(value) => {
+                    setDescription(value);
+                  }}
+                  className="[&_.is-empty]:text-muted-foreground min-h-[120px] p-4 rounded-lg border w-full"
+                />
+              </VStack>
+
+              {type === "Measurement" && (
+                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                  <UnitOfMeasure
+                    name="unitOfMeasureCode"
+                    label="Unit of Measure"
+                  />
+
+                  <ToggleGroup
+                    type="multiple"
+                    value={numericControls}
+                    onValueChange={setNumericControls}
+                    className="justify-start items-start mt-6"
+                  >
+                    <ToggleGroupItem size="sm" value="min">
+                      <LuMinimize2 className="mr-2" />
+                      Minimum
+                    </ToggleGroupItem>
+                    <ToggleGroupItem size="sm" value="max">
+                      <LuMaximize2 className="mr-2" />
+                      Maximum
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+
+                  {numericControls.includes("min") && (
+                    <Number
+                      name="minValue"
+                      label="Minimum"
+                      formatOptions={{
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 10,
+                      }}
+                    />
+                  )}
+                  {numericControls.includes("max") && (
+                    <Number
+                      name="maxValue"
+                      label="Maximum"
+                      formatOptions={{
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 10,
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+              {type === "List" && (
+                <ArrayInput name="listValues" label="List Options" />
+              )}
+
+              <Submit
+                leftIcon={<LuCirclePlus />}
+                isDisabled={isDisabled || fetcher.state !== "idle"}
+                isLoading={fetcher.state !== "idle"}
+              >
+                Save Step
+              </Submit>
+            </VStack>
+          </ValidatedForm>
+        </div>
+      ) : (
+        <div className="flex justify-end mb-4">
+          <Button onClick={disclosure.onOpen} leftIcon={<LuCirclePlus />}>
+            Add Step
+          </Button>
+        </div>
+      )}
 
       {steps.length > 0 && (
         <div className="border rounded-lg ">

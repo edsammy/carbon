@@ -743,6 +743,68 @@ export const fieldMappings = {
       },
     },
   },
+  methodMaterial: {
+    level: {
+      label: "Level",
+      required: false,
+      type: "string",
+    },
+    partId: {
+      label: "Part ID",
+      required: true,
+      type: "string",
+    },
+    description: {
+      label: "Description",
+      required: false,
+      type: "string",
+    },
+    methodType: {
+      label: "Method Type",
+      required: true,
+      type: "enum",
+      enumData: {
+        description:
+          "The method type of the part, which describes whether it is bought or made",
+        options: methodType,
+        default: "Pick",
+      },
+    },
+    quantity: {
+      label: "Quantity",
+      required: true,
+      type: "number",
+    },
+    unitOfMeasureCode: {
+      label: "Unit of Measure",
+      required: true,
+      type: "enum",
+      enumData: {
+        description: "The unit of measure of the part",
+        fetcher: async (
+          client: SupabaseClient<Database>,
+          companyId: string
+        ) => {
+          const { data, error } = await client
+            .from("unitOfMeasure")
+            .select("name, code")
+            .eq("companyId", companyId);
+
+          if (error) {
+            return { data: null, error };
+          }
+
+          return {
+            data: data.map((item) => ({
+              name: item.name,
+              id: item.code,
+            })),
+          };
+        },
+        default: "EA",
+      },
+    },
+  },
 } as const;
 
 export const importPermissions: Record<keyof typeof fieldMappings, string> = {
@@ -752,6 +814,7 @@ export const importPermissions: Record<keyof typeof fieldMappings, string> = {
   supplierContact: "purchasing",
   part: "parts",
   material: "parts",
+  methodMaterial: "parts",
   tool: "parts",
   fixture: "parts",
   consumable: "parts",
@@ -1108,5 +1171,24 @@ export const importSchemas: Record<
       .string()
       .optional()
       .describe("The unit of measure of the material"),
+  }),
+  methodMaterial: z.object({
+    level: z.string().optional().describe("The level of the material"),
+    partId: z
+      .string()
+      .min(1, { message: "Part ID is required" })
+      .describe("The id of the part"),
+    description: z.string().optional().describe("The description of the part"),
+    quantity: z.string().describe("The quantity of the part"),
+    methodType: z
+      .string()
+      .optional()
+      .describe(
+        "The method type of the part, which describes whether it is bought or made"
+      ),
+    unitOfMeasureCode: z
+      .string()
+      .optional()
+      .describe("The unit of measure of the part"),
   }),
 } as const;

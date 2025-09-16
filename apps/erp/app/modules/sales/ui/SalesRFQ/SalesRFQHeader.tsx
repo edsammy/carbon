@@ -3,6 +3,7 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -88,12 +89,14 @@ const SalesRFQHeader = () => {
               <span>{routeData?.rfqSummary?.rfqId}</span>
             </Heading>
           </Link>
+          <Copy text={routeData?.rfqSummary?.rfqId ?? ""} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton
                 aria-label="More options"
                 icon={<LuEllipsisVertical />}
-                variant="ghost"
+                variant="secondary"
+                size="sm"
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>

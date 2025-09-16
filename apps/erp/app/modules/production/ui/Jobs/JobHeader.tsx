@@ -3,6 +3,7 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -133,12 +134,14 @@ const JobHeader = () => {
               <span>{routeData?.job?.jobId}</span>
             </Heading>
           </Link>
+          <Copy text={routeData?.job?.jobId ?? ""} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton
                 aria-label="More options"
                 icon={<LuEllipsisVertical />}
-                variant="ghost"
+                variant="secondary"
+                size="sm"
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>

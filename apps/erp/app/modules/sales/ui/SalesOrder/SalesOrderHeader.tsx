@@ -1,5 +1,6 @@
 import {
   Button,
+  Copy,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -243,12 +244,14 @@ const SalesOrderHeader = () => {
                 <span>{routeData?.salesOrder?.salesOrderId}</span>
               </Heading>
             </Link>
+            <Copy text={routeData?.salesOrder?.salesOrderId ?? ""} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <IconButton
                   aria-label="More options"
                   icon={<LuEllipsisVertical />}
-                  variant="ghost"
+                  variant="secondary"
+                  size="sm"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
