@@ -10,24 +10,17 @@ export async function action({ request, params }: ActionFunctionArgs) {
     delete: "production",
   });
 
-  const { attributeId } = params;
+  const { stepId } = params;
 
-  if (!attributeId) throw new Error("attributeId is not found");
+  if (!stepId) throw new Error("stepId is not found");
 
-  const deleteAttribute = await deleteProcedureStep(
-    client,
-    attributeId,
-    companyId
-  );
-  if (deleteAttribute.error) {
+  const deleteStep = await deleteProcedureStep(client, stepId, companyId);
+  if (deleteStep.error) {
     return json(
       {
         success: false,
       },
-      await flash(
-        request,
-        error(deleteAttribute.error, "Failed to delete attribute")
-      )
+      await flash(request, error(deleteStep.error, "Failed to delete step"))
     );
   }
 
@@ -35,6 +28,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
     {
       success: true,
     },
-    await flash(request, success("Successfully deleted attribute"))
+    await flash(request, success("Successfully deleted step"))
   );
 }

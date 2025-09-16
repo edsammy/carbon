@@ -14,8 +14,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
     update: "production",
   });
 
-  const { attributeId } = params;
-  if (!attributeId) throw notFound("attribute id is not found");
+  const { stepId } = params;
+  if (!stepId) throw notFound("step id is not found");
 
   const validation = await validator(procedureStepValidator).validate(
     await request.formData()
@@ -24,15 +24,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
   if (validation.error) {
     return json(
       { success: false },
-      await flash(
-        request,
-        error(validation.error, "Failed to update attribute")
-      )
+      await flash(request, error(validation.error, "Failed to update step"))
     );
   }
 
   const update = await upsertProcedureStep(client, {
-    id: attributeId,
+    id: stepId,
     ...validation.data,
     updatedBy: userId,
   });
@@ -41,7 +38,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       { success: false },
       await flash(
         request,
-        error(update.error, "Failed to update procedure attribute")
+        error(update.error, "Failed to update procedure step")
       )
     );
   }

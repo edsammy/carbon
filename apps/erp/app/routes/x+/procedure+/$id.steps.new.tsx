@@ -24,10 +24,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   if (validation.error) {
     return json(
       { success: false },
-      await flash(
-        request,
-        error(validation.error, "Failed to create attribute")
-      )
+      await flash(request, error(validation.error, "Failed to create step"))
     );
   }
 
@@ -45,7 +42,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       },
       await flash(
         request,
-        error(create.error, "Failed to insert procedure attribute")
+        error(create.error, "Failed to insert procedure step")
       )
     );
   }
