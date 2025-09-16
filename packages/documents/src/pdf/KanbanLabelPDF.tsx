@@ -17,6 +17,7 @@ interface KanbanLabel {
 }
 
 interface KanbanLabelPDFProps {
+  baseUrl: string;
   labels: KanbanLabel[];
 }
 
@@ -36,7 +37,7 @@ const tw = createTw({
   },
 });
 
-const KanbanLabelPDF = ({ labels }: KanbanLabelPDFProps) => {
+const KanbanLabelPDF = ({ baseUrl, labels }: KanbanLabelPDFProps) => {
   // Fixed 2x3 layout (6 labels per page)
   const rows = 3;
   const columns = 2;
@@ -105,7 +106,10 @@ const KanbanLabelPDF = ({ labels }: KanbanLabelPDFProps) => {
                       >
                         {/* QR Code */}
                         <Image
-                          src={generateQRCode(label.id, qrCodeSize / 72)}
+                          src={generateQRCode(
+                            `${baseUrl}/api/kanban/${label.id}`,
+                            qrCodeSize / 72
+                          )}
                           style={{
                             width: qrCodeSize,
                             height: qrCodeSize,

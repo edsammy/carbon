@@ -64,7 +64,6 @@
     "nanoid": "5.0.4",
     "nanostores": "^0.9.3",
     "non.geist": "~1.0.3",
-    "nprogress": "0.2.0",
     "papaparse": "5.3.2",
     "performant-array-to-tree": "1.11.0",
     "posthog-js": "^1.116.6",

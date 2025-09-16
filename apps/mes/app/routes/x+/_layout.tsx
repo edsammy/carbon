@@ -10,15 +10,14 @@ import {
   requireAuthSession,
 } from "@carbon/auth/session.server";
 import { SidebarProvider, TooltipProvider, useMount } from "@carbon/react";
+import { useNProgress } from "@carbon/remix";
 import { getStripeCustomerByCompanyId } from "@carbon/stripe/stripe.server";
 import { Edition } from "@carbon/utils";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
-import { Outlet, useLoaderData, useNavigation } from "@remix-run/react";
+import { Outlet, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
-import NProgress from "nprogress";
 import posthog from "posthog-js";
-import { useEffect } from "react";
 import { AppSidebar } from "~/components";
 import RealtimeDataProvider from "~/components/RealtimeDataProvider";
 import { useUser } from "~/hooks";
@@ -120,8 +119,6 @@ export default function AuthenticatedRoute() {
   const { session, activeEvents, company, companies, location, locations } =
     useLoaderData<typeof loader>();
 
-  const transition = useNavigation();
-
   const user = useUser();
   useMount(() => {
     posthog.identify(user.id, {
@@ -130,17 +127,7 @@ export default function AuthenticatedRoute() {
     });
   });
 
-  /* NProgress */
-  useEffect(() => {
-    if (
-      (transition.state === "loading" || transition.state === "submitting") &&
-      !NProgress.isStarted()
-    ) {
-      NProgress.start();
-    } else {
-      NProgress.done();
-    }
-  }, [transition.state]);
+  useNProgress();
 
   return (
     <div className="h-screen w-screen overflow-y-auto md:overflow-hidden">

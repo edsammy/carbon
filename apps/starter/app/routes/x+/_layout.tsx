@@ -1,9 +1,7 @@
 import { Toaster } from "@carbon/react";
-import { Outlet, useLoaderData, useNavigation } from "@remix-run/react";
+import { Outlet, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
-import NProgress from "nprogress";
-import { useEffect } from "react";
 
 import {
   CarbonProvider,
@@ -16,6 +14,7 @@ import {
   destroyAuthSession,
   requireAuthSession,
 } from "@carbon/auth/session.server";
+import { useNProgress } from "@carbon/remix";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { accessToken, companyId, expiresAt, expiresIn, userId } =
@@ -54,19 +53,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function AuthenticatedRoute() {
   const { session } = useLoaderData<typeof loader>();
 
-  const transition = useNavigation();
-
-  /* NProgress */
-  useEffect(() => {
-    if (
-      (transition.state === "loading" || transition.state === "submitting") &&
-      !NProgress.isStarted()
-    ) {
-      NProgress.start();
-    } else {
-      NProgress.done();
-    }
-  }, [transition.state]);
+  useNProgress();
 
   return (
     <CarbonProvider session={session}>

@@ -211,10 +211,10 @@ const Item = ({
                       )}
                       disabled={props.isReadOnly}
                       variant="secondary"
-                      size={props.inline ? "sm" : "lg"}
+                      size={props.inline ? "sm" : "md"}
                       icon={
                         type === "Item" ? (
-                          <LuFilter className="h-4 w-4" />
+                          <LuFilter className="size-3" />
                         ) : (
                           <MethodItemTypeIcon type={type} />
                         )

@@ -14,6 +14,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // Get kanban IDs from search params
   const url = new URL(request.url);
   const idsParam = url.searchParams.get("ids");
+  const baseUrl = url.origin;
 
   if (!idsParam) {
     return new Response("No kanban IDs provided", { status: 400 });
@@ -94,7 +95,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   // Generate PDF
-  const stream = await renderToStream(<KanbanLabelPDF labels={labels} />);
+  const stream = await renderToStream(
+    <KanbanLabelPDF baseUrl={baseUrl} labels={labels} />
+  );
 
   const body: Buffer = await new Promise((resolve, reject) => {
     const buffers: Uint8Array[] = [];

@@ -7,16 +7,9 @@ import { Button, IconButton, TooltipProvider, useMount } from "@carbon/react";
 import { getStripeCustomerByCompanyId } from "@carbon/stripe/stripe.server";
 import { Edition } from "@carbon/utils";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
-import {
-  Outlet,
-  useFetcher,
-  useLoaderData,
-  useNavigation,
-} from "@remix-run/react";
+import { Outlet, useFetcher, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
-import NProgress from "nprogress";
-import { useEffect } from "react";
 
 import posthog from "posthog-js";
 import { LuArrowUpRight, LuX } from "react-icons/lu";
@@ -36,6 +29,7 @@ import {
 } from "~/modules/users/users.server";
 import { path } from "~/utils/path";
 
+import { useNProgress } from "@carbon/remix";
 import { getSavedViews } from "~/modules/shared/shared.service";
 
 export const config = {
@@ -135,7 +129,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function AuthenticatedRoute() {
   const { session, user } = useLoaderData<typeof loader>();
 
-  const transition = useNavigation();
+  useNProgress();
 
   useMount(() => {
     if (!user) return;
@@ -145,18 +139,6 @@ export default function AuthenticatedRoute() {
       name: `${user.firstName} ${user.lastName}`,
     });
   });
-
-  /* NProgress */
-  useEffect(() => {
-    if (
-      (transition.state === "loading" || transition.state === "submitting") &&
-      !NProgress.isStarted()
-    ) {
-      NProgress.start();
-    } else {
-      NProgress.done();
-    }
-  }, [transition.state]);
 
   return (
     <div className="h-[100dvh] flex flex-col">
