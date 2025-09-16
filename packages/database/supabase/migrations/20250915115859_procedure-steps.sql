@@ -232,7 +232,8 @@ FOR DELETE USING (
 );
 
 
-
+-- Rename procedureAttribute to procedureStep
+ALTER TABLE "procedureAttribute" RENAME TO "procedureStep";
 
 -- procedureStep table doesn't need renaming (already correct name)
 
