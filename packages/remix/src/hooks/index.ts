@@ -1,4 +1,5 @@
 import { useEdition } from "./useEdition";
+import { useKeyboardWedgeNavigation } from "./useKeyboardWedgeNavigation";
 import { useMode } from "./useMode";
 import { useNanoStore } from "./useNanoStore";
 import { useNProgress } from "./useNProgress";
@@ -9,6 +10,7 @@ import { useUrlParams } from "./useUrlParams";
 
 export {
   useEdition,
+  useKeyboardWedgeNavigation,
   useMode,
   useNanoStore,
   useNProgress,

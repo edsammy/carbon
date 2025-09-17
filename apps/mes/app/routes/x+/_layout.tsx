@@ -10,7 +10,7 @@ import {
   requireAuthSession,
 } from "@carbon/auth/session.server";
 import { SidebarProvider, TooltipProvider, useMount } from "@carbon/react";
-import { useNProgress } from "@carbon/remix";
+import { useKeyboardWedgeNavigation, useNProgress } from "@carbon/remix";
 import { getStripeCustomerByCompanyId } from "@carbon/stripe/stripe.server";
 import { Edition } from "@carbon/utils";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
@@ -119,6 +119,9 @@ export default function AuthenticatedRoute() {
   const { session, activeEvents, company, companies, location, locations } =
     useLoaderData<typeof loader>();
 
+  useNProgress();
+  useKeyboardWedgeNavigation();
+
   const user = useUser();
   useMount(() => {
     posthog.identify(user.id, {
@@ -126,8 +129,6 @@ export default function AuthenticatedRoute() {
       name: `${user.firstName} ${user.lastName}`,
     });
   });
-
-  useNProgress();
 
   return (
     <div className="h-screen w-screen overflow-y-auto md:overflow-hidden">

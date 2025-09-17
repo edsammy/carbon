@@ -29,7 +29,7 @@ import {
 } from "~/modules/users/users.server";
 import { path } from "~/utils/path";
 
-import { useNProgress } from "@carbon/remix";
+import { useKeyboardWedgeNavigation, useNProgress } from "@carbon/remix";
 import { getSavedViews } from "~/modules/shared/shared.service";
 
 export const config = {
@@ -130,6 +130,7 @@ export default function AuthenticatedRoute() {
   const { session, user } = useLoaderData<typeof loader>();
 
   useNProgress();
+  useKeyboardWedgeNavigation();
 
   useMount(() => {
     if (!user) return;
