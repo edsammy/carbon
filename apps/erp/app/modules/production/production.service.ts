@@ -941,12 +941,41 @@ export async function getTrackedEntityByJobId(
     };
   }
 
-  return client
+  const result = await client
     .from("trackedEntity")
     .select("*")
     .eq("attributes ->> Job Make Method", jobMakeMethod.data.id)
     .eq("companyId", jobMakeMethod.data.companyId)
+    .limit(1);
+
+  return {
+    data: result.data?.[0] ?? null,
+    error: result.error,
+  };
+}
+
+export async function getTrackedEntitiesByJobId(
+  client: SupabaseClient<Database>,
+  jobId: string
+) {
+  const jobMakeMethod = await client
+    .from("jobMakeMethod")
+    .select("*")
+    .eq("jobId", jobId)
+    .is("parentMaterialId", null)
     .single();
+  if (jobMakeMethod.error) {
+    return {
+      data: null,
+      error: jobMakeMethod.error,
+    };
+  }
+
+  return client
+    .from("trackedEntity")
+    .select("*")
+    .eq("attributes ->> Job Make Method", jobMakeMethod.data.id)
+    .eq("companyId", jobMakeMethod.data.companyId);
 }
 
 export async function recalculateJobOperationDependencies(
@@ -1032,6 +1061,7 @@ export async function updateJobBatchNumber(
     .select("id, attributes")
     .eq("id", trackedEntityId)
     .single();
+
   if (currentAttributes.error) {
     return currentAttributes;
   }
@@ -1049,7 +1079,8 @@ export async function updateJobBatchNumber(
       },
     })
     .eq("id", currentAttributes.data.id)
-    .select("id, attributes");
+    .select("id, attributes")
+    .order("createdAt", { ascending: false });
 }
 
 export async function updateJobStatus(

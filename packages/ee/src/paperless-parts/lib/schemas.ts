@@ -138,7 +138,7 @@ export const ShopOperationSchema = z.object({
 export const ComponentSchema = z.object({
   id: z.number().optional(),
   child_ids: z.array(z.number()).optional(),
-  children: z.array(z.unknown()).optional(), // recursive, so using unknown
+  children: z.array(z.unknown()).optional(), // TODO: array of child_id and quantity objects
   description: z.string().nullable().optional(),
   export_controlled: z.boolean().optional(),
   finishes: z.array(z.unknown()).optional(),
@@ -146,7 +146,7 @@ export const ComponentSchema = z.object({
   is_assembly: z.boolean().optional(),
   is_root_component: z.boolean().optional(),
   material: z.unknown().nullable().optional(),
-  material_operations: z.array(z.unknown()).optional(),
+  material_operations: z.array(z.unknown()).optional(), // TODO - similar to shop operations, but without runtime and setup time
   obtain_method: z.string().optional(),
   parent_ids: z.array(z.number()).optional(),
   part_custom_attrs: z.array(z.unknown()).optional(),
@@ -155,7 +155,7 @@ export const ComponentSchema = z.object({
   part_url: z.string().url().optional().nullable(),
   part_uuid: z.string().uuid().optional(),
   process: z.unknown().nullable().optional(),
-  purchased_component: z.unknown().nullable().optional(),
+  purchased_component: z.unknown().nullable().optional(), // TODO - object that leads to the purchased component table, can have shop operations,
   revision: z.string().optional().nullable(),
   shop_operations: z.array(ShopOperationSchema).optional(),
   supporting_files: z.array(z.unknown()).optional(),

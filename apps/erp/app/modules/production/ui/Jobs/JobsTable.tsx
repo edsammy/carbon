@@ -1,3 +1,4 @@
+import { useCarbon } from "@carbon/auth";
 import {
   Badge,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ import {
   LuHash,
   LuMapPin,
   LuPencil,
+  LuQrCode,
   LuSquareUser,
   LuTag,
   LuTrash,
@@ -47,7 +49,7 @@ import {
 import { Enumerable } from "~/components/Enumerable";
 import { useLocations } from "~/components/Form/Location";
 import { ConfirmDelete } from "~/components/Modals";
-import { usePermissions, useUrlParams } from "~/hooks";
+import { usePermissions, useUrlParams, useUser } from "~/hooks";
 import { useCustomColumns } from "~/hooks/useCustomColumns";
 import type { action } from "~/routes/x+/job+/update";
 import { useCustomers, useParts, usePeople, useTools } from "~/stores";
@@ -78,11 +80,70 @@ const defaultColumnVisibility = {
   quantityReceivedToInventory: false,
 };
 
+function useReadableTrackedEntities(data: Job[], companyId: string) {
+  const [trackedEntities, setTrackedEntities] = useState<
+    Record<string, string>
+  >({});
+  const { carbon } = useCarbon();
+
+  async function getTrackedEntities(
+    jobMakeMethodIds: string[],
+    companyId: string
+  ) {
+    if (carbon) {
+      const response = await carbon
+        ?.from("trackedEntity")
+        .select("*")
+        .in("attributes->>Job Make Method", jobMakeMethodIds)
+        .eq("companyId", companyId);
+
+      if (response.data) {
+        const result = response.data.reduce<Record<string, string>>(
+          (acc, curr) => {
+            if (
+              curr.attributes !== null &&
+              typeof curr.attributes === "object" &&
+              "Job Make Method" in curr.attributes &&
+              "Batch Number" in curr.attributes
+            ) {
+              // @ts-ignore
+              acc[curr.attributes["Job Make Method"]] =
+                curr.attributes["Batch Number"];
+            }
+            return acc;
+          },
+          {}
+        );
+
+        setTrackedEntities(result);
+      }
+    }
+  }
+
+  useEffect(() => {
+    getTrackedEntities(
+      data.reduce<string[]>((acc, curr) => {
+        if (curr.jobMakeMethodId) {
+          acc.push(curr.jobMakeMethodId);
+        }
+        return acc;
+      }, []),
+      companyId
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  return trackedEntities;
+}
+
 const JobsTable = memo(({ data, count, tags }: JobsTableProps) => {
   const navigate = useNavigate();
   const [params] = useUrlParams();
   const parts = useParts();
   const tools = useTools();
+  const {
+    company: { id: companyId },
+  } = useUser();
 
   const items = useMemo(() => [...parts, ...tools], [parts, tools]);
 
@@ -93,6 +154,8 @@ const JobsTable = memo(({ data, count, tags }: JobsTableProps) => {
   const permissions = usePermissions();
   const deleteModal = useDisclosure();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
+  const trackedEntities = useReadableTrackedEntities(data, companyId);
 
   const onDelete = (data: Job) => {
     setSelectedJob(data);
@@ -151,6 +214,20 @@ const JobsTable = memo(({ data, count, tags }: JobsTableProps) => {
             })),
           },
           icon: <AiOutlinePartition />,
+        },
+      },
+      {
+        id: "trackedEntityId",
+        header: "Tracking",
+        cell: ({ row }) =>
+          row.original.jobMakeMethodId &&
+          trackedEntities[row.original.jobMakeMethodId] ? (
+            <Badge variant="secondary">
+              {trackedEntities[row.original.jobMakeMethodId]}
+            </Badge>
+          ) : null,
+        meta: {
+          icon: <LuQrCode />,
         },
       },
       {
@@ -468,7 +545,7 @@ const JobsTable = memo(({ data, count, tags }: JobsTableProps) => {
     ];
     return [...defaultColumns, ...customColumns];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params, customColumns]);
+  }, [params, customColumns, trackedEntities]);
 
   const fetcher = useFetcher<typeof action>();
   useEffect(() => {

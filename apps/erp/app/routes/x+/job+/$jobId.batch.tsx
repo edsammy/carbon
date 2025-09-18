@@ -20,7 +20,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const value = String(formData.get("value"));
   if (!value) throw new Error("Could not find value");
 
-  // we need a service role here
   const update = await updateJobBatchNumber(client, trackedEntityId, value);
 
   if (update.error) {

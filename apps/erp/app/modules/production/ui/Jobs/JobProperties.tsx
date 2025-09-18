@@ -22,7 +22,7 @@ import {
   Select,
   ValidatedForm,
 } from "@carbon/form";
-import type { PostgrestSingleResponse } from "@supabase/supabase-js";
+import type { PostgrestResponse } from "@supabase/supabase-js";
 import { RiProgress8Line } from "react-icons/ri";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
@@ -50,7 +50,7 @@ const JobProperties = () => {
   const routeData = useRouteData<{
     job: Job;
     tags: { name: string }[];
-    trackedEntity: Promise<PostgrestSingleResponse<TrackedEntity>>;
+    trackedEntities: Promise<PostgrestResponse<TrackedEntity>>;
   }>(path.to.job(jobId));
 
   const fetcher = useFetcher<typeof action>();
@@ -122,6 +122,11 @@ const JobProperties = () => {
   const onUpdateBatchNumber = useCallback(
     (trackedEntityId: string, value: string) => {
       const formData = new FormData();
+
+      if (!trackedEntityId) {
+        toast.error("Tracked entity ID is required but none was found");
+        return;
+      }
 
       formData.append("id", trackedEntityId);
       formData.append("value", value);
@@ -200,41 +205,55 @@ const JobProperties = () => {
 
       <VStack spacing={2}>
         <Suspense fallback={null}>
-          <Await resolve={routeData?.trackedEntity}>
-            {(trackedEntity) => {
+          <Await resolve={routeData?.trackedEntities}>
+            {(entities) => {
+              console.log("entities", entities);
               const trackingType = routeData?.job?.itemTrackingType ?? "";
-              const batchNumber: string =
-                // @ts-ignore
-                trackedEntity?.data?.attributes?.["Batch Number"]?.toString() ??
-                "";
+
               if (!["Batch", "Serial"].includes(trackingType)) {
                 return null;
               }
+
+              const trackedEntities = entities?.data ?? [];
+
               return (
                 <>
-                  <ValidatedForm
-                    defaultValues={{
-                      batchNumber,
-                    }}
-                    validator={z.object({
-                      batchNumber: zfd.text(z.string().optional()),
-                    })}
-                    className="w-full"
-                  >
-                    <InputControlled
-                      name="batchNumber"
-                      label={`${trackingType} Number`}
-                      value={batchNumber}
-                      size="sm"
-                      inline
-                      onBlur={(e) => {
-                        onUpdateBatchNumber(
-                          trackedEntity?.data?.id ?? "",
-                          e.target.value
-                        );
-                      }}
-                    />
-                  </ValidatedForm>
+                  {trackedEntities.map((entity, index) => {
+                    console.log("entity", entity);
+                    const trackingNumber: string =
+                      // @ts-ignore
+                      entity?.attributes?.["Batch Number"]?.toString() ?? "";
+                    console.log("trackingNumber", trackingNumber);
+
+                    const label =
+                      trackingType === "Serial" && trackedEntities.length > 1
+                        ? `${trackingType} ${index + 1}`
+                        : `${trackingType} Number`;
+
+                    return (
+                      <ValidatedForm
+                        key={entity.id}
+                        defaultValues={{
+                          trackingNumber,
+                        }}
+                        validator={z.object({
+                          trackingNumber: zfd.text(z.string().optional()),
+                        })}
+                        className="w-full"
+                      >
+                        <InputControlled
+                          name="trackingNumber"
+                          label={label}
+                          value={trackingNumber}
+                          size="sm"
+                          inline
+                          onBlur={(e) => {
+                            onUpdateBatchNumber(entity.id, e.target.value);
+                          }}
+                        />
+                      </ValidatedForm>
+                    );
+                  })}
                 </>
               );
             }}

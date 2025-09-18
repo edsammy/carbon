@@ -1820,7 +1820,6 @@ export async function createPartFromComponent(
           createdBy
         );
         if (process) {
-          // console.log({ operation });
           operations.push({
             order: operation.position ?? index + 1,
             operationOrder: "After Previous",
@@ -1835,6 +1834,7 @@ export async function createPartFromComponent(
             createdBy,
             setupTime: (operation.setup_time ?? 0) * 60,
             setupUnit: "Total Minutes",
+            // laborTime: // TODO: we'd have to standardize on a costing variable to use for this
             machineTime: (operation.runtime ?? 0) * 60,
             machineUnit: "Minutes/Piece",
             workInstruction: operation.notes
