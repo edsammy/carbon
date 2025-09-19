@@ -504,10 +504,10 @@ export const JobOperation = ({
                 )}
                 <div className="flex flex-col flex-grow">
                   <Heading size="h3" className="line-clamp-1">
-                    {operation.itemDescription}
+                    {operation.description}
                   </Heading>
                   <p className="text-muted-foreground line-clamp-1">
-                    {operation.itemReadableId}
+                    {operation.itemDescription}{" "}
                   </p>
                 </div>
               </HStack>
@@ -535,7 +535,10 @@ export const JobOperation = ({
                     <FaCheck className="h-3 w-3 text-emerald-500" />
                   </div>
                   <div className="p-6 pt-0">
-                    <Heading size="h1">{operation.quantityComplete}</Heading>
+                    <Heading size="h1">
+                      {operation.quantityComplete} of{" "}
+                      {operation.operationQuantity}
+                    </Heading>
                   </div>
                 </div>
                 <div className="rounded-xl border bg-card text-card-foreground shadow">
