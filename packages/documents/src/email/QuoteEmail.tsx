@@ -1,3 +1,4 @@
+import { getAppUrl } from "@carbon/auth";
 import type { Database } from "@carbon/database";
 import {
   Body,
@@ -31,7 +32,7 @@ const QuoteEmail = ({
 }: QuoteEmailProps) => {
   const digitalQuoteUrl =
     companySettings.digitalQuoteEnabled && !!quote.externalLinkId
-      ? `https://app.carbon.ms/share/quote/${quote.externalLinkId}` // the VERCEL_URL variable was giving us a preview branch
+      ? `${getAppUrl()}/share/quote/${quote.externalLinkId}` // the VERCEL_URL variable was giving us a preview branch
       : undefined;
 
   const preview = <Preview>{`${quote.quoteId} from ${company.name}`}</Preview>;

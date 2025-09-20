@@ -1,7 +1,9 @@
 import {
   assertIsPost,
   carbonClient,
+  CarbonEdition,
   error,
+  ITAR_ENVIRONMENT,
   magicLinkValidator,
 } from "@carbon/auth";
 import { sendMagicLink, verifyAuthSession } from "@carbon/auth/auth.server";
@@ -19,6 +21,8 @@ import {
   toast,
   VStack,
 } from "@carbon/react";
+import { ItarLoginDisclaimer } from "@carbon/remix";
+import { Edition } from "@carbon/utils";
 import { useFetcher, useSearchParams } from "@remix-run/react";
 import { Ratelimit } from "@upstash/ratelimit";
 import type {
@@ -178,27 +182,30 @@ export default function LoginRoute() {
           </ValidatedForm>
         )}
       </div>
-      <div className="text-sm text-center text-balance text-muted-foreground w-[380px] mt-4">
-        <p>
-          By signing in, you agree to the{" "}
-          <a
-            href="https://carbon.ms/terms"
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
-          >
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a
-            href="https://carbon.ms/privacy"
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
-          >
-            Privacy Policy.
-          </a>
-        </p>
+      <div className="flex flex-col gap-4 text-sm text-center text-balance text-muted-foreground w-[380px]">
+        {ITAR_ENVIRONMENT && <ItarLoginDisclaimer />}
+        {CarbonEdition === Edition.Cloud && (
+          <p>
+            By signing in, you agree to the{" "}
+            <a
+              href="https://carbon.ms/terms"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://carbon.ms/privacy"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Privacy Policy.
+            </a>
+          </p>
+        )}
       </div>
     </>
   );

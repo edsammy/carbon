@@ -58,6 +58,7 @@ export const path = {
       previewFile: (path: string) => generatePath(`${file}/preview/${path}`),
     },
     accountSettings: `${ERP_URL}/x/account`,
+    acknowledge: `${x}/acknowledge`,
     active: `${x}/active`,
     assigned: `${x}/assigned`,
     authenticatedRoot: x,

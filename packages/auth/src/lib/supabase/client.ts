@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 
 import {
   SUPABASE_ANON_KEY,
-  SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_URL,
 } from "../../config/env";
 
 const getCarbonClient = (supabaseKey: string, accessToken?: string) => {
@@ -19,7 +19,7 @@ const getCarbonClient = (supabaseKey: string, accessToken?: string) => {
       }
     : {};
 
-  const client = createClient<Database>(SUPABASE_URL, supabaseKey, {
+  const client = createClient<Database, "public">(SUPABASE_URL, supabaseKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -31,13 +31,17 @@ const getCarbonClient = (supabaseKey: string, accessToken?: string) => {
 };
 
 export const getCarbonAPIKeyClient = (apiKey: string) => {
-  const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: {
-      headers: {
-        "carbon-key": apiKey,
+  const client = createClient<Database, "public">(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          "carbon-key": apiKey,
+        },
       },
-    },
-  });
+    }
+  );
 
   return client;
 };

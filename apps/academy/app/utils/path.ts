@@ -5,7 +5,7 @@ const challenge = "/challenge"; // from ~/routes/challenge+ folder
 const course = "/course"; // from ~/routes/course+ folder
 const lesson = "/lesson"; // from ~/routes/lesson+ folder
 
-const ERP_URL = SUPABASE_URL.includes("localhost")
+const ERP_URL = SUPABASE_URL?.includes("localhost")
   ? "http://localhost:3000"
   : "https://app.carbon.ms";
 

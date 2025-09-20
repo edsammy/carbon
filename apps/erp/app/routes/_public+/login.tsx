@@ -5,6 +5,7 @@ import {
   CLOUDFLARE_TURNSTILE_SECRET_KEY,
   CLOUDFLARE_TURNSTILE_SITE_KEY,
   error,
+  ITAR_ENVIRONMENT,
   magicLinkValidator,
 } from "@carbon/auth";
 import { sendMagicLink, verifyAuthSession } from "@carbon/auth/auth.server";
@@ -23,7 +24,7 @@ import {
   toast,
   VStack,
 } from "@carbon/react";
-import { useMode } from "@carbon/remix";
+import { ItarLoginDisclaimer, useMode } from "@carbon/remix";
 import { Edition } from "@carbon/utils";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { useFetcher, useSearchParams } from "@remix-run/react";
@@ -288,35 +289,33 @@ export default function LoginRoute() {
         )}
       </div>
 
-      {mode !== "verify" && fetcher.data?.success !== true && (
-        <div className="text-center mt-4">
-          <p className="text-sm text-muted-foreground">
-            Login or create a new account
+      <div className="flex flex-col gap-4 text-sm text-center text-balance text-muted-foreground w-[380px]">
+        {mode !== "verify" && fetcher.data?.success !== true && (
+          <p>Login or create a new account</p>
+        )}
+        {ITAR_ENVIRONMENT && <ItarLoginDisclaimer />}
+        {CarbonEdition === Edition.Cloud && (
+          <p>
+            By signing in, you agree to the{" "}
+            <a
+              href="https://carbon.ms/terms"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://carbon.ms/privacy"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Privacy Policy.
+            </a>
           </p>
-        </div>
-      )}
-
-      <div className="text-sm text-center text-balance text-muted-foreground w-[380px] mt-4">
-        <p>
-          By signing in, you agree to the{" "}
-          <a
-            href="https://carbon.ms/terms"
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
-          >
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a
-            href="https://carbon.ms/privacy"
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
-          >
-            Privacy Policy.
-          </a>
-        </p>
+        )}
       </div>
     </>
   );

@@ -1,16 +1,17 @@
-import { Edition, isBrowser } from "@carbon/utils";
+import { Edition, isBrowser, parseBoolean } from "@carbon/utils";
 
 declare global {
   interface Window {
     env: {
       CARBON_EDITION: string;
-      SUPABASE_URL: string;
-      SUPABASE_ANON_KEY: string;
+      CLOUDFLARE_TURNSTILE_SITE_KEY: string;
+      ITAR_ENVIRONMENT: string;
       POSTHOG_API_HOST: string;
       POSTHOG_PROJECT_PUBLIC_KEY: string;
+      SUPABASE_URL: string;
+      SUPABASE_ANON_KEY: string;
       VERCEL_URL: string;
       VERCEL_ENV: string;
-      CLOUDFLARE_TURNSTILE_SITE_KEY: string;
     };
   }
 }
@@ -105,6 +106,14 @@ export const EXCHANGE_RATES_API_KEY = getEnv("EXCHANGE_RATES_API_KEY", {
   isRequired: false,
   isSecret: true,
 });
+
+const itarEnvironment = getEnv("ITAR_ENVIRONMENT", {
+  isRequired: false,
+  isSecret: false,
+});
+
+export const ITAR_ENVIRONMENT = parseBoolean(itarEnvironment, false);
+
 export const NOVU_APPLICATION_ID = getEnv("NOVU_APPLICATION_ID", {
   isRequired: false,
   isSecret: false,
@@ -192,7 +201,9 @@ export const CLOUDFLARE_TURNSTILE_SECRET_KEY = getEnv(
 
 export function getAppUrl() {
   if (VERCEL_ENV === "production" || NODE_ENV === "production") {
-    return "https://app.carbon.ms";
+    return ITAR_ENVIRONMENT
+      ? "https://itar.carbon.ms"
+      : "https://app.carbon.ms";
   }
 
   if (VERCEL_ENV === "preview") {
@@ -202,9 +213,24 @@ export function getAppUrl() {
   return "http://localhost:3000";
 }
 
+export function getMESUrl() {
+  if (VERCEL_ENV === "production" || NODE_ENV === "production") {
+    return ITAR_ENVIRONMENT
+      ? "https://itar.mes.carbon.ms"
+      : "https://mes.carbon.ms";
+  }
+
+  if (VERCEL_ENV === "preview") {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return "http://localhost:3001";
+}
+
 export function getBrowserEnv() {
   return {
     CARBON_EDITION,
+    ITAR_ENVIRONMENT,
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     POSTHOG_API_HOST,

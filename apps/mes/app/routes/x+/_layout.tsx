@@ -4,13 +4,19 @@ import {
   getCarbon,
   getCompanies,
   getUser,
+  ITAR_ENVIRONMENT,
 } from "@carbon/auth";
 import {
   destroyAuthSession,
   requireAuthSession,
 } from "@carbon/auth/session.server";
 import { SidebarProvider, TooltipProvider, useMount } from "@carbon/react";
-import { useKeyboardWedgeNavigation, useNProgress } from "@carbon/remix";
+import {
+  AcademyBanner,
+  ItarPopup,
+  useKeyboardWedgeNavigation,
+  useNProgress,
+} from "@carbon/remix";
 import { getStripeCustomerByCompanyId } from "@carbon/stripe/stripe.server";
 import { Edition } from "@carbon/utils";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
@@ -20,7 +26,6 @@ import { json, redirect } from "@vercel/remix";
 import posthog from "posthog-js";
 import { AppSidebar } from "~/components";
 import RealtimeDataProvider from "~/components/RealtimeDataProvider";
-import { useUser } from "~/hooks";
 import { getLocation, setLocation } from "~/services/location.server";
 import {
   getActiveJobCount,
@@ -116,38 +121,55 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function AuthenticatedRoute() {
-  const { session, activeEvents, company, companies, location, locations } =
-    useLoaderData<typeof loader>();
+  const {
+    session,
+    activeEvents,
+    company,
+    companies,
+    location,
+    locations,
+    user,
+  } = useLoaderData<typeof loader>();
 
   useNProgress();
   useKeyboardWedgeNavigation();
 
-  const user = useUser();
   useMount(() => {
-    posthog.identify(user.id, {
-      email: user.email,
-      name: `${user.firstName} ${user.lastName}`,
+    posthog.identify(user?.id, {
+      email: user?.email,
+      name: `${user?.firstName} ${user?.lastName}`,
     });
   });
 
   return (
     <div className="h-screen w-screen overflow-y-auto md:overflow-hidden">
-      <CarbonProvider session={session}>
-        <RealtimeDataProvider>
-          <SidebarProvider defaultOpen={false}>
-            <TooltipProvider delayDuration={0}>
-              <AppSidebar
-                activeEvents={activeEvents}
-                company={company}
-                companies={companies}
-                location={location}
-                locations={locations}
-              />
-              <Outlet />
-            </TooltipProvider>
-          </SidebarProvider>
-        </RealtimeDataProvider>
-      </CarbonProvider>
+      {user?.acknowledgedITAR === false && ITAR_ENVIRONMENT ? (
+        <ItarPopup
+          acknowledgeAction={path.to.acknowledge}
+          logoutAction={path.to.logout}
+        />
+      ) : (
+        <CarbonProvider session={session}>
+          <RealtimeDataProvider>
+            <SidebarProvider defaultOpen={false}>
+              <TooltipProvider delayDuration={0}>
+                {user?.acknowledgedUniversity ? null : (
+                  <AcademyBanner acknowledgeAction={path.to.acknowledge} />
+                )}
+
+                <AppSidebar
+                  activeEvents={activeEvents}
+                  company={company}
+                  companies={companies}
+                  location={location}
+                  locations={locations}
+                />
+                <Outlet />
+              </TooltipProvider>
+            </SidebarProvider>
+          </RealtimeDataProvider>
+        </CarbonProvider>
+      )}
     </div>
   );
 }

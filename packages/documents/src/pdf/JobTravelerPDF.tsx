@@ -1,3 +1,4 @@
+import { getMESUrl } from "@carbon/auth";
 import type { Database } from "@carbon/database";
 import type { JSONContent } from "@carbon/react";
 import { Image, StyleSheet, Text, View } from "@react-pdf/renderer";
@@ -18,11 +19,11 @@ interface JobTravelerProps extends PDF {
 }
 
 function getStartPath(operationId: string) {
-  return `https://mes.carbon.ms/x/start/${operationId}`;
+  return `${getMESUrl()}/x/start/${operationId}`;
 }
 
 function getEndPath(operationId: string) {
-  return `https://mes.carbon.ms/x/end/${operationId}`;
+  return `${getMESUrl()}/x/end/${operationId}`;
 }
 
 // Initialize tailwind-styled-components

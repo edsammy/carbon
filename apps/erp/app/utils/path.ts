@@ -1,13 +1,11 @@
-import { SUPABASE_URL } from "@carbon/auth";
+import { getMESUrl, SUPABASE_URL } from "@carbon/auth";
 import { generatePath } from "@remix-run/react";
 
 const x = "/x"; // from ~/routes/x+ folder
 const api = "/api"; // from ~/routes/api+ folder
 const file = "/file"; // from ~/routes/file+ folder
 const onboarding = "/onboarding"; // from ~/routes/onboarding+ folder
-const mes = SUPABASE_URL.includes("localhost")
-  ? "http://localhost:3001"
-  : "https://mes.carbon.ms";
+const mes = getMESUrl();
 
 export const path = {
   to: {

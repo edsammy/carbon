@@ -53,6 +53,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const {
     CARBON_EDITION,
     CLOUDFLARE_TURNSTILE_SITE_KEY,
+    ITAR_ENVIRONMENT,
     POSTHOG_API_HOST,
     POSTHOG_PROJECT_PUBLIC_KEY,
     SUPABASE_URL,
@@ -67,6 +68,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       env: {
         CARBON_EDITION,
         CLOUDFLARE_TURNSTILE_SITE_KEY,
+        ITAR_ENVIRONMENT,
         POSTHOG_API_HOST,
         POSTHOG_PROJECT_PUBLIC_KEY,
         SUPABASE_URL,

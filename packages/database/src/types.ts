@@ -19393,7 +19393,7 @@ export type Database = {
         Row: {
           assignee: string | null
           companyId: string | null
-          content: Json | null
+          content: Json
           createdAt: string
           createdBy: string
           description: string | null
@@ -19408,7 +19408,7 @@ export type Database = {
         Insert: {
           assignee?: string | null
           companyId?: string | null
-          content?: Json | null
+          content?: Json
           createdAt?: string
           createdBy: string
           description?: string | null
@@ -19423,7 +19423,7 @@ export type Database = {
         Update: {
           assignee?: string | null
           companyId?: string | null
-          content?: Json | null
+          content?: Json
           createdAt?: string
           createdBy?: string
           description?: string | null
@@ -34427,6 +34427,7 @@ export type Database = {
       user: {
         Row: {
           about: string
+          acknowledgedITAR: boolean
           acknowledgedUniversity: boolean
           active: boolean | null
           admin: boolean | null
@@ -34442,6 +34443,7 @@ export type Database = {
         }
         Insert: {
           about?: string
+          acknowledgedITAR?: boolean
           acknowledgedUniversity?: boolean
           active?: boolean | null
           admin?: boolean | null
@@ -34457,6 +34459,7 @@ export type Database = {
         }
         Update: {
           about?: string
+          acknowledgedITAR?: boolean
           acknowledgedUniversity?: boolean
           active?: boolean | null
           admin?: boolean | null

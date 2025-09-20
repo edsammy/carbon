@@ -10,11 +10,12 @@ import {
   LuLogOut,
   LuMapPin,
   LuMoon,
+  LuShieldCheck,
   LuSun,
   LuUser,
 } from "react-icons/lu";
 
-import { type Company } from "@carbon/auth";
+import { ITAR_ENVIRONMENT, type Company } from "@carbon/auth";
 import {
   Avatar,
   cn,
@@ -42,9 +43,10 @@ import {
   SidebarMenuItem,
   SidebarRail,
   Switch,
+  useDisclosure,
   useSidebar,
 } from "@carbon/react";
-import { useMode } from "@carbon/remix";
+import { ItarDisclosure, useMode } from "@carbon/remix";
 import { Form, Link, useFetcher, useLocation } from "@remix-run/react";
 import { useRef, type ComponentProps } from "react";
 import { BsFillHexagonFill } from "react-icons/bs";
@@ -256,6 +258,9 @@ export function UserNav({
 
   const optimisticLocation =
     (fetcher.formData?.get("location") as string | undefined) ?? location;
+
+  const itarDisclosure = useDisclosure();
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -292,6 +297,7 @@ export function UserNav({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <DropdownMenuIcon icon={<LuBuilding />} />
@@ -392,6 +398,12 @@ export function UserNav({
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            {ITAR_ENVIRONMENT && (
+              <DropdownMenuItem onClick={itarDisclosure.onOpen}>
+                <DropdownMenuIcon icon={<LuShieldCheck />} />
+                About
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <Form method="post" action={path.to.logout}>
                 <button type="submit" className="w-full flex items-center">
@@ -403,6 +415,7 @@ export function UserNav({
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+      {ITAR_ENVIRONMENT && <ItarDisclosure disclosure={itarDisclosure} />}
     </SidebarMenu>
   );
 }

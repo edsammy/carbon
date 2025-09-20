@@ -1,18 +1,28 @@
-import { CarbonEdition, CarbonProvider, getCarbon } from "@carbon/auth";
+import {
+  CarbonEdition,
+  CarbonProvider,
+  getCarbon,
+  ITAR_ENVIRONMENT,
+} from "@carbon/auth";
 import {
   destroyAuthSession,
   requireAuthSession,
 } from "@carbon/auth/session.server";
-import { Button, IconButton, TooltipProvider, useMount } from "@carbon/react";
+import { TooltipProvider, useMount } from "@carbon/react";
+import {
+  AcademyBanner,
+  ItarPopup,
+  useKeyboardWedgeNavigation,
+  useNProgress,
+} from "@carbon/remix";
 import { getStripeCustomerByCompanyId } from "@carbon/stripe/stripe.server";
 import { Edition } from "@carbon/utils";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
-import { Outlet, useFetcher, useLoaderData } from "@remix-run/react";
+import { Outlet, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
 
 import posthog from "posthog-js";
-import { LuArrowUpRight, LuX } from "react-icons/lu";
 import { RealtimeDataProvider } from "~/components";
 import { PrimaryNavigation, Topbar } from "~/components/Layout";
 import {
@@ -29,7 +39,6 @@ import {
 } from "~/modules/users/users.server";
 import { path } from "~/utils/path";
 
-import { useKeyboardWedgeNavigation, useNProgress } from "@carbon/remix";
 import { getSavedViews } from "~/modules/shared/shared.service";
 
 export const config = {
@@ -143,59 +152,32 @@ export default function AuthenticatedRoute() {
 
   return (
     <div className="h-[100dvh] flex flex-col">
-      <CarbonProvider session={session}>
-        <RealtimeDataProvider>
-          <TooltipProvider>
-            <div className="flex flex-col h-screen">
-              {user?.acknowledgedUniversity ? null : <AcademyBanner />}
-              <Topbar />
-              <div className="flex flex-1 h-[calc(100vh-49px)] relative">
-                <PrimaryNavigation />
-                <main className="flex-1 overflow-y-auto scrollbar-hide border-l border-t bg-muted sm:rounded-tl-2xl relative z-10">
-                  <Outlet />
-                </main>
+      {user?.acknowledgedITAR === false && ITAR_ENVIRONMENT ? (
+        <ItarPopup
+          acknowledgeAction={path.to.acknowledge}
+          logoutAction={path.to.logout}
+        />
+      ) : (
+        <CarbonProvider session={session}>
+          <RealtimeDataProvider>
+            <TooltipProvider>
+              <div className="flex flex-col h-screen">
+                {user?.acknowledgedUniversity ? null : (
+                  <AcademyBanner acknowledgeAction={path.to.acknowledge} />
+                )}
+
+                <Topbar />
+                <div className="flex flex-1 h-[calc(100vh-49px)] relative">
+                  <PrimaryNavigation />
+                  <main className="flex-1 overflow-y-auto scrollbar-hide border-l border-t bg-muted sm:rounded-tl-2xl relative z-10">
+                    <Outlet />
+                  </main>
+                </div>
               </div>
-            </div>
-          </TooltipProvider>
-        </RealtimeDataProvider>
-      </CarbonProvider>
-    </div>
-  );
-}
-
-function AcademyBanner() {
-  const fetcher = useFetcher<{}>();
-
-  return (
-    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-between gap-10  bg-[#212278] dark:bg-[#2f31ae] text-white py-1 px-2 rounded-lg z-50 shadow-md">
-      <div />
-      <fetcher.Form method="post" action={path.to.acknowledge}>
-        <input type="hidden" name="intent" value="academy" />
-        <input
-          type="hidden"
-          name="redirectTo"
-          value="https://learn.carbon.ms"
-        />
-        <Button
-          type="submit"
-          variant="ghost"
-          size="lg"
-          className="hover:bg-transparent text-white hover:text-white"
-          rightIcon={<LuArrowUpRight />}
-        >
-          <span>Introducing Carbon Academy</span>
-        </Button>
-      </fetcher.Form>
-      <fetcher.Form method="post" action={path.to.acknowledge}>
-        <input type="hidden" name="intent" value="academy" />
-        <IconButton
-          type="submit"
-          aria-label="Close"
-          variant="ghost"
-          className="text-white dark:text-white hover:text-white"
-          icon={<LuX />}
-        />
-      </fetcher.Form>
+            </TooltipProvider>
+          </RealtimeDataProvider>
+        </CarbonProvider>
+      )}
     </div>
   );
 }
