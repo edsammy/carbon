@@ -28,3 +28,4 @@ packages/database/.env
 packages/database/supabase/seed.sql
 
 .vercel
+.env*.local

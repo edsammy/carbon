@@ -425,6 +425,9 @@ export const path = {
       ),
     customerPayment: (id: string) =>
       generatePath(`${x}/customer/${id}/payments`),
+    customerPortals: `${x}/sales/customer-portals`,
+    customerPortal: (id: string) =>
+      generatePath(`${x}/sales/customer-portals/${id}`),
     customerShipping: (id: string) =>
       generatePath(`${x}/customer/${id}/shipping`),
     customerStatus: (id: string) =>
@@ -985,9 +988,6 @@ export const path = {
     noQuoteReasons: `${x}/sales/no-quote-reasons`,
     noQuoteReason: (id: string) =>
       generatePath(`${x}/sales/no-quote-reasons/${id}`),
-    customerPortals: `${x}/sales/customer-portals`,
-    customerPortal: (id: string) =>
-      generatePath(`${x}/sales/customer-portals/${id}`),
     notificationSettings: `${x}/account/notifications`,
     part: (id: string) => generatePath(`${x}/part/${id}`),
     partCosting: (id: string) => generatePath(`${x}/part/${id}/view/costing`),
