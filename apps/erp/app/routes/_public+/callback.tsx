@@ -52,6 +52,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const { refreshToken, userId } = validation.data;
   const serviceRole = getCarbonServiceRole();
+
   const companies = await serviceRole
     .from("userToCompany")
     .select("companyId")
