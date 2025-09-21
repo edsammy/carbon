@@ -14,6 +14,7 @@ export type Customer = {
   slug: string;
   active: boolean;
   seeded: boolean;
+  connection_string: string | null;
   database_url: string | null;
   project_id: string | null;
   decrypted_access_token: string | null;
@@ -45,6 +46,7 @@ async function migrate(): Promise<void> {
     try {
       console.log(`✅ 🥚 Migrating ${customer.id}`);
       const {
+        connection_string,
         database_url,
         decrypted_database_password,
         decrypted_service_role_key,
@@ -64,7 +66,7 @@ async function migrate(): Promise<void> {
             decrypted_access_token === null
               ? SUPABASE_ACCESS_TOKEN
               : decrypted_access_token,
-          SUPABASE_URL: database_url,
+          SUPABASE_URL: database_url ?? undefined,
           SUPABASE_DB_PASSWORD: decrypted_database_password ?? undefined,
           SUPABASE_PROJECT_ID: project_id ?? undefined,
           SUPABASE_SERVICE_ROLE_KEY: decrypted_service_role_key ?? undefined,
@@ -77,21 +79,20 @@ async function migrate(): Promise<void> {
 
       if (project_id) {
         await $$`supabase link`;
+      } else {
+        await $$`supabase link --project-ref default`;
       }
 
       console.log(`✅ 🐣 Starting migrations for ${customer.id}`);
-      if (database_url && database_url.startsWith("postgresql://")) {
-        await $$`supabase db push --db-url ${database_url} --include-all`;
+
+      if (connection_string && connection_string.startsWith("postgresql://")) {
+        await $$`supabase db push --db-url ${connection_string} --include-all`;
       } else {
         await $$`supabase db push --include-all`;
       }
 
       console.log(`✅ 🐣 Starting deployments for ${customer.id}`);
-      if (database_url && database_url.startsWith("postgresql://")) {
-        await $$`supabase functions deploy --db-url ${database_url}`;
-      } else {
-        await $$`supabase functions deploy`;
-      }
+      await $$`supabase functions deploy`;
 
       if (!customer.seeded) {
         try {
