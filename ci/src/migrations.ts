@@ -75,17 +75,23 @@ async function migrate(): Promise<void> {
         cwd: "supabase",
       });
 
-      let dbArg = "";
       if (project_id) {
         await $$`supabase link`;
-      } else if (database_url.startsWith("postgresql://")) {
-        dbArg = `--db-url ${database_url}`;
       }
 
       console.log(`✅ 🐣 Starting migrations for ${customer.id}`);
-      await $$`supabase db push ${dbArg} --include-all`;
+      if (database_url && database_url.startsWith("postgresql://")) {
+        await $$`supabase db push --db-url ${database_url} --include-all`;
+      } else {
+        await $$`supabase db push --include-all`;
+      }
+
       console.log(`✅ 🐣 Starting deployments for ${customer.id}`);
-      await $$`supabase functions deploy ${dbArg}`;
+      if (database_url && database_url.startsWith("postgresql://")) {
+        await $$`supabase functions deploy --db-url ${database_url}`;
+      } else {
+        await $$`supabase functions deploy`;
+      }
 
       if (!customer.seeded) {
         try {
