@@ -216,7 +216,7 @@ export function getAppUrl() {
 export function getMESUrl() {
   if (VERCEL_ENV === "production" || NODE_ENV === "production") {
     return ITAR_ENVIRONMENT
-      ? "https://itar.mes.carbon.ms"
+      ? "https://mes.itar.carbon.ms"
       : "https://mes.carbon.ms";
   }
 
