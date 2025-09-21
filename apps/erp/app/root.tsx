@@ -59,6 +59,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     NOVU_APPLICATION_ID,
+    VERCEL_ENV,
+    VERCEL_URL,
   } = getBrowserEnv();
 
   const sessionFlash = await getSessionFlash(request);
@@ -74,6 +76,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         SUPABASE_URL,
         SUPABASE_ANON_KEY,
         NOVU_APPLICATION_ID,
+        VERCEL_ENV,
+        VERCEL_URL,
       },
       mode: getMode(request),
       theme: getTheme(request),
