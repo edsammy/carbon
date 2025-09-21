@@ -232,12 +232,10 @@ FOR DELETE USING (
 );
 
 
--- Rename procedureAttribute to procedureStep
-ALTER TABLE "procedureAttribute" RENAME TO "procedureStep";
+-- Skip renaming procedureAttribute to procedureStep since it doesn't exist
+-- procedureStep table already exists with correct name
 
--- procedureStep table doesn't need renaming (already correct name)
-
--- Update RLS policies for the renamed table
+-- Update RLS policies for the existing procedureStep table
 DROP POLICY IF EXISTS "SELECT" ON "public"."procedureStep";
 DROP POLICY IF EXISTS "INSERT" ON "public"."procedureStep";
 DROP POLICY IF EXISTS "UPDATE" ON "public"."procedureStep";
