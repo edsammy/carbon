@@ -89,10 +89,9 @@ async function migrate(): Promise<void> {
         await $$`supabase db push --db-url ${connection_string} --include-all`;
       } else {
         await $$`supabase db push --include-all`;
+        console.log(`✅ 🐣 Starting deployments for ${customer.id}`);
+        await $$`supabase functions deploy`;
       }
-
-      console.log(`✅ 🐣 Starting deployments for ${customer.id}`);
-      await $$`supabase functions deploy`;
 
       if (!customer.seeded) {
         try {
