@@ -51,6 +51,7 @@ async function migrate(): Promise<void> {
         decrypted_database_password,
         decrypted_service_role_key,
         project_id,
+        decrypted_anon_key,
         decrypted_access_token,
       } = customer;
       if (!database_url) {
@@ -69,6 +70,7 @@ async function migrate(): Promise<void> {
           SUPABASE_URL: database_url ?? undefined,
           SUPABASE_DB_PASSWORD: decrypted_database_password ?? undefined,
           SUPABASE_PROJECT_ID: project_id ?? undefined,
+          SUPABASE_ANON_KEY: decrypted_anon_key ?? undefined,
           SUPABASE_SERVICE_ROLE_KEY: decrypted_service_role_key ?? undefined,
           SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID,
           SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET,
