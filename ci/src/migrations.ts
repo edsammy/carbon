@@ -79,8 +79,6 @@ async function migrate(): Promise<void> {
 
       if (project_id) {
         await $$`supabase link`;
-      } else {
-        await $$`supabase link --project-ref default`;
       }
 
       console.log(`✅ 🐣 Starting migrations for ${customer.id}`);
