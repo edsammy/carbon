@@ -265,7 +265,7 @@ const PurchaseOrderLineForm = ({
       <ModalCardProvider type={type}>
         <ModalCard
           onClose={onClose}
-          defaultCollapsed={isEditing}
+          defaultCollapsed={false}
           isCollapsible={isEditing}
         >
           <ModalCardContent size="xxlarge">

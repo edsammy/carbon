@@ -251,7 +251,7 @@ const PurchaseInvoiceLineForm = ({
     <ModalCardProvider type={type}>
       <ModalCard
         onClose={onClose}
-        defaultCollapsed={isEditing}
+        defaultCollapsed={false}
         isCollapsible={isEditing}
       >
         <ModalCardContent size="xxlarge">

@@ -25,7 +25,6 @@ import { useDropzone } from "react-dropzone";
 import { LuCloudUpload } from "react-icons/lu";
 import type { z } from "zod";
 import {
-  Boolean,
   CustomFormFields,
   DefaultMethodType,
   Hidden,
@@ -291,7 +290,6 @@ const ToolForm = ({ initialValues, type = "card", onClose }: ToolFormProps) => {
                     isReadOnly={replenishmentSystem === "Make"}
                   />
                 )}
-                <Boolean name="active" label="Active" />
 
                 <CustomFormFields table="tool" tags={initialValues.tags} />
               </div>

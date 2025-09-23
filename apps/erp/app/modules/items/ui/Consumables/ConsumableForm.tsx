@@ -16,7 +16,6 @@ import type { PostgrestResponse } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import {
-  Boolean,
   CustomFormFields,
   DefaultMethodType,
   Hidden,
@@ -168,7 +167,6 @@ const ConsumableForm = ({
                     minValue={0}
                   />
                 )}
-                <Boolean name="active" label="Active" />
 
                 <CustomFormFields
                   table="consumable"

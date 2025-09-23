@@ -265,7 +265,7 @@ const SalesInvoiceLineForm = ({
       <ModalCard
         onClose={onClose}
         isCollapsible={isEditing}
-        defaultCollapsed={isEditing}
+        defaultCollapsed={false}
       >
         <ModalCardContent size="xxlarge">
           <ValidatedForm

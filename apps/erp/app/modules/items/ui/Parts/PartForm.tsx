@@ -26,7 +26,6 @@ import { LuCloudUpload } from "react-icons/lu";
 import type { z } from "zod";
 import { TrackingTypeIcon } from "~/components";
 import {
-  Boolean,
   CustomFormFields,
   DefaultMethodType,
   Hidden,
@@ -298,7 +297,7 @@ const PartForm = ({ initialValues, type = "card", onClose }: PartFormProps) => {
                 {!isEditing && replenishmentSystem !== "Buy" && (
                   <Number name="lotSize" label="Batch Size" minValue={0} />
                 )}
-                <Boolean name="active" label="Active" />
+
                 <CustomFormFields table="part" tags={initialValues.tags} />
               </div>
               <VStack spacing={2} className="mt-4 w-full">

@@ -183,7 +183,7 @@ const SalesRFQLineForm = ({
         <ModalCard
           onClose={onClose}
           isCollapsible={isEditing}
-          defaultCollapsed={isEditing}
+          defaultCollapsed={false}
         >
           <ModalCardContent>
             <ValidatedForm
