@@ -11,6 +11,15 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment:
+          - name: "production"
+            access_token: TRIGGER_ACCESS_TOKEN
+            project_id: TRIGGER_PROJECT_ID
+          - name: "govcloud"
+            access_token: TRIGGER_ACCESS_TOKEN
+            project_id: GOVCLOUD_TRIGGER_PROJECT_ID
 
     steps:
       - uses: actions/checkout@v2
@@ -26,10 +35,10 @@ jobs:
       - name: Build packages
         run: npm run build:packages
 
-      - name: 🚀 Deploy Trigger.dev
+      - name: 🚀 Deploy Trigger.dev (${{ matrix.environment.name }})
         env:
-          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-          TRIGGER_PROJECT_ID: ${{ secrets.TRIGGER_PROJECT_ID }}
+          TRIGGER_ACCESS_TOKEN: ${{ secrets[matrix.environment.access_token] }}
+          TRIGGER_PROJECT_ID: ${{ secrets[matrix.environment.project_id] }}
         run: |
           cd packages/jobs
           npx trigger.dev@3.3.12 deploy
