@@ -129,6 +129,12 @@ export async function action({ request }: ActionFunctionArgs): FormActionData {
       );
     }
     return json({ success: true, mode: "login" });
+  } else if (CarbonEdition === Edition.Enterprise) {
+    // Enterprise edition does not support signup
+    return json(
+      { success: false, message: "Invalid email/password combination" },
+      await flash(request, error(null, "Failed to sign in"))
+    );
   } else {
     // User doesn't exist, send verification code for signup
     const verificationSent = await sendVerificationCode(email);
@@ -253,7 +259,7 @@ export default function LoginRoute() {
               <Submit
                 isDisabled={
                   fetcher.state !== "idle" ||
-                  (CarbonEdition === Edition.Cloud && !turnstileToken)
+                  (!!CLOUDFLARE_TURNSTILE_SITE_KEY && !turnstileToken)
                 }
                 isLoading={fetcher.state === "submitting"}
                 size="lg"
@@ -262,20 +268,19 @@ export default function LoginRoute() {
               >
                 Continue with Email
               </Submit>
-              {CarbonEdition === Edition.Cloud &&
-                !!CLOUDFLARE_TURNSTILE_SITE_KEY && (
-                  <div className="w-full flex justify-center">
-                    <Turnstile
-                      siteKey={CLOUDFLARE_TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                      onError={() => setTurnstileToken("")}
-                      onExpire={() => setTurnstileToken("")}
-                      options={{
-                        theme: theme === "dark" ? "dark" : "light",
-                      }}
-                    />
-                  </div>
-                )}
+              {!!CLOUDFLARE_TURNSTILE_SITE_KEY && (
+                <div className="w-full flex justify-center">
+                  <Turnstile
+                    siteKey={CLOUDFLARE_TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onError={() => setTurnstileToken("")}
+                    onExpire={() => setTurnstileToken("")}
+                    options={{
+                      theme: theme === "dark" ? "dark" : "light",
+                    }}
+                  />
+                </div>
+              )}
               <Separator />
               <Button
                 type="button"
