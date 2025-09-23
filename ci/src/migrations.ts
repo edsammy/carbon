@@ -8,7 +8,7 @@ import {
   SUPABASE_AUTH_EXTERNAL_GOOGLE_REDIRECT_URI,
 } from "./env";
 
-export type Customer = {
+export type Workspace = {
   id: number;
   name: string;
   slug: string;
@@ -17,61 +17,58 @@ export type Customer = {
   connection_string: string | null;
   database_url: string | null;
   project_id: string | null;
-  decrypted_access_token: string | null;
-  decrypted_anon_key: string | null;
-  decrypted_database_password: string | null;
-  decrypted_jwt_key: string | null;
-  decrypted_service_role_key: string | null;
-  latest_migration: string | null;
+  access_token: string | null;
+  anon_key: string | null;
+  database_password: string | null;
+  jwt_key: string | null;
+  service_role_key: string | null;
 };
 
 async function migrate(): Promise<void> {
   console.log("✅ 🌱 Starting migrations");
 
-  const { data: customers, error } = await client
-    .from("decrypted_customer")
+  const { data: workspaces, error } = await client
+    .from("workspaces")
     .select("*");
 
   if (error) {
-    console.error("🔴 🍳 Failed to fetch customers", error);
+    console.error("🔴 🍳 Failed to fetch workspaces", error);
     return;
   }
 
-  console.log("✅ 🛩️ Successfully retreived customers");
+  console.log("✅ 🛩️ Successfully retreived workspaces");
 
   console.log("👯‍♀️ Copying supabase folder");
   await $`cp -r ../packages/database/supabase .`;
 
-  for await (const customer of customers as Customer[]) {
+  for await (const workspace of workspaces as Workspace[]) {
     try {
-      console.log(`✅ 🥚 Migrating ${customer.id}`);
+      console.log(`✅ 🥚 Migrating ${workspace.id}`);
       const {
         connection_string,
         database_url,
-        decrypted_database_password,
-        decrypted_service_role_key,
+        database_password,
+        service_role_key,
         project_id,
-        decrypted_anon_key,
-        decrypted_access_token,
-      } = customer;
+        anon_key,
+        access_token,
+      } = workspace;
       if (!database_url) {
-        console.log(`🔴🍳 Missing database url for ${customer.id}`);
+        console.log(`🔴🍳 Missing database url for ${workspace.id}`);
         continue;
       }
 
-      console.log(`✅ 🔑 Setting up environment for ${customer.id}`);
+      console.log(`✅ 🔑 Setting up environment for ${workspace.id}`);
 
       let $$ = $({
         env: {
           SUPABASE_ACCESS_TOKEN:
-            decrypted_access_token === null
-              ? SUPABASE_ACCESS_TOKEN
-              : decrypted_access_token,
+            access_token === null ? SUPABASE_ACCESS_TOKEN : access_token,
           SUPABASE_URL: database_url ?? undefined,
-          SUPABASE_DB_PASSWORD: decrypted_database_password ?? undefined,
+          SUPABASE_DB_PASSWORD: database_password ?? undefined,
           SUPABASE_PROJECT_ID: project_id ?? undefined,
-          SUPABASE_ANON_KEY: decrypted_anon_key ?? undefined,
-          SUPABASE_SERVICE_ROLE_KEY: decrypted_service_role_key ?? undefined,
+          SUPABASE_ANON_KEY: anon_key ?? undefined,
+          SUPABASE_SERVICE_ROLE_KEY: service_role_key ?? undefined,
           SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID,
           SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET,
           SUPABASE_AUTH_EXTERNAL_GOOGLE_REDIRECT_URI,
@@ -83,40 +80,40 @@ async function migrate(): Promise<void> {
         await $$`supabase link`;
       }
 
-      console.log(`✅ 🐣 Starting migrations for ${customer.id}`);
+      console.log(`✅ 🐣 Starting migrations for ${workspace.id}`);
 
       if (connection_string && connection_string.startsWith("postgresql://")) {
         await $$`supabase db push --db-url ${connection_string} --include-all`;
       } else {
         await $$`supabase db push --include-all`;
-        console.log(`✅ 🐣 Starting deployments for ${customer.id}`);
+        console.log(`✅ 🐣 Starting deployments for ${workspace.id}`);
         await $$`supabase functions deploy`;
       }
 
-      if (!customer.seeded) {
+      if (!workspace.seeded) {
         try {
-          console.log(`✅ 🌱 Seeding ${customer.id}`);
+          console.log(`✅ 🌱 Seeding ${workspace.id}`);
           await $$`tsx ../../packages/database/src/seed.ts`;
           const { error } = await client
-            .from("customer")
+            .from("workspace")
             .update({ seeded: true })
-            .eq("id", customer.id);
+            .eq("id", workspace.id);
 
           if (error) {
             throw new Error(
-              `🔴 🍳 Failed to mark ${customer.id} as seeded: ${error.message}`
+              `🔴 🍳 Failed to mark ${workspace.id} as seeded: ${error.message}`
             );
           }
 
           // TODO: run the seed.sql file
         } catch (e) {
-          console.error(`🔴 🍳 Failed to seed ${customer.id}`, e);
+          console.error(`🔴 🍳 Failed to seed ${workspace.id}`, e);
         }
       }
 
-      console.log(`✅ 🐓 Successfully migrated ${customer.id}`);
+      console.log(`✅ 🐓 Successfully migrated ${workspace.id}`);
     } catch (error) {
-      console.error(`🔴 🍳 Failed to migrate ${customer.id}`, error);
+      console.error(`🔴 🍳 Failed to migrate ${workspace.id}`, error);
     }
   }
 }
