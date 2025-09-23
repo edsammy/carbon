@@ -36,7 +36,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   let contentJSON;
   try {
-    contentJSON = content ? JSON.parse(content) : undefined;
+    contentJSON = content ? JSON.parse(content) : {};
   } catch (e) {
     return json(
       {},
