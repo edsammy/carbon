@@ -1,4 +1,4 @@
-import { ITAR_ENVIRONMENT, SUPABASE_URL } from "@carbon/auth";
+import { CONTROLLED_ENVIRONMENT, SUPABASE_URL } from "@carbon/auth";
 import { Button, Heading, VStack } from "@carbon/react";
 import { useNavigate, useSearchParams } from "@remix-run/react";
 
@@ -20,7 +20,7 @@ export default function ConfirmMagicLink() {
     <>
       <div className="flex justify-center mb-4">
         <img
-          src={ITAR_ENVIRONMENT ? "/flag.png" : "/carbon-logo-mark.svg"}
+          src={CONTROLLED_ENVIRONMENT ? "/flag.png" : "/carbon-logo-mark.svg"}
           alt="Carbon Logo"
           className="w-36"
         />

@@ -5,7 +5,7 @@ declare global {
     env: {
       CARBON_EDITION: string;
       CLOUDFLARE_TURNSTILE_SITE_KEY: string;
-      ITAR_ENVIRONMENT: string;
+      CONTROLLED_ENVIRONMENT: string;
       POSTHOG_API_HOST: string;
       POSTHOG_PROJECT_PUBLIC_KEY: string;
       SUPABASE_URL: string;
@@ -107,12 +107,12 @@ export const EXCHANGE_RATES_API_KEY = getEnv("EXCHANGE_RATES_API_KEY", {
   isSecret: true,
 });
 
-const itarEnvironment = getEnv("ITAR_ENVIRONMENT", {
+const itarEnvironment = getEnv("CONTROLLED_ENVIRONMENT", {
   isRequired: false,
   isSecret: false,
 });
 
-export const ITAR_ENVIRONMENT = parseBoolean(itarEnvironment, false);
+export const CONTROLLED_ENVIRONMENT = parseBoolean(itarEnvironment, false);
 
 export const NOVU_APPLICATION_ID = getEnv("NOVU_APPLICATION_ID", {
   isRequired: false,
@@ -201,7 +201,7 @@ export const CLOUDFLARE_TURNSTILE_SECRET_KEY = getEnv(
 
 export function getAppUrl() {
   if (VERCEL_ENV === "production" || NODE_ENV === "production") {
-    return ITAR_ENVIRONMENT
+    return CONTROLLED_ENVIRONMENT
       ? "https://itar.carbon.ms"
       : "https://app.carbon.ms";
   }
@@ -215,7 +215,7 @@ export function getAppUrl() {
 
 export function getMESUrl() {
   if (VERCEL_ENV === "production" || NODE_ENV === "production") {
-    return ITAR_ENVIRONMENT
+    return CONTROLLED_ENVIRONMENT
       ? "https://mes.itar.carbon.ms"
       : "https://mes.carbon.ms";
   }
@@ -230,7 +230,7 @@ export function getMESUrl() {
 export function getBrowserEnv() {
   return {
     CARBON_EDITION,
-    ITAR_ENVIRONMENT,
+    CONTROLLED_ENVIRONMENT,
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     POSTHOG_API_HOST,

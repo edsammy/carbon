@@ -1,4 +1,4 @@
-import { ITAR_ENVIRONMENT } from "@carbon/auth";
+import { CONTROLLED_ENVIRONMENT } from "@carbon/auth";
 import { z } from "zod";
 import type { IntegrationConfig } from "../types";
 
@@ -6,7 +6,7 @@ export const Slack: IntegrationConfig = {
   name: "Slack",
   id: "slack",
   category: "Assistant",
-  active: ITAR_ENVIRONMENT === false,
+  active: CONTROLLED_ENVIRONMENT === false,
   logo: Logo,
   shortDescription: "Use the Carbon Assistant in your Slack workspace.",
   description:

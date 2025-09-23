@@ -1,10 +1,10 @@
 import {
   CarbonEdition,
   CarbonProvider,
+  CONTROLLED_ENVIRONMENT,
   getCarbon,
   getCompanies,
   getUser,
-  ITAR_ENVIRONMENT,
 } from "@carbon/auth";
 import {
   destroyAuthSession,
@@ -143,7 +143,7 @@ export default function AuthenticatedRoute() {
 
   return (
     <div className="h-screen w-screen overflow-y-auto md:overflow-hidden">
-      {user?.acknowledgedITAR === false && ITAR_ENVIRONMENT ? (
+      {user?.acknowledgedITAR === false && CONTROLLED_ENVIRONMENT ? (
         <ItarPopup
           acknowledgeAction={path.to.acknowledge}
           logoutAction={path.to.logout}

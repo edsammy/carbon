@@ -113,7 +113,17 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (intent === "billing-portal") {
     try {
-      const billingPortalUrl = await getBillingPortalRedirectUrl({ companyId });
+      const plans = await client
+        .from("plan")
+        .select("stripePriceId")
+        .eq("userBasedPricing", true);
+
+      const priceIds = plans.data?.map((plan) => plan.stripePriceId);
+
+      const billingPortalUrl = await getBillingPortalRedirectUrl({
+        companyId,
+        priceIds,
+      });
       return redirect(billingPortalUrl, 301);
     } catch (err) {
       console.error("Failed to get billing portal URL:", err);

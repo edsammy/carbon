@@ -266,8 +266,10 @@ export async function getCheckoutUrl({
 
 export async function getBillingPortalRedirectUrl({
   companyId,
+  priceIds,
 }: {
   companyId: string;
+  priceIds?: string[];
 }) {
   if (!stripe) {
     throw new Error("Stripe is not initialized");
@@ -285,6 +287,7 @@ export async function getBillingPortalRedirectUrl({
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: `${getAppUrl()}/x/settings/company`,
+    configuration: "",
   });
 
   if (!portalSession.url) {

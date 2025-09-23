@@ -15,7 +15,7 @@ import {
   LuUser,
 } from "react-icons/lu";
 
-import { ITAR_ENVIRONMENT, type Company } from "@carbon/auth";
+import { CONTROLLED_ENVIRONMENT, type Company } from "@carbon/auth";
 import {
   Avatar,
   cn,
@@ -398,7 +398,7 @@ export function UserNav({
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {ITAR_ENVIRONMENT && (
+            {CONTROLLED_ENVIRONMENT && (
               <DropdownMenuItem onClick={itarDisclosure.onOpen}>
                 <DropdownMenuIcon icon={<LuShieldCheck />} />
                 About
@@ -415,7 +415,7 @@ export function UserNav({
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
-      {ITAR_ENVIRONMENT && <ItarDisclosure disclosure={itarDisclosure} />}
+      {CONTROLLED_ENVIRONMENT && <ItarDisclosure disclosure={itarDisclosure} />}
     </SidebarMenu>
   );
 }

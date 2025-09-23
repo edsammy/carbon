@@ -2,8 +2,8 @@ import {
   assertIsPost,
   carbonClient,
   CarbonEdition,
+  CONTROLLED_ENVIRONMENT,
   error,
-  ITAR_ENVIRONMENT,
   magicLinkValidator,
 } from "@carbon/auth";
 import { sendMagicLink, verifyAuthSession } from "@carbon/auth/auth.server";
@@ -127,7 +127,7 @@ export default function LoginRoute() {
     <>
       <div className="flex justify-center mb-4">
         <img
-          src={ITAR_ENVIRONMENT ? "/flag.png" : "/carbon-logo-mark.svg"}
+          src={CONTROLLED_ENVIRONMENT ? "/flag.png" : "/carbon-logo-mark.svg"}
           alt="Carbon Logo"
           className="w-36"
         />
@@ -187,7 +187,7 @@ export default function LoginRoute() {
         )}
       </div>
       <div className="flex flex-col gap-4 text-sm text-center text-balance text-muted-foreground w-[380px]">
-        {ITAR_ENVIRONMENT && <ItarLoginDisclaimer />}
+        {CONTROLLED_ENVIRONMENT && <ItarLoginDisclaimer />}
         {CarbonEdition === Edition.Cloud && (
           <p>
             By signing in, you agree to the{" "}

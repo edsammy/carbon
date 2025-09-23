@@ -1,4 +1,4 @@
-import { ITAR_ENVIRONMENT } from "@carbon/auth";
+import { CONTROLLED_ENVIRONMENT } from "@carbon/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -198,7 +198,7 @@ const AvatarMenu = () => {
           </DropdownMenuSub>
 
           <DropdownMenuSeparator />
-          {ITAR_ENVIRONMENT && (
+          {CONTROLLED_ENVIRONMENT && (
             <DropdownMenuItem onClick={itarDisclosure.onOpen}>
               <DropdownMenuIcon icon={<LuShieldCheck />} />
               About
@@ -214,7 +214,7 @@ const AvatarMenu = () => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {ITAR_ENVIRONMENT && <ItarDisclosure disclosure={itarDisclosure} />}
+      {CONTROLLED_ENVIRONMENT && <ItarDisclosure disclosure={itarDisclosure} />}
     </>
   );
 };

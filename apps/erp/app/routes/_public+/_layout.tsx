@@ -1,6 +1,6 @@
 import { Outlet } from "@remix-run/react";
 
-import { ITAR_ENVIRONMENT } from "@carbon/auth";
+import { CONTROLLED_ENVIRONMENT } from "@carbon/auth";
 import { cn, Heading } from "@carbon/react";
 
 export default function PublicRoute() {
@@ -12,7 +12,7 @@ export default function PublicRoute() {
           alt="Carbon Logo"
           className={cn(
             "max-w-[240px] mb-3 dark:hidden z-50",
-            ITAR_ENVIRONMENT && "grayscale"
+            CONTROLLED_ENVIRONMENT && "grayscale"
           )}
         />
         <img
@@ -20,7 +20,7 @@ export default function PublicRoute() {
           alt="Carbon Logo"
           className={cn(
             "max-w-[240px] mb-3 dark:block hidden z-50",
-            ITAR_ENVIRONMENT && "grayscale"
+            CONTROLLED_ENVIRONMENT && "grayscale"
           )}
         />
 

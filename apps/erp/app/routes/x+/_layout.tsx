@@ -1,8 +1,8 @@
 import {
   CarbonEdition,
   CarbonProvider,
+  CONTROLLED_ENVIRONMENT,
   getCarbon,
-  ITAR_ENVIRONMENT,
 } from "@carbon/auth";
 import {
   destroyAuthSession,
@@ -152,7 +152,7 @@ export default function AuthenticatedRoute() {
 
   return (
     <div className="h-[100dvh] flex flex-col">
-      {user?.acknowledgedITAR === false && ITAR_ENVIRONMENT ? (
+      {user?.acknowledgedITAR === false && CONTROLLED_ENVIRONMENT ? (
         <ItarPopup
           acknowledgeAction={path.to.acknowledge}
           logoutAction={path.to.logout}

@@ -1,4 +1,4 @@
-import { ITAR_ENVIRONMENT } from "@carbon/auth";
+import { CONTROLLED_ENVIRONMENT } from "@carbon/auth";
 import { HStack } from "@carbon/react";
 import { Agent } from "~/components/Agent/Agent.ee";
 import { usePermissions, useUser } from "~/hooks";
@@ -16,7 +16,7 @@ const Topbar = () => {
   const notificationsKey = `${user.id}:${user.company.id}`;
 
   const { isInternal } = useFlags();
-  const canAccessAgent = isInternal && !ITAR_ENVIRONMENT;
+  const canAccessAgent = isInternal && !CONTROLLED_ENVIRONMENT;
 
   return (
     <div className="h-[49px] grid grid-cols-[1fr_200px_1fr] bg-background text-foreground px-4 top-0 sticky z-10 items-center">
