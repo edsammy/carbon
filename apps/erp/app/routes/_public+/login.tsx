@@ -107,7 +107,6 @@ export async function action({ request }: ActionFunctionArgs): FormActionData {
     );
 
     const verifyData = await verifyResponse.json();
-
     if (!verifyData.success) {
       return json(
         error(null, "Bot verification failed. Please try again."),
