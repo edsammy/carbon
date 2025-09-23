@@ -15,6 +15,6 @@ dotenv.config();
 
     console.log({ data, error });
   } catch (err) {
-    console.error("Error reading file or uploading:", err);
+    console.error("Error:", err);
   }
 })();
