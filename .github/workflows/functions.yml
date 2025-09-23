@@ -33,7 +33,7 @@ jobs:
 
       - name: Deploy functions
         run: |
-          ssh $INSTANCE_USER@$INSTANCE_HOST 'bash /home/ubuntu/supabase/sync-carbon-functions.sh'
+          ssh $INSTANCE_USER@$INSTANCE_HOST 'sudo bash /home/ubuntu/supabase/sync-carbon-functions.sh'
 
       - name: Cleanup SSH key
         if: always()
