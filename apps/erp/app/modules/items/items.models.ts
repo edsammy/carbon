@@ -85,7 +85,6 @@ export const itemValidator = z.object({
     .string()
     .min(1, { message: "Unit of Measure is required" }),
   unitCost: zfd.numeric(z.number().nonnegative().optional()),
-  active: zfd.checkbox(),
 });
 
 export const configurationParameterGroupValidator = z.object({
