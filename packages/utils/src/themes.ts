@@ -287,7 +287,7 @@ export const themes = [
     name: "green",
     label: "Green",
     activeColor: {
-      light: "151 76.2% 36.3%",
+      light: "171 62% 41%",
       dark: "142.1 70.6% 45.3%",
     },
     cssVars: {
