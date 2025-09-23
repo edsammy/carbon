@@ -11,7 +11,7 @@ dotenv.config();
 
   try {
     // Upload to test bucket
-    const { data, error } = await supabase.functions.invoke("ping", {});
+    const { data, error } = await supabase.functions.invoke("seed-company", {});
 
     console.log({ data, error });
   } catch (err) {

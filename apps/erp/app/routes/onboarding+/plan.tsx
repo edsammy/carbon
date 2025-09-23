@@ -8,6 +8,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  cn,
   IconButton,
   VStack,
 } from "@carbon/react";
@@ -48,6 +49,20 @@ const PLANS = {
       //   <span>AI Agents</span>
       //   <Badge variant="outline">Beta</Badge>
       // </div>,
+    ],
+  },
+  GOVCLOUD: {
+    price: 90,
+    userMinimum: 5,
+    talkToSales: true,
+    description: "For US companies handling ITAR data",
+    features: [
+      "5 User Minimum",
+      "ERP, MES, QMS",
+      "Cloud-Hosted",
+      "API and Webhooks",
+      "Implementation Support",
+      "Unlimited Functional Support",
     ],
   },
 } as const;
@@ -139,7 +154,14 @@ export default function OnboardingPlan() {
         </div>
 
         <CardContent className="flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div
+            className={cn(
+              "grid gap-6",
+              plans.length === 1
+                ? "grid-cols-1 justify-center max-w-md mx-auto"
+                : "grid-cols-1 md:grid-cols-2"
+            )}
+          >
             {plans
               .sort((a, b) => {
                 const priceA = PLANS[a.id as keyof typeof PLANS]?.price || 0;
@@ -191,7 +213,9 @@ export default function OnboardingPlan() {
                               fetcher.formData?.get("planId") === plan.id
                             }
                           >
-                            Start {plan.stripeTrialPeriodDays} Day Free Trial
+                            {plan.stripeTrialPeriodDays > 0
+                              ? `Start ${plan.stripeTrialPeriodDays} Day Free Trial`
+                              : "Start Now"}
                           </Button>
                         </fetcher.Form>
 

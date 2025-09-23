@@ -1,6 +1,7 @@
 import { Outlet } from "@remix-run/react";
 
-import { Heading } from "@carbon/react";
+import { ITAR_ENVIRONMENT } from "@carbon/auth";
+import { cn, Heading } from "@carbon/react";
 
 export default function PublicRoute() {
   return (
@@ -9,12 +10,18 @@ export default function PublicRoute() {
         <img
           src="/carbon-word-light.svg"
           alt="Carbon Logo"
-          className="max-w-[240px] mb-3 dark:hidden z-50"
+          className={cn(
+            "max-w-[240px] mb-3 dark:hidden z-50",
+            ITAR_ENVIRONMENT && "grayscale"
+          )}
         />
         <img
           src="/carbon-word-dark.svg"
           alt="Carbon Logo"
-          className="max-w-[240px] mb-3 dark:block hidden z-50"
+          className={cn(
+            "max-w-[240px] mb-3 dark:block hidden z-50",
+            ITAR_ENVIRONMENT && "grayscale"
+          )}
         />
 
         <div className="relative z-20 mt-auto">
