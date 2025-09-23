@@ -1,5 +1,6 @@
 import type { Database } from "@carbon/database";
 import { isBrowser } from "@carbon/utils";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 
 import {
@@ -8,7 +9,10 @@ import {
   SUPABASE_URL,
 } from "../../config/env";
 
-const getCarbonClient = (supabaseKey: string, accessToken?: string) => {
+const getCarbonClient = (
+  supabaseKey: string,
+  accessToken?: string
+): SupabaseClient<Database, "public"> => {
   const global = accessToken
     ? {
         global: {
