@@ -12,10 +12,14 @@ import {
   LuWorkflow,
 } from "react-icons/lu";
 import { usePermissions } from "~/hooks";
+import { useFlags } from "~/hooks/useFlags";
 import type { AuthenticatedRouteGroup } from "~/types";
 import { path } from "~/utils/path";
 
-const settingsRoutes: AuthenticatedRouteGroup[] = [
+const settingsRoutes: AuthenticatedRouteGroup<{
+  requiresOwnership?: boolean;
+  requiresCloudEnvironment?: boolean;
+}>[] = [
   {
     name: "Company",
     routes: [
@@ -31,6 +35,7 @@ const settingsRoutes: AuthenticatedRouteGroup[] = [
         role: "employee",
         icon: <LuCreditCard />,
         requiresOwnership: true,
+        requiresCloudEnvironment: true,
       },
       {
         name: "Labels",
@@ -108,6 +113,7 @@ const settingsRoutes: AuthenticatedRouteGroup[] = [
 
 export default function useSettingsSubmodules() {
   const permissions = usePermissions();
+  const { isCloud } = useFlags();
 
   return {
     groups: settingsRoutes
@@ -133,6 +139,10 @@ export default function useSettingsSubmodules() {
 
           // Check ownership requirement
           if (route.requiresOwnership && !permissions.isOwner()) {
+            return false;
+          }
+
+          if (route.requiresCloudEnvironment && !isCloud) {
             return false;
           }
 

@@ -14,13 +14,12 @@ export type Authenticated<T> = T & {
   role?: Role;
   permission?: string;
   internal?: boolean;
-  requiresOwnership?: boolean;
 };
 
-export type AuthenticatedRouteGroup = {
+export type AuthenticatedRouteGroup<T> = T & {
   name: string;
   icon?: any;
-  routes: Authenticated<Route>[];
+  routes: Authenticated<Route & T>[];
 };
 
 export type FormActionData = Promise<

@@ -299,11 +299,13 @@ export default function LoginRoute() {
       </div>
 
       <div className="flex flex-col gap-4 text-sm text-center text-balance text-muted-foreground w-[380px]">
-        {mode !== "verify" && fetcher.data?.success !== true && (
-          <p>Login or create a new account</p>
-        )}
+        {mode !== "verify" &&
+          fetcher.data?.success !== true &&
+          CarbonEdition !== Edition.Enterprise && (
+            <p>Login or create a new account</p>
+          )}
         {CONTROLLED_ENVIRONMENT && <ItarLoginDisclaimer />}
-        {CarbonEdition === Edition.Cloud && (
+        {CarbonEdition !== Edition.Community && (
           <p>
             By signing in, you agree to the{" "}
             <a
