@@ -3,14 +3,14 @@ import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import type { JSONContent } from "@carbon/react";
 import { Input, toast, useDebounce } from "@carbon/react";
-import { generateHTML, Editor } from "@carbon/react/Editor";
-import { today, getLocalTimeZone } from "@internationalized/date";
+import { Editor, generateHTML } from "@carbon/react/Editor";
+import { getLocalTimeZone, today } from "@internationalized/date";
 import { Outlet, useFetcher, useLoaderData, useParams } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { defer, redirect } from "@vercel/remix";
 import { nanoid } from "nanoid";
 import { useState } from "react";
-import { ResizablePanels, PanelProvider } from "~/components/Layout/Panels";
+import { PanelProvider, ResizablePanels } from "~/components/Layout/Panels";
 import { usePermissions, useUser } from "~/hooks";
 import { getProcedure, getProcedureVersions } from "~/modules/production";
 import ProcedureExplorer from "~/modules/production/ui/Procedures/ProcedureExplorer";
@@ -115,7 +115,7 @@ function ProcedureEditor() {
       await carbon
         ?.from("procedure")
         .update({
-          content: content,
+          content: content ?? {},
           updatedAt: today(getLocalTimeZone()).toString(),
           updatedBy: userId,
         })
