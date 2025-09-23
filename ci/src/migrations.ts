@@ -95,7 +95,7 @@ async function migrate(): Promise<void> {
           console.log(`✅ 🌱 Seeding ${workspace.id}`);
           await $$`tsx ../../packages/database/src/seed.ts`;
           const { error } = await client
-            .from("workspace")
+            .from("workspaces")
             .update({ seeded: true })
             .eq("id", workspace.id);
 
