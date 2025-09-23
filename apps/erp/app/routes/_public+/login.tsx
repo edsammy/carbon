@@ -19,7 +19,6 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
-  cn,
   Heading,
   Separator,
   toast,
@@ -194,7 +193,7 @@ export default function LoginRoute() {
         <img
           src={ITAR_ENVIRONMENT ? "/flag.png" : "/carbon-logo-mark.svg"}
           alt="Carbon Logo"
-          className={cn(ITAR_ENVIRONMENT ? "w-48" : "w-36")}
+          className="w-36"
         />
       </div>
       <div className="rounded-lg md:bg-card md:border md:border-border md:shadow-lg p-8 w-[380px]">

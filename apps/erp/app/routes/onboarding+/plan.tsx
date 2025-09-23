@@ -158,7 +158,7 @@ export default function OnboardingPlan() {
             className={cn(
               "grid gap-6",
               plans.length === 1
-                ? "grid-cols-1 justify-center max-w-md mx-auto"
+                ? "grid-cols-1 justify-center"
                 : "grid-cols-1 md:grid-cols-2"
             )}
           >
