@@ -13,8 +13,7 @@ dotenv.config();
     // Upload to test bucket
     const { data, error } = await supabase.functions.invoke("ping", {});
 
-    console.log(data);
-    console.log(error);
+    console.log({ data, error });
   } catch (err) {
     console.error("Error reading file or uploading:", err);
   }
