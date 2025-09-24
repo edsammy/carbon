@@ -1865,6 +1865,22 @@ export async function createPartFromComponent(
   const name =
     component.part_name || component.part_number || `Part ${component.id}`;
 
+  // Check if part already exists by partId (readableId)
+  const existingItem = await carbon
+    .from("item")
+    .select("id")
+    .eq("companyId", companyId)
+    .eq("readableId", partId)
+    .eq("revision", revision)
+    .maybeSingle();
+
+  if (existingItem.data) {
+    return {
+      itemId: existingItem.data.id,
+      partId: partId,
+    };
+  }
+
   // Create the item first
   const itemInsert = await carbon
     .from("item")
