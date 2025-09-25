@@ -392,7 +392,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
       const poHeaders = new Headers({
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${shipment.data.shipmentId}.pdf"`,
+        "Content-Disposition": `inline; filename="${shipment.data.shipmentId}.pdf"`,
       });
       return new Response(poBody, { status: 200, headers: poHeaders });
     }

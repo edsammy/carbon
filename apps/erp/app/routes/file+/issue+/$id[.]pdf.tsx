@@ -103,7 +103,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   const headers = new Headers({
     "Content-Type": "application/pdf",
-    "Content-Disposition": `attachment; filename="${nonConformance.data.nonConformanceId}.pdf"`,
+    "Content-Disposition": `inline; filename="${nonConformance.data.nonConformanceId}.pdf"`,
   });
   return new Response(body, { status: 200, headers });
 }

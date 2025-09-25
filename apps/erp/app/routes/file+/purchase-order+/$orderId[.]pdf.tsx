@@ -92,7 +92,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   const headers = new Headers({
     "Content-Type": "application/pdf",
-    "Content-Disposition": `attachment; filename="${purchaseOrder.data.purchaseOrderId}.pdf"`,
+    "Content-Disposition": `inline; filename="${purchaseOrder.data.purchaseOrderId}.pdf"`,
   });
   return new Response(body, { status: 200, headers });
 }

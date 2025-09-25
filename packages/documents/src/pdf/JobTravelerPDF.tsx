@@ -106,7 +106,6 @@ const JobHeader = ({
   batchNumber,
   thumbnail,
 }: JobHeaderProps) => {
-  console.log(thumbnail);
   const getTargetInfo = () => {
     if (job.salesOrderId && job.salesOrderLineId) {
       return `Sales Order: ${job.salesOrderReadableId || "Make to Order"}`;
