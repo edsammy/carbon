@@ -85,7 +85,6 @@ async function deploy(): Promise<void> {
         database_url,
         database_password,
         slug,
-        project_id,
         access_token,
         anon_key,
         service_role_key,
@@ -155,11 +154,6 @@ async function deploy(): Promise<void> {
 
       if (!database_password) {
         console.log(`🔴🍳 Missing database password for ${workspace.id}`);
-        continue;
-      }
-
-      if (!project_id) {
-        console.log(`🔴🍳 Missing project id for ${workspace.id}`);
         continue;
       }
 
