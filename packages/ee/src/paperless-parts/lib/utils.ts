@@ -64,6 +64,7 @@ function isModelFile(filename: string): boolean {
   const extension = filename.toLowerCase().split(".").pop() || "";
   return supportedModelTypes.includes(extension);
 }
+
 const substanceSchema = z.object({
   substanceId: z
     .string()
@@ -806,29 +807,21 @@ async function uploadModelFile(
 /**
  * Upload file to Carbon storage and create document record using upsertDocument
  */
-async function uploadFileToOpportunityLine(
+async function uploadFileToItem(
   carbon: SupabaseClient<Database>,
   args: {
     file: File;
     companyId: string;
-    lineId: string;
-    sourceDocumentType: string;
-    sourceDocumentId: string;
+    itemId: string;
     createdBy: string;
   }
 ): Promise<boolean> {
-  const {
-    file,
-    companyId,
-    lineId,
-    sourceDocumentType,
-    sourceDocumentId,
-    createdBy,
-  } = args;
+  const { file, companyId, itemId, createdBy } = args;
+
+  if (file.name === "flat.step") return false;
 
   try {
-    // Create storage path similar to OpportunityLineDocuments
-    const storagePath = `${companyId}/opportunity-line/${lineId}/${stripSpecialCharacters(
+    const storagePath = `${companyId}/parts/${itemId}/${stripSpecialCharacters(
       file.name
     )}`;
 
@@ -937,15 +930,7 @@ async function processSupportingFiles(
     createdBy: string;
   }
 ): Promise<void> {
-  const {
-    supportingFiles,
-    companyId,
-    lineId,
-    itemId,
-    sourceDocumentType,
-    sourceDocumentId,
-    createdBy,
-  } = args;
+  const { supportingFiles, companyId, lineId, itemId, createdBy } = args;
 
   if (!supportingFiles?.length) {
     return;
@@ -954,6 +939,8 @@ async function processSupportingFiles(
   console.log(
     `Processing ${supportingFiles.length} supporting files for line ${lineId}`
   );
+
+  let hasModel = false;
 
   for (const supportingFile of supportingFiles) {
     if (!supportingFile.url || !supportingFile.filename) {
@@ -979,7 +966,7 @@ async function processSupportingFiles(
       }
 
       // Check if this is a CAD model file
-      if (isModelFile(file.name)) {
+      if (isModelFile(file.name) && !hasModel) {
         console.log(`Processing ${file.name} as CAD model`);
         const uploadSuccess = await uploadModelFile(carbon, {
           file,
@@ -995,14 +982,13 @@ async function processSupportingFiles(
           );
         }
       } else {
+        hasModel = true;
         console.log(`Processing ${file.name} as document`);
         // Upload as regular document
-        const uploadSuccess = await uploadFileToOpportunityLine(carbon, {
+        const uploadSuccess = await uploadFileToItem(carbon, {
           file,
           companyId,
-          lineId,
-          sourceDocumentType,
-          sourceDocumentId,
+          itemId,
           createdBy,
         });
 
