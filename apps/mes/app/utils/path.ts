@@ -69,7 +69,7 @@ export const path = {
     feedback: `${x}/feedback`,
     finish: `${x}/finish`,
 
-    healthcheck: "/healthcheck",
+    health: "/health",
     inventoryAdjustment: `${x}/adjustment`,
     issue: `${x}/issue`,
     issueTrackedEntity: `${x}/issue-tracked-entity`,

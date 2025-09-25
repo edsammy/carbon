@@ -18,7 +18,7 @@ export const path = {
     course: (moduleId: string, courseId: string) =>
       generatePath(`${course}/${moduleId}/${courseId}`),
     dashboard: `${ERP_URL}/x`,
-    healthcheck: "/healthcheck",
+    health: "/health",
     login: "/login",
     logout: "/logout",
     refreshSession: "/refresh-session",
