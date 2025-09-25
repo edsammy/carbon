@@ -280,11 +280,10 @@ async function deploy(): Promise<void> {
         },
         // Run SST from the repository root where sst.config.ts is located
         cwd: "..",
+        stdio: "pipe",
       });
 
-      console.log(
-        `🚀 🧰 Deploying infrastructure for ${workspace.id} with SST`
-      );
+      console.log(`🚀 🧰 Deploying apps for ${workspace.id} with SST`);
 
       await $$`npx --yes sst deploy --stage prod`;
 
