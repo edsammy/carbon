@@ -53,7 +53,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       .maybeSingle(),
     client
       .from("item")
-      .select("*")
+      .select("*, modelUpload(thumbnailPath)")
       .eq("id", jobMakeMethod.data.itemId ?? "")
       .single(),
   ]);
@@ -84,10 +84,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   // Get thumbnail if it exists
   let thumbnail: string | null = null;
-  if (item.data.thumbnailPath) {
+  if (item.data.thumbnailPath || item.data.modelUpload?.thumbnailPath) {
     thumbnail = await getBase64ImageFromSupabase(
       client,
-      item.data.thumbnailPath
+      item.data.thumbnailPath ?? item.data.modelUpload?.thumbnailPath ?? ""
     );
   }
 
