@@ -85,7 +85,6 @@ async function deploy(): Promise<void> {
         database_url,
         database_password,
         slug,
-        access_token,
         anon_key,
         service_role_key,
         carbon_edition,
@@ -154,11 +153,6 @@ async function deploy(): Promise<void> {
 
       if (!database_password) {
         console.log(`🔴🍳 Missing database password for ${workspace.id}`);
-        continue;
-      }
-
-      if (!access_token) {
-        console.log(`🔴🍳 Missing access token for ${workspace.id}`);
         continue;
       }
 
