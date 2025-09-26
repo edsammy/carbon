@@ -427,7 +427,23 @@ export const JobOperation = ({
         </header>
 
         <div className="hidden md:flex items-center justify-between px-4 lg:pl-6 py-2 h-[var(--header-height)] bg-background gap-4 max-w-[100vw] overflow-x-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-accent">
-          <Heading size="h4">{operation.jobReadableId}</Heading>
+          <HStack>
+            <Heading size="h4">{operation.jobReadableId}</Heading>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<LuQrCode />}
+              asChild
+            >
+              <a
+                href={path.to.file.jobTraveler(operation.jobMakeMethodId)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Traveler
+              </a>
+            </Button>
+          </HStack>
 
           <HStack className="justify-end items-center gap-2">
             {job.customer?.name && (

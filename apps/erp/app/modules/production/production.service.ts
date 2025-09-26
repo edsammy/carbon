@@ -320,12 +320,14 @@ export async function getJobsList(
 
 export async function getJobMakeMethodById(
   client: SupabaseClient<Database>,
-  jobMakeMethodId: string
+  jobMakeMethodId: string,
+  companyId: string
 ) {
   return client
     .from("jobMakeMethod")
     .select("*, ...item(itemType:type)")
     .eq("id", jobMakeMethodId)
+    .eq("companyId", companyId)
     .single();
 }
 

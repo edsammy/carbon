@@ -1,3 +1,4 @@
+import { getCarbonServiceRole } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { JobTravelerPDF } from "@carbon/documents/pdf";
 import type { JSONContent } from "@carbon/react";
@@ -16,22 +17,24 @@ import { getLocale } from "~/utils/request";
 export const config = { runtime: "nodejs" };
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { client } = await requirePermissions(request, {
-    view: "production",
-  });
+  const { companyId } = await requirePermissions(request, {});
 
   const { id } = params;
   if (!id) throw new Error("Could not find job make method id");
 
-  const jobMakeMethod = await getJobMakeMethodById(client, id);
+  const serviceRole = await getCarbonServiceRole();
+
+  // we add the companyId to make sure we belong to the company
+  // while allowing guys on the shop floor with no permissions to download the traveler
+  const jobMakeMethod = await getJobMakeMethodById(serviceRole, id, companyId);
   if (jobMakeMethod.error) {
     console.error(jobMakeMethod.error);
     throw new Error("Failed to load job make method");
   }
 
   const [company, job] = await Promise.all([
-    getCompany(client, jobMakeMethod.data?.companyId ?? ""),
-    getJob(client, jobMakeMethod.data?.jobId ?? ""),
+    getCompany(serviceRole, jobMakeMethod.data?.companyId ?? ""),
+    getJob(serviceRole, jobMakeMethod.data?.jobId ?? ""),
   ]);
 
   if (company.error) {
@@ -45,13 +48,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const [jobOperations, customer, item] = await Promise.all([
-    getJobOperationsByMethodId(client, id),
-    client
+    getJobOperationsByMethodId(serviceRole, id),
+    serviceRole
       .from("customer")
       .select("*")
       .eq("id", job.data.customerId ?? "")
       .maybeSingle(),
-    client
+    serviceRole
       .from("item")
       .select("*, modelUpload(thumbnailPath)")
       .eq("id", jobMakeMethod.data.itemId ?? "")
@@ -70,7 +73,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   let batchNumber: string | undefined;
   if (["Batch", "Serial"].includes(item.data.itemTrackingType)) {
-    const trackedEntity = await getTrackedEntityByJobId(client, job.data.id!);
+    const trackedEntity = await getTrackedEntityByJobId(
+      serviceRole,
+      job.data.id!
+    );
     if (trackedEntity.error) {
       console.error(trackedEntity.error);
       throw new Error("Failed to load tracked entity");
@@ -86,7 +92,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   let thumbnail: string | null = null;
   if (item.data.thumbnailPath || item.data.modelUpload?.thumbnailPath) {
     thumbnail = await getBase64ImageFromSupabase(
-      client,
+      serviceRole,
       item.data.thumbnailPath ?? item.data.modelUpload?.thumbnailPath ?? ""
     );
   }

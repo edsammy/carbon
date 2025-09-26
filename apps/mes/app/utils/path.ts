@@ -16,6 +16,7 @@ export const path = {
         generatePath(`${api}/serial-numbers?itemId=${itemId}`),
     },
     file: {
+      jobTraveler: (id: string) => `${getAppUrl()}${file}/traveler/${id}.pdf`,
       operationLabelsPdf: (
         id: string,
         {

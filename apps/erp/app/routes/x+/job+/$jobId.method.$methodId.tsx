@@ -46,7 +46,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     getJobMaterialsByMethodId(client, methodId),
     getJobOperationsByMethodId(client, methodId),
     getTagsList(client, companyId, "operation"),
-    getJobMakeMethodById(client, methodId),
+    getJobMakeMethodById(client, methodId, companyId),
   ]);
 
   if (materials.error) {
