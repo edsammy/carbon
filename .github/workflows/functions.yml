@@ -22,6 +22,8 @@ jobs:
       INSTANCE_SSH_KEY: ${{ secrets[matrix.environment.instance_ssh_key] }}
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
