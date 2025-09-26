@@ -43,7 +43,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   if (!methodId) throw new Error("Could not find methodId");
 
   const [makeMethod, materials, operations, tags] = await Promise.all([
-    getJobMakeMethodById(client, methodId),
+    getJobMakeMethodById(client, methodId, companyId),
     getJobMaterialsByMethodId(client, methodId),
     getJobOperationsByMethodId(client, methodId),
     getTagsList(client, companyId, "operation"),
