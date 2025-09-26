@@ -126,7 +126,7 @@ The monorepo follows the Turborepo convention of grouping packages into one of t
 
 ### Setup
 
-1. Clone the repo into a public GitHub repository (or fork https://github.com/crbnos/carbon/fork). If you plan to distribute the code, keep the source code public to comply with [AGPLv3](https://github.com/crbnos/carbon/blob/main/LICENSE). To clone in a private repository, [acquire a commercial license](https://carbon.ms/sales)
+1. Clone the repo into a GitHub repository (or fork https://github.com/crbnos/carbon/fork). If you plan to use the code in production, [acquire a commercial license](https://carbon.ms/sales) to comply with the BSL license.
 
    ```sh
    git clone https://github.com/crbnos/carbon.git
@@ -269,7 +269,7 @@ There are two ways to use the API:
 
 ### From another Codebase
 
-First, set up the necessary credentials in environment variables. For the example below: 
+First, set up the necessary credentials in environment variables. For the example below:
 
 1. Navigate to settings in the ERP to generate an API key. Set this in `CARBON_API_KEY`
 2. Get the Supabase URL to call (this is `SUPABASE_URL` in your `.env` if hosting locally, e.g. http://localhost:54321). Set this as `CARBON_API_URL`.
