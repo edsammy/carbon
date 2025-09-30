@@ -33,7 +33,7 @@ jobs:
 
       - name: Deploy functions
         run: |
-          ssh ubuntu@$INSTANCE_HOST 'sudo bash -c "cd /home/ubuntu/supabase && git config pull.rebase true && sudo bash sync-carbon-functions.sh"'
+          ssh ubuntu@$INSTANCE_HOST 'sudo bash /home/ubuntu/supabase/sync-carbon-functions.sh'
 
       - name: Cleanup SSH key
         if: always()

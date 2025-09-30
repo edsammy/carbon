@@ -6,7 +6,7 @@ COPY package.json package-lock.json turbo.json ./
 COPY apps ./apps
 COPY packages ./packages
 # Install all workspaces (dev deps are needed to build)
-RUN npm ci --workspaces
+RUN npm ci
 
 FROM deps AS build
 # Build only ERP and its deps
