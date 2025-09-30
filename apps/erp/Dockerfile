@@ -7,7 +7,7 @@ COPY apps ./apps
 COPY packages ./packages
 # Install all workspaces (dev deps are needed to build)
 # Force reinstall to fix optional deps issue in Alpine
-RUN npm ci --workspace && npm install @rollup/rollup-linux-x64-musl --no-save
+RUN npm ci && npm install @rollup/rollup-linux-x64-musl --no-save
 
 FROM deps AS build
 # Build only ERP and its deps
