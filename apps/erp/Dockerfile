@@ -1,4 +1,4 @@
-FROM node:20-alpine AS deps
+FROM node:20 AS deps
 WORKDIR /repo
 # Copy root manifests for workspaces
 COPY package.json package-lock.json turbo.json ./
@@ -6,14 +6,13 @@ COPY package.json package-lock.json turbo.json ./
 COPY apps ./apps
 COPY packages ./packages
 # Install all workspaces (dev deps are needed to build)
-# Force reinstall to fix optional deps issue in Alpine
-RUN npm ci && npm install @rollup/rollup-linux-x64-musl --no-save
+RUN npm ci
 
 FROM deps AS build
 # Build only ERP and its deps
 RUN npx turbo@1.13.2 run build --filter=./apps/erp
 
-FROM node:20-alpine
+FROM node:20
 WORKDIR /repo
 ENV NODE_ENV=production
 ENV PORT=3000
