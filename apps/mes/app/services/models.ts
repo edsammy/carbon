@@ -91,7 +91,6 @@ export const productionEventValidator = z.object({
     }),
   }),
   workCenterId: zfd.text(z.string().optional()),
-  hasActiveEvents: z.enum(["true", "false"]),
   trackedEntityId: zfd.text(z.string().optional()),
 });
 

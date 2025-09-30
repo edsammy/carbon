@@ -424,11 +424,7 @@ serve(async (req: Request) => {
               selectedLines[line.id].quantity === 0
           );
 
-          const originatedFromDigitalQuote =
-            digitalQuoteAcceptedBy && digitalQuoteAcceptedByEmail;
-          const salesOrderStatus = originatedFromDigitalQuote
-            ? "Needs Approval"
-            : "To Ship and Invoice";
+          const salesOrderStatus = "To Ship and Invoice";
 
           const salesOrder = await trx
             .insertInto("salesOrder")
@@ -457,9 +453,6 @@ serve(async (req: Request) => {
                 exchangeRate: quote.data.exchangeRate ?? 1,
                 exchangeRateUpdatedAt:
                   quote.data.exchangeRateUpdatedAt ?? new Date().toISOString(),
-                completedDate: originatedFromDigitalQuote
-                  ? new Date().toISOString()
-                  : null,
                 opportunityId: quote.data.opportunityId,
               },
             ])

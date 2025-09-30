@@ -289,7 +289,7 @@ export default function PurchaseDashboard() {
                   path.to.supplierQuotes
                 }?filter=status:in:${OPEN_SUPPLIER_QUOTE_STATUSES.join(",")}`}
               >
-                View Quotes
+                View Active Quotes
               </Link>
             </Button>
           </HStack>
@@ -318,7 +318,7 @@ export default function PurchaseDashboard() {
                   path.to.purchaseOrders
                 }?filter=status:in:${OPEN_PURCHASE_ORDER_STATUSES.join(",")}`}
               >
-                View Purchase Orders
+                View Open POs
               </Link>
             </Button>
           </HStack>
@@ -348,7 +348,7 @@ export default function PurchaseDashboard() {
                   path.to.purchaseInvoices
                 }?filter=status:in:${OPEN_INVOICE_STATUSES.join(",")}`}
               >
-                View Invoices
+                View Open Invoices
               </Link>
             </Button>
           </HStack>

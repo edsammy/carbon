@@ -269,7 +269,6 @@ export const JobOperation = ({
     completeModal,
     eventType,
     finishModal,
-    hasActiveEvents,
     isOverdue,
     issueModal,
     laborProductionEvent,
@@ -1844,7 +1843,6 @@ export const JobOperation = ({
                 setupProductionEvent={setupProductionEvent}
                 laborProductionEvent={laborProductionEvent}
                 machineProductionEvent={machineProductionEvent}
-                hasActiveEvents={hasActiveEvents}
                 isTrackedActivity={
                   method?.requiresSerialTracking === true ||
                   method?.requiresBatchTracking === true
@@ -1894,8 +1892,11 @@ export const JobOperation = ({
                   onClick={completeModal.onOpen}
                 />
                 <IconButtonWithTooltip
-                  icon={
-                    <FaCheck className="text-accent-foreground group-hover:text-accent-foreground/80" />
+                  icon={<FaCheck />}
+                  variant={
+                    operation.quantityComplete === operation.operationQuantity
+                      ? "success"
+                      : "default"
                   }
                   tooltip="Close Out"
                   onClick={finishModal.onOpen}
@@ -2811,10 +2812,12 @@ function IconButtonWithTooltip({
   icon,
   tooltip,
   disabled,
+  variant,
   ...props
 }: ComponentProps<"button"> & {
   icon: ReactNode;
   tooltip: string;
+  variant?: "default" | "success" | "destructive";
   disabled?: boolean;
 }) {
   return (
@@ -2822,7 +2825,13 @@ function IconButtonWithTooltip({
       {...props}
       tooltip={tooltip}
       disabled={disabled}
-      className="size-16 text-xl md:text-lg md:size-[8dvh] flex flex-row items-center gap-2 justify-center bg-accent rounded-full shadow-lg hover:cursor-pointer hover:shadow-xl hover:accent hover:scale-105 transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-30"
+      className={cn(
+        "size-16 text-xl md:text-lg md:size-[8dvh] flex flex-row items-center gap-2 justify-center bg-accent rounded-full shadow-lg hover:cursor-pointer hover:shadow-xl hover:accent hover:scale-105 transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-30 text-accent-foreground group-hover:text-accent-foreground/80",
+        variant === "success" &&
+          "bg-emerald-500 !text-white hover:bg-emerald-600 hover:text-white",
+        variant === "destructive" &&
+          "bg-red-500 !text-white hover:bg-red-600 hover:text-white"
+      )}
     >
       {icon}
     </ButtonWithTooltip>
@@ -2929,7 +2938,6 @@ function StartStopButton({
   setupProductionEvent,
   laborProductionEvent,
   machineProductionEvent,
-  hasActiveEvents,
   isTrackedActivity,
   trackedEntityId,
   ...props
@@ -2940,7 +2948,6 @@ function StartStopButton({
   setupProductionEvent: ProductionEvent | undefined;
   laborProductionEvent: ProductionEvent | undefined;
   machineProductionEvent: ProductionEvent | undefined;
-  hasActiveEvents: boolean;
   isTrackedActivity: boolean;
   trackedEntityId: string | undefined;
 }) {
@@ -3014,10 +3021,7 @@ function StartStopButton({
       )}
       <Hidden name="jobOperationId" value={operation.id} />
       <Hidden name="timezone" />
-      <Hidden
-        name="hasActiveEvents"
-        value={hasActiveEvents ? "true" : "false"}
-      />
+
       <Hidden name="action" value={isActive ? "End" : "Start"} />
       <Hidden name="type" value={eventType} />
       <Hidden name="workCenterId" value={operation.workCenterId ?? undefined} />

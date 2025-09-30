@@ -184,6 +184,24 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           )
         );
       }
+
+      const issue = await serviceRole.functions.invoke("issue", {
+        body: {
+          id: operationId,
+          type: "jobOperation",
+          quantity: quantityToComplete,
+          companyId,
+          userId,
+        },
+        region: FunctionRegion.UsEast1,
+      });
+
+      if (issue.error) {
+        throw redirect(
+          path.to.operation(operationId),
+          await flash(request, error(issue.error, "Failed to issue materials"))
+        );
+      }
     }
   }
 

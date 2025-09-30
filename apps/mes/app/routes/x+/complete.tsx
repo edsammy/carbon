@@ -27,9 +27,9 @@ export async function action({ request }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
-  // this is a serial part
+  const serviceRole = await getCarbonServiceRole();
+
   if (validation.data.trackingType === "Serial") {
-    const serviceRole = await getCarbonServiceRole();
     const response = await serviceRole.functions.invoke("issue", {
       body: {
         type: "jobOperationSerialComplete",
@@ -89,6 +89,24 @@ export async function action({ request }: ActionFunctionArgs) {
           request,
           error(insertProduction.error, "Failed to record production quantity")
         )
+      );
+    }
+
+    const issue = await serviceRole.functions.invoke("issue", {
+      body: {
+        id: validation.data.jobOperationId,
+        type: "jobOperation",
+        quantity: validation.data.quantity,
+        companyId,
+        userId,
+      },
+      region: FunctionRegion.UsEast1,
+    });
+
+    if (issue.error) {
+      throw json(
+        insertProduction.data,
+        await flash(request, error(issue.error, "Failed to issue materials"))
       );
     }
 

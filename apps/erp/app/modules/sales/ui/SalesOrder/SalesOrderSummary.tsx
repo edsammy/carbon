@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
   cn,
@@ -16,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   Tr,
+  useDisclosure,
   VStack,
 } from "@carbon/react";
 import { formatDate } from "@carbon/utils";
@@ -35,9 +37,11 @@ import {
   LuEllipsisVertical,
   LuImage,
   LuInfo,
+  LuTriangleAlert,
 } from "react-icons/lu";
 import { CustomerAvatar, Hyperlink, MethodIcon } from "~/components";
-import { usePercentFormatter, useRouteData } from "~/hooks";
+import { Confirm } from "~/components/Modals";
+import { usePercentFormatter, usePermissions, useRouteData } from "~/hooks";
 import type { Job } from "~/modules/production/types";
 import JobStatus from "~/modules/production/ui/Jobs/JobStatus";
 import { getPrivateUrl, path } from "~/utils/path";
@@ -64,6 +68,8 @@ const SalesOrderSummary = ({
     customer: Customer;
     quote: Quotation;
   }>(path.to.salesOrder(orderId));
+
+  const salesOrderToJobsModal = useDisclosure();
 
   const { locale } = useLocale();
   const formatter = useMemo(
@@ -102,125 +108,160 @@ const SalesOrderSummary = ({
     (routeData?.salesOrder?.exchangeRate ?? 1) *
     (routeData?.salesOrder?.shippingCost ?? 0);
   const total = subtotal + tax + convertedShippingCost;
+  const permissions = usePermissions();
 
   return (
-    <Card>
-      <CardHeader>
-        <HStack className="justify-between items-center">
-          <div className="flex flex-col gap-1">
-            <CardTitle>{routeData?.salesOrder.salesOrderId}</CardTitle>
-            <CardDescription>Sales Order</CardDescription>
-          </div>
-          <div className="flex flex-col gap-1 items-end">
-            <CustomerAvatar
-              customerId={routeData?.salesOrder.customerId ?? null}
-            />
-            {routeData?.salesOrder?.orderDate && (
-              <span className="text-muted-foreground text-sm">
-                Ordered {formatDate(routeData?.salesOrder.orderDate)}
-              </span>
-            )}
-            {routeData?.quote?.digitalQuoteAcceptedBy && (
-              <span className="text-muted-foreground text-sm flex flex-row items-center gap-x-1">
-                via Digital Quote
-                <Tooltip>
-                  <TooltipTrigger>
-                    <LuInfo className="size-4" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="flex flex-col gap-y-0">
-                      <span>{routeData?.quote?.digitalQuoteAcceptedBy}</span>
-                      <span>
-                        {routeData?.quote?.digitalQuoteAcceptedByEmail}
-                      </span>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </span>
-            )}
-          </div>
-        </HStack>
-      </CardHeader>
-      <CardContent>
-        <LineItems
-          salesOrder={routeData?.salesOrder}
-          currencyCode={routeData?.salesOrder?.currencyCode ?? "USD"}
-          locale={locale}
-          formatter={formatter}
-          lines={routeData?.lines ?? []}
-        />
-
-        <VStack spacing={2} className="mt-8">
-          <HStack className="justify-between text-base text-muted-foreground w-full">
-            <span>Subtotal:</span>
-            <MotionNumber
-              value={subtotal}
-              format={{
-                style: "currency",
-                currency: routeData?.salesOrder?.currencyCode ?? "USD",
-              }}
-              locales={locale}
-            />
-          </HStack>
-          <HStack className="justify-between text-base text-muted-foreground w-full">
-            <span>Tax:</span>
-            <MotionNumber
-              value={tax}
-              format={{
-                style: "currency",
-                currency: routeData?.salesOrder?.currencyCode ?? "USD",
-              }}
-              locales={locale}
-            />
-          </HStack>
-          <HStack className="justify-between text-base text-muted-foreground w-full">
-            {convertedShippingCost > 0 ? (
-              <>
-                <VStack spacing={0}>
-                  <span>Shipping:</span>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={onEditShippingCost}
-                  >
-                    Edit Shipping
-                  </Button>
-                </VStack>
-                <MotionNumber
-                  value={convertedShippingCost}
-                  format={{
-                    style: "currency",
-                    currency: routeData?.salesOrder.currencyCode ?? "USD",
-                  }}
-                  locales={locale}
-                />
-              </>
-            ) : isEditable ? (
-              <Button
-                variant="link"
-                size="sm"
-                className="text-muted-foreground"
-                onClick={onEditShippingCost}
-              >
-                Add Shipping
+    <>
+      {["To Ship and Invoice", "To Ship"].includes(
+        routeData?.salesOrder?.status ?? ""
+      ) &&
+        permissions.can("create", "production") &&
+        permissions.is("employee") &&
+        !routeData?.salesOrder?.jobs && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex flex-row gap-2">
+                <LuTriangleAlert /> Jobs Required
+              </CardTitle>
+              <CardDescription>
+                This sales order has lines that require jobs to be created
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button variant="primary" onClick={salesOrderToJobsModal.onOpen}>
+                Create Jobs
               </Button>
-            ) : null}
+            </CardFooter>
+            {salesOrderToJobsModal.isOpen && (
+              <Confirm
+                title="Convert Lines to Jobs"
+                text="Are you sure you want to create jobs for this sales order? This will create jobs for all lines that don't already have jobs."
+                confirmText="Create Jobs"
+                onCancel={salesOrderToJobsModal.onClose}
+                onSubmit={salesOrderToJobsModal.onClose}
+                action={path.to.salesOrderLinesToJobs(orderId)}
+              />
+            )}
+          </Card>
+        )}
+      <Card>
+        <CardHeader>
+          <HStack className="justify-between items-center">
+            <div className="flex flex-col gap-1">
+              <CardTitle>{routeData?.salesOrder.salesOrderId}</CardTitle>
+              <CardDescription>Sales Order</CardDescription>
+            </div>
+            <div className="flex flex-col gap-1 items-end">
+              <CustomerAvatar
+                customerId={routeData?.salesOrder.customerId ?? null}
+              />
+              {routeData?.salesOrder?.orderDate && (
+                <span className="text-muted-foreground text-sm">
+                  Ordered {formatDate(routeData?.salesOrder.orderDate)}
+                </span>
+              )}
+              {routeData?.quote?.digitalQuoteAcceptedBy && (
+                <span className="text-muted-foreground text-sm flex flex-row items-center gap-x-1">
+                  via Digital Quote
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <LuInfo className="size-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="flex flex-col gap-y-0">
+                        <span>{routeData?.quote?.digitalQuoteAcceptedBy}</span>
+                        <span>
+                          {routeData?.quote?.digitalQuoteAcceptedByEmail}
+                        </span>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </span>
+              )}
+            </div>
           </HStack>
-          <HStack className="justify-between text-xl font-bold w-full">
-            <span>Total:</span>
-            <MotionNumber
-              value={total}
-              format={{
-                style: "currency",
-                currency: routeData?.salesOrder?.currencyCode ?? "USD",
-              }}
-              locales={locale}
-            />
-          </HStack>
-        </VStack>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <LineItems
+            salesOrder={routeData?.salesOrder}
+            currencyCode={routeData?.salesOrder?.currencyCode ?? "USD"}
+            locale={locale}
+            formatter={formatter}
+            lines={routeData?.lines ?? []}
+          />
+
+          <VStack spacing={2} className="mt-8">
+            <HStack className="justify-between text-base text-muted-foreground w-full">
+              <span>Subtotal:</span>
+              <MotionNumber
+                value={subtotal}
+                format={{
+                  style: "currency",
+                  currency: routeData?.salesOrder?.currencyCode ?? "USD",
+                }}
+                locales={locale}
+              />
+            </HStack>
+            <HStack className="justify-between text-base text-muted-foreground w-full">
+              <span>Tax:</span>
+              <MotionNumber
+                value={tax}
+                format={{
+                  style: "currency",
+                  currency: routeData?.salesOrder?.currencyCode ?? "USD",
+                }}
+                locales={locale}
+              />
+            </HStack>
+            <HStack className="justify-between text-base text-muted-foreground w-full">
+              {convertedShippingCost > 0 ? (
+                <>
+                  <VStack spacing={0}>
+                    <span>Shipping:</span>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-muted-foreground"
+                      onClick={onEditShippingCost}
+                    >
+                      Edit Shipping
+                    </Button>
+                  </VStack>
+                  <MotionNumber
+                    value={convertedShippingCost}
+                    format={{
+                      style: "currency",
+                      currency: routeData?.salesOrder.currencyCode ?? "USD",
+                    }}
+                    locales={locale}
+                  />
+                </>
+              ) : isEditable ? (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={onEditShippingCost}
+                >
+                  Add Shipping
+                </Button>
+              ) : null}
+            </HStack>
+            <HStack className="justify-between text-xl font-bold w-full">
+              <span>Total:</span>
+              <MotionNumber
+                value={total}
+                format={{
+                  style: "currency",
+                  currency: routeData?.salesOrder?.currencyCode ?? "USD",
+                }}
+                locales={locale}
+              />
+            </HStack>
+          </VStack>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
@@ -269,6 +310,14 @@ function LineItems({
           jobs.reduce((acc, job) => acc + job.quantityComplete, 0) >=
           (line.saleQuantity ?? 0);
 
+        const hasAnyQuantityReleased =
+          jobs.reduce((acc, job) => {
+            if (job.status !== "Planned" && job.status !== "Draft") {
+              return acc + job.productionQuantity;
+            }
+            return acc;
+          }, 0) > 0;
+
         const jobVariant: "red" | "orange" | "green" =
           hasEnoughJobsToCoverQuantity && hasEnoughCompletedToCoverQuantity
             ? "green"
@@ -276,11 +325,17 @@ function LineItems({
             ? "orange"
             : "red";
 
-        const jobLabel: "Requires Jobs" | "In Progress" | "Complete" =
+        const jobLabel:
+          | "Requires Jobs"
+          | "In Progress"
+          | "Complete"
+          | "Planned" =
           hasEnoughJobsToCoverQuantity && hasEnoughCompletedToCoverQuantity
             ? "Complete"
             : hasEnoughJobsToCoverQuantity
-            ? "In Progress"
+            ? hasAnyQuantityReleased
+              ? "In Progress"
+              : "Planned"
             : "Requires Jobs";
 
         return (

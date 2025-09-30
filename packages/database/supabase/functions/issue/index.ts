@@ -32,6 +32,7 @@ const payloadValidator = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("jobOperation"),
+    quantity: z.number(),
     id: z.string(),
     companyId: z.string(),
     userId: z.string(),
@@ -271,7 +272,7 @@ serve(async (req: Request) => {
         break;
       }
       case "jobOperation": {
-        const { id, companyId, userId } = validatedPayload;
+        const { id, companyId, quantity, userId } = validatedPayload;
         await db.transaction().execute(async (trx) => {
           const materialsToIssue = await trx
             .selectFrom("jobMaterial")
@@ -406,6 +407,9 @@ serve(async (req: Request) => {
 
             for await (const material of materialsToIssue) {
               if (material.quantityToIssue) {
+                // Calculate the quantity to issue based on payload quantity multiplied by the material quantity
+                const quantityToIssue = Number(material.quantity) * quantity;
+
                 const proposedShelfId =
                   shelfIdsToUse.get(material.itemId) ?? material.shelfId;
 
@@ -436,7 +440,6 @@ serve(async (req: Request) => {
                 const currentQuantity = Number(
                   currentShelfQuantity?.quantity ?? 0
                 );
-                const quantityToIssue = Number(material.quantityToIssue);
 
                 if (
                   currentQuantity < quantityToIssue &&
@@ -450,7 +453,9 @@ serve(async (req: Request) => {
                   finalShelfId = bestShelf.shelfId;
                 }
 
-                if (itemIdIsTracked.get(material.itemId)) {
+                const isTracked = itemIdIsTracked.get(material.itemId);
+
+                if (isTracked) {
                   itemLedgerInserts.push({
                     entryType: "Consumption",
                     documentType: "Job Consumption",
@@ -458,7 +463,7 @@ serve(async (req: Request) => {
                     documentLineId: id,
                     companyId,
                     itemId: material.itemId,
-                    quantity: -Number(material.quantityToIssue),
+                    quantity: -quantityToIssue,
                     locationId: job?.locationId,
                     shelfId: finalShelfId,
                     createdBy: userId,
@@ -469,8 +474,7 @@ serve(async (req: Request) => {
                   .updateTable("jobMaterial")
                   .set({
                     quantityIssued:
-                      (Number(material.quantityIssued) ?? 0) +
-                      Number(material.quantityToIssue),
+                      (Number(material.quantityIssued) ?? 0) + quantityToIssue,
                   })
                   .where("id", "=", material.id)
                   .execute();

@@ -371,7 +371,7 @@ export default function SalesDashboard() {
                   path.to.salesRfqs
                 }?filter=status:in:${OPEN_RFQ_STATUSES.join(",")}`}
               >
-                View RFQs
+                View Open RFQs
               </Link>
             </Button>
           </HStack>
@@ -400,7 +400,7 @@ export default function SalesDashboard() {
                   path.to.quotes
                 }?filter=status:in:${OPEN_QUOTE_STATUSES.join(",")}`}
               >
-                View Quotes
+                View Open Quotes
               </Link>
             </Button>
           </HStack>
@@ -430,7 +430,7 @@ export default function SalesDashboard() {
                   path.to.salesOrders
                 }?filter=status:in:${OPEN_SALES_ORDER_STATUSES.join(",")}`}
               >
-                View Orders
+                View Open Orders
               </Link>
             </Button>
           </HStack>

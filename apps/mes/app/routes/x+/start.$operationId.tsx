@@ -2,10 +2,8 @@ import { error, getCarbonServiceRole } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import { getLocalTimeZone, now } from "@internationalized/date";
-import { FunctionRegion } from "@supabase/supabase-js";
 import { redirect, type LoaderFunctionArgs } from "@vercel/remix";
 import {
-  getProductionEventsForJobOperation,
   getTrackedEntitiesByMakeMethodId,
   startProductionEvent,
 } from "~/services/operations.service";
@@ -28,16 +26,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const serviceRole = await getCarbonServiceRole();
-  const [jobOperation, productionEvents] = await Promise.all([
+  const [jobOperation] = await Promise.all([
     serviceRole
       .from("jobOperation")
       .select("*")
       .eq("id", operationId)
       .maybeSingle(),
-    getProductionEventsForJobOperation(serviceRole, {
-      operationId,
-      userId,
-    }),
   ]);
 
   if (jobOperation.error || !jobOperation.data) {
@@ -74,8 +68,21 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     }
   }
 
-  const hasActiveEvents =
-    Array.isArray(productionEvents.data) && productionEvents.data.length > 0;
+  // If type is Machine, cancel all setup and labor production events for this operation
+  if (type === "Machine") {
+    const currentTime = now(getLocalTimeZone()).toAbsoluteString();
+
+    await serviceRole
+      .from("productionEvent")
+      .update({
+        endTime: currentTime,
+        updatedAt: currentTime,
+        updatedBy: userId,
+      })
+      .eq("jobOperationId", operationId)
+      .in("type", ["Setup", "Labor"])
+      .is("endTime", null);
+  }
 
   const startEvent = await startProductionEvent(
     serviceRole,
@@ -96,26 +103,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       path.to.operations,
       await flash(request, error(startEvent.error, "Failed to start event"))
     );
-  }
-
-  if (hasActiveEvents === false) {
-    const serviceRole = await getCarbonServiceRole();
-    const issue = await serviceRole.functions.invoke("issue", {
-      body: {
-        id: operationId,
-        type: "jobOperation",
-        companyId,
-        userId,
-      },
-      region: FunctionRegion.UsEast1,
-    });
-
-    if (issue.error) {
-      throw redirect(
-        path.to.operation(operationId),
-        await flash(request, error(issue.error, "Failed to issue materials"))
-      );
-    }
   }
 
   throw redirect(path.to.operation(operationId));

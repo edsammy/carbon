@@ -1,14 +1,8 @@
-import {
-  assertIsPost,
-  error,
-  getCarbonServiceRole,
-  success,
-} from "@carbon/auth";
+import { assertIsPost, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import { getLocalTimeZone, now } from "@internationalized/date";
-import { FunctionRegion } from "@supabase/supabase-js";
 import type { ActionFunctionArgs } from "@vercel/remix";
 import { json } from "@vercel/remix";
 import { productionEventValidator } from "~/services/models";
@@ -34,7 +28,6 @@ export async function action({ request }: ActionFunctionArgs) {
     id,
     action: productionAction,
     timezone,
-    hasActiveEvents,
     trackedEntityId,
     ...data
   } = validation.data;
@@ -57,26 +50,6 @@ export async function action({ request }: ActionFunctionArgs) {
         {},
         await flash(request, error(startEvent.error, "Failed to start event"))
       );
-    }
-
-    if (hasActiveEvents === "false") {
-      const serviceRole = await getCarbonServiceRole();
-      const issue = await serviceRole.functions.invoke("issue", {
-        body: {
-          id: data.jobOperationId,
-          type: "jobOperation",
-          companyId,
-          userId,
-        },
-        region: FunctionRegion.UsEast1,
-      });
-
-      if (issue.error) {
-        return json(
-          startEvent.data,
-          await flash(request, error(issue.error, "Failed to issue materials"))
-        );
-      }
     }
 
     return json(
