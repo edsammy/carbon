@@ -6,7 +6,8 @@ COPY package.json package-lock.json turbo.json ./
 COPY apps ./apps
 COPY packages ./packages
 # Install all workspaces (dev deps are needed to build)
-RUN npm ci
+# Force reinstall to fix optional deps issue in Alpine
+RUN npm ci --workspace && npm install @rollup/rollup-linux-x64-musl --no-save
 
 FROM deps AS build
 # Build only ERP and its deps
