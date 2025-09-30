@@ -65,7 +65,12 @@ import { JobStartModal } from "~/modules/production/ui/Jobs/JobHeader";
 import { JobOperationStatus } from "~/modules/production/ui/Jobs/JobOperationStatus";
 import JobStatus from "~/modules/production/ui/Jobs/JobStatus";
 import { path } from "~/utils/path";
-import type { Opportunity, SalesOrder, SalesOrderLine } from "../../types";
+import type {
+  Opportunity,
+  SalesOrder,
+  SalesOrderJob,
+  SalesOrderLine,
+} from "../../types";
 
 type SalesOrderLineJobsProps = {
   salesOrder: SalesOrder;
@@ -140,7 +145,7 @@ export function SalesOrderLineJobs({
                       index === jobs.length - 1 && "border-b-0"
                     )}
                   >
-                    <SalesOrderJobItem job={job} />
+                    <SalesOrderJobItem job={job as SalesOrderJob} />
                   </div>
                 ))}
             </div>
@@ -259,12 +264,13 @@ export function SalesOrderLineJobs({
   );
 }
 
-export function SalesOrderJobItem({ job }: { job: Job }) {
+export function SalesOrderJobItem({ job }: { job: SalesOrderJob }) {
   const disclosure = useDisclosure();
   const permissions = usePermissions();
   const releaseModal = useDisclosure();
   const statusFetcher = useFetcher<{}>();
   const todaysDate = useMemo(() => today(getLocalTimeZone()), []);
+  console.log({ job });
 
   return (
     <VStack>
@@ -348,10 +354,10 @@ export function SalesOrderJobItem({ job }: { job: Job }) {
         </HStack>
       </HStack>
 
-      {disclosure.isOpen && <JobDetails job={job} />}
+      {disclosure.isOpen && <JobDetails job={job as Job} />}
       {releaseModal.isOpen && (
         <JobStartModal
-          job={job}
+          job={job as Job}
           onClose={releaseModal.onClose}
           fetcher={statusFetcher}
         />

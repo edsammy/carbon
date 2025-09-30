@@ -8,7 +8,6 @@ import type {
   getCustomers,
   getCustomerStatuses,
   getCustomerTypes,
-  getHistoricalQuoteLinePricesByItemId,
   getNoQuoteReasons,
   getOpportunity,
   getQuoteLinePrices,
@@ -20,6 +19,7 @@ import type {
   getQuotePayment,
   getQuotes,
   getQuoteShipment,
+  getRelatedPricesForQuoteLine,
   getSalesOrderLines,
   getSalesOrderLineShipments,
   getSalesOrderRelatedItems,
@@ -119,7 +119,9 @@ export type QuotationPrice = NonNullable<
 >[number];
 
 export type HistoricalQuotationPrice = NonNullable<
-  Awaited<ReturnType<typeof getHistoricalQuoteLinePricesByItemId>>["data"]
+  NonNullable<
+    Awaited<ReturnType<typeof getRelatedPricesForQuoteLine>>
+  >["historicalQuoteLinePrices"]
 >[number];
 
 export type QuotationStatusType = Database["public"]["Enums"]["quoteStatus"];
@@ -142,8 +144,11 @@ export type SalesOrderJob = {
   status: (typeof jobStatus)[number];
   dueDate?: string;
   salesOrderLineId: string;
+  quantity: number;
+  scrapQuantity: number;
   productionQuantity: number;
   quantityComplete: number;
+  quantityShipped: number;
   assignee: string;
 };
 

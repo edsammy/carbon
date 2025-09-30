@@ -42,7 +42,6 @@ import {
 import { CustomerAvatar, Hyperlink, MethodIcon } from "~/components";
 import { Confirm } from "~/components/Modals";
 import { usePercentFormatter, usePermissions, useRouteData } from "~/hooks";
-import type { Job } from "~/modules/production/types";
 import JobStatus from "~/modules/production/ui/Jobs/JobStatus";
 import { getPrivateUrl, path } from "~/utils/path";
 import type {
@@ -638,7 +637,7 @@ function LineItems({
                             index === jobs.length - 1 && "border-b-0"
                           )}
                         >
-                          <SalesOrderJobItem job={job as Job} />
+                          <SalesOrderJobItem job={job} />
                         </div>
                       ))}
                   </div>

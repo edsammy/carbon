@@ -1,10 +1,13 @@
 import { useCarbon } from "@carbon/auth";
 import { useParams } from "@remix-run/react";
 import { useCallback, useEffect, useState } from "react";
-import { useUser } from "~/hooks";
 import type { z } from "zod";
+import { useUser } from "~/hooks";
+import type {
+  shipmentStatusType,
+  shipmentValidator,
+} from "~/modules/inventory";
 import type { ShipmentSourceDocument } from "~/modules/inventory/types";
-import type { shipmentStatusType, shipmentValidator } from "~/modules/inventory";
 import type { ListItem } from "~/types";
 
 export default function useShipmentForm({
@@ -51,7 +54,7 @@ export default function useShipmentForm({
           ?.from("salesOrder")
           .select("id, salesOrderId")
           .eq("companyId", user.company.id)
-          .or("status.eq.To Ship, status.eq.To Ship and Invoice")
+          .in("status", ["To Ship", "To Ship and Invoice", "Draft"])
           .then((response) => {
             if (response.error) {
               setError(response.error.message);
