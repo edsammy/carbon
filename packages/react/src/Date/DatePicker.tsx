@@ -16,7 +16,6 @@ import {
   PopoverTrigger,
 } from "../Popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../Tooltip";
-import { useOutsideClick } from "../hooks";
 import { FieldButton } from "./components/Button";
 import { Calendar } from "./components/Calendar";
 import DateField from "./components/DateField";
@@ -35,11 +34,6 @@ const DatePicker = (
   const ref = useRef<HTMLDivElement>(null);
   const { groupProps, fieldProps, buttonProps, dialogProps, calendarProps } =
     useDatePicker(props, state, ref);
-
-  useOutsideClick({
-    ref,
-    handler: () => state.setOpen(false),
-  });
 
   return (
     <Popover open={state.isOpen} onOpenChange={state.setOpen}>
