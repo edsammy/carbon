@@ -131,6 +131,32 @@ export async function convertSalesOrderLinesToJobs(
 
         const dueDate = line.promisedDate ?? undefined;
 
+        // Validate locationId exists if provided
+        let locationId = line.locationId;
+        if (locationId) {
+          const locationExists = await serviceRole
+            .from("location")
+            .select("id")
+            .eq("id", locationId)
+            .eq("companyId", companyId)
+            .single();
+
+          if (locationExists.error) {
+            // If location doesn't exist, try to get a default location for the company
+            const defaultLocation = await serviceRole
+              .from("location")
+              .select("id")
+              .eq("companyId", companyId)
+              .limit(1);
+
+            if (defaultLocation.data) {
+              locationId = defaultLocation.data?.[0]?.id;
+            } else {
+              throw new Error("No location found");
+            }
+          }
+        }
+
         const data = {
           customerId: salesOrder.data?.customerId ?? undefined,
           deadlineType: "Hard Deadline" as const,
@@ -141,7 +167,7 @@ export async function convertSalesOrderLinesToJobs(
                 .toString()
             : undefined,
           itemId: line.itemId,
-          locationId: line.locationId ?? "",
+          locationId: locationId!,
           modelUploadId: line.modelUploadId ?? undefined,
           quantity: jobQuantity,
           quoteId: quoteId ?? undefined,
