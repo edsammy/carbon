@@ -212,7 +212,7 @@ const PurchaseOrderPDF = ({
                   {purchaseOrder.purchaseOrderType === "Outside Processing" &&
                     line.jobOperationDescription && (
                       <Text style={tw("text-[9px] opacity-80 mt-1")}>
-                        Operation: {line.jobOperationDescription}
+                        {line.jobOperationDescription}
                       </Text>
                     )}
                 </View>

@@ -2243,6 +2243,7 @@ export type Database = {
           digitalQuoteNotificationGroup: string[]
           id: string
           inventoryJobCompletedNotificationGroup: string[]
+          kanbanOutput: Database["public"]["Enums"]["kanbanOutput"]
           materialGeneratedIds: boolean
           productLabelSize: string | null
           rfqReadyNotificationGroup: string[]
@@ -2256,6 +2257,7 @@ export type Database = {
           digitalQuoteNotificationGroup?: string[]
           id: string
           inventoryJobCompletedNotificationGroup?: string[]
+          kanbanOutput?: Database["public"]["Enums"]["kanbanOutput"]
           materialGeneratedIds?: boolean
           productLabelSize?: string | null
           rfqReadyNotificationGroup?: string[]
@@ -2269,6 +2271,7 @@ export type Database = {
           digitalQuoteNotificationGroup?: string[]
           id?: string
           inventoryJobCompletedNotificationGroup?: string[]
+          kanbanOutput?: Database["public"]["Enums"]["kanbanOutput"]
           materialGeneratedIds?: boolean
           productLabelSize?: string | null
           rfqReadyNotificationGroup?: string[]
@@ -10214,6 +10217,7 @@ export type Database = {
         Row: {
           assignee: string | null
           companyId: string
+          completeAllOnScan: boolean
           createdAt: string
           createdBy: string
           customFields: Json | null
@@ -10256,6 +10260,7 @@ export type Database = {
         Insert: {
           assignee?: string | null
           companyId: string
+          completeAllOnScan?: boolean
           createdAt?: string
           createdBy: string
           customFields?: Json | null
@@ -10298,6 +10303,7 @@ export type Database = {
         Update: {
           assignee?: string | null
           companyId?: string
+          completeAllOnScan?: boolean
           createdAt?: string
           createdBy?: string
           customFields?: Json | null
@@ -11650,12 +11656,15 @@ export type Database = {
       kanban: {
         Row: {
           autoRelease: boolean
+          autoStartJob: boolean
           companyId: string
+          completedBarcodeOverride: string | null
           conversionFactor: number
           createdAt: string
           createdBy: string
           id: string
           itemId: string
+          jobId: string | null
           locationId: string
           purchaseUnitOfMeasureCode: string | null
           quantity: number
@@ -11667,12 +11676,15 @@ export type Database = {
         }
         Insert: {
           autoRelease?: boolean
+          autoStartJob?: boolean
           companyId: string
+          completedBarcodeOverride?: string | null
           conversionFactor?: number
           createdAt?: string
           createdBy: string
           id?: string
           itemId: string
+          jobId?: string | null
           locationId: string
           purchaseUnitOfMeasureCode?: string | null
           quantity: number
@@ -11684,12 +11696,15 @@ export type Database = {
         }
         Update: {
           autoRelease?: boolean
+          autoStartJob?: boolean
           companyId?: string
+          completedBarcodeOverride?: string | null
           conversionFactor?: number
           createdAt?: string
           createdBy?: string
           id?: string
           itemId?: string
+          jobId?: string | null
           locationId?: string
           purchaseUnitOfMeasureCode?: string | null
           quantity?: number
@@ -11796,6 +11811,27 @@ export type Database = {
             columns: ["itemId"]
             isOneToOne: false
             referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "job"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "openProductionOrders"
             referencedColumns: ["id"]
           },
           {
@@ -13312,6 +13348,7 @@ export type Database = {
       methodOperation: {
         Row: {
           companyId: string
+          completeAllOnScan: boolean
           createdAt: string
           createdBy: string
           customFields: Json | null
@@ -13341,6 +13378,7 @@ export type Database = {
         }
         Insert: {
           companyId: string
+          completeAllOnScan?: boolean
           createdAt?: string
           createdBy: string
           customFields?: Json | null
@@ -13370,6 +13408,7 @@ export type Database = {
         }
         Update: {
           companyId?: string
+          completeAllOnScan?: boolean
           createdAt?: string
           createdBy?: string
           customFields?: Json | null
@@ -24716,6 +24755,7 @@ export type Database = {
       quoteOperation: {
         Row: {
           companyId: string
+          completeAllOnScan: boolean
           createdAt: string
           createdBy: string
           customFields: Json | null
@@ -24750,6 +24790,7 @@ export type Database = {
         }
         Insert: {
           companyId: string
+          completeAllOnScan?: boolean
           createdAt?: string
           createdBy: string
           customFields?: Json | null
@@ -24784,6 +24825,7 @@ export type Database = {
         }
         Update: {
           companyId?: string
+          completeAllOnScan?: boolean
           createdAt?: string
           createdBy?: string
           customFields?: Json | null
@@ -39784,12 +39826,16 @@ export type Database = {
       kanbans: {
         Row: {
           autoRelease: boolean | null
+          autoStartJob: boolean | null
           companyId: string | null
+          completedBarcodeOverride: string | null
           conversionFactor: number | null
           createdAt: string | null
           createdBy: string | null
           id: string | null
           itemId: string | null
+          jobId: string | null
+          jobReadableId: string | null
           locationId: string | null
           locationName: string | null
           name: string | null
@@ -39904,6 +39950,27 @@ export type Database = {
             columns: ["itemId"]
             isOneToOne: false
             referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "job"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "openProductionOrders"
             referencedColumns: ["id"]
           },
           {
@@ -40983,14 +41050,14 @@ export type Database = {
           },
           {
             foreignKeyName: "partner_id_fkey"
-            columns: ["supplierLocationId"]
+            columns: ["id"]
             isOneToOne: false
             referencedRelation: "supplierLocation"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "partner_id_fkey"
-            columns: ["id"]
+            columns: ["supplierLocationId"]
             isOneToOne: false
             referencedRelation: "supplierLocation"
             referencedColumns: ["id"]
@@ -42055,6 +42122,7 @@ export type Database = {
           itemName: string | null
           itemReadableId: string | null
           jobId: string | null
+          jobOperationDescription: string | null
           jobOperationId: string | null
           locationId: string | null
           modelId: string | null
@@ -42352,14 +42420,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["customerCountryCode"]
+            columns: ["supplierCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["supplierCountryCode"]
+            columns: ["customerCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -45406,14 +45474,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["customerCountryCode"]
+            columns: ["paymentCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["paymentCountryCode"]
+            columns: ["customerCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -49247,6 +49315,7 @@ export type Database = {
         | "Credit Memo"
         | "Blanket Order"
         | "Return Order"
+      kanbanOutput: "label" | "qrcode" | "url"
       makeMethodStatus: "Draft" | "Active" | "Archived"
       methodOperationOrder: "After Previous" | "With Previous"
       methodType: "Buy" | "Make" | "Pick"

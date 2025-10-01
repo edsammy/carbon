@@ -1,4 +1,3 @@
--- Add jobOperation description to purchaseOrderLines view
 
 DROP VIEW IF EXISTS "purchaseOrderLines";
 CREATE OR REPLACE VIEW "purchaseOrderLines" WITH(SECURITY_INVOKER=true) AS (
