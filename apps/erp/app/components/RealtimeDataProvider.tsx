@@ -345,12 +345,7 @@ const RealtimeDataProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyId]);
-
-  useEffect(() => {
-    if (carbon && accessToken) carbon.realtime.setAuth(accessToken);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [companyId, accessToken]);
 
   return <>{children}</>;
 };

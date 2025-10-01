@@ -2,8 +2,9 @@
 
 import { useCarbon } from "@carbon/auth";
 import { fetchAllFromTable } from "@carbon/database";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import idb from "localforage";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useUser } from "~/hooks";
 import { useItems, usePeople } from "~/stores";
 import type { Item } from "~/stores/items";
@@ -23,6 +24,8 @@ const RealtimeDataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [, setItems] = useItems();
   const [, setPeople] = usePeople();
+
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const hydrate = async () => {
     if (!hydratedFromIdb) {
@@ -79,87 +82,95 @@ const RealtimeDataProvider = ({ children }: { children: React.ReactNode }) => {
     if (!companyId) return;
     hydrate();
 
-    if (!carbon || !accessToken) return;
-    carbon.realtime.setAuth(accessToken);
-    const channel = carbon
-      .channel("realtime:core")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "item",
-          filter: `companyId=eq.${companyId}`,
-        },
-        (payload) => {
-          if ("companyId" in payload.new && payload.new.companyId !== companyId)
-            return;
-          switch (payload.eventType) {
-            case "INSERT":
-              const { new: inserted } = payload;
+    if (!channelRef.current && carbon && accessToken) {
+      carbon.realtime.setAuth(accessToken);
+      channelRef.current = carbon
+        .channel("realtime:core")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "item",
+            filter: `companyId=eq.${companyId}`,
+          },
+          (payload) => {
+            if (
+              "companyId" in payload.new &&
+              payload.new.companyId !== companyId
+            )
+              return;
+            switch (payload.eventType) {
+              case "INSERT":
+                const { new: inserted } = payload;
 
-              setItems((items) =>
-                [
-                  ...items,
-                  {
-                    id: inserted.id,
-                    name: inserted.name,
-                    readableIdWithRevision: inserted.readableIdWithRevision,
-                    description: inserted.description,
-                    replenishmentSystem: inserted.replenishmentSystem,
-                    itemTrackingType: inserted.itemTrackingType,
-                    type: inserted.type,
-                    active: inserted.active,
-                  },
-                ].sort((a, b) =>
-                  a.readableIdWithRevision.localeCompare(
-                    b.readableIdWithRevision
-                  )
-                )
-              );
-
-              break;
-            case "UPDATE":
-              const { new: updated } = payload;
-
-              setItems((items) =>
-                items
-                  .map((i) => {
-                    if (i.id === updated.id) {
-                      return {
-                        ...i,
-                        readableIdWithRevision: updated.readableIdWithRevision,
-                        name: updated.name,
-                        replenishmentSystem: updated.replenishmentSystem,
-                        type: updated.type,
-                        active: updated.active,
-                      };
-                    }
-                    return i;
-                  })
-                  .sort((a, b) =>
+                setItems((items) =>
+                  [
+                    ...items,
+                    {
+                      id: inserted.id,
+                      name: inserted.name,
+                      readableIdWithRevision: inserted.readableIdWithRevision,
+                      description: inserted.description,
+                      replenishmentSystem: inserted.replenishmentSystem,
+                      itemTrackingType: inserted.itemTrackingType,
+                      type: inserted.type,
+                      active: inserted.active,
+                    },
+                  ].sort((a, b) =>
                     a.readableIdWithRevision.localeCompare(
                       b.readableIdWithRevision
                     )
                   )
-              );
-              break;
-            case "DELETE":
-              const { old: deleted } = payload;
-              setItems((items) => items.filter((p) => p.id !== deleted.id));
-              break;
-            default:
-              break;
+                );
+
+                break;
+              case "UPDATE":
+                const { new: updated } = payload;
+
+                setItems((items) =>
+                  items
+                    .map((i) => {
+                      if (i.id === updated.id) {
+                        return {
+                          ...i,
+                          readableIdWithRevision:
+                            updated.readableIdWithRevision,
+                          name: updated.name,
+                          replenishmentSystem: updated.replenishmentSystem,
+                          type: updated.type,
+                          active: updated.active,
+                        };
+                      }
+                      return i;
+                    })
+                    .sort((a, b) =>
+                      a.readableIdWithRevision.localeCompare(
+                        b.readableIdWithRevision
+                      )
+                    )
+                );
+                break;
+              case "DELETE":
+                const { old: deleted } = payload;
+                setItems((items) => items.filter((p) => p.id !== deleted.id));
+                break;
+              default:
+                break;
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
 
     return () => {
-      if (channel) carbon?.removeChannel(channel);
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carbon, accessToken, companyId]);
+  }, [companyId, accessToken]);
 
   return <>{children}</>;
 };
