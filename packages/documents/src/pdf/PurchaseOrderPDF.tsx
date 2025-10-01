@@ -209,6 +209,12 @@ const PurchaseOrderPDF = ({
                   <Text style={tw("text-[9px] opacity-80")}>
                     {getLineDescriptionDetails(line)}
                   </Text>
+                  {purchaseOrder.purchaseOrderType === "Outside Processing" &&
+                    line.jobOperationDescription && (
+                      <Text style={tw("text-[9px] opacity-80 mt-1")}>
+                        Operation: {line.jobOperationDescription}
+                      </Text>
+                    )}
                 </View>
                 <Text style={tw("w-[15%] text-right")}>
                   {line.purchaseOrderLineType === "Comment"

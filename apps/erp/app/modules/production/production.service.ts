@@ -1,5 +1,7 @@
+import { getCarbonServiceRole } from "@carbon/auth";
 import { fetchAllFromTable, type Database, type Json } from "@carbon/database";
 import type { JSONContent } from "@carbon/react";
+import { parseDate } from "@internationalized/date";
 import type { FileObject, StorageError } from "@supabase/storage-js";
 import {
   FunctionRegion,
@@ -30,6 +32,196 @@ import type {
   scrapReasonValidator,
 } from "./production.models";
 import type { Job } from "./types";
+
+export async function convertSalesOrderLinesToJobs(
+  client: SupabaseClient<Database>,
+  {
+    orderId,
+    companyId,
+    userId,
+  }: {
+    orderId: string;
+    companyId: string;
+    userId: string;
+  }
+) {
+  const salesOrder = await client
+    .from("salesOrder")
+    .select("*")
+    .eq("id", orderId)
+    .single();
+
+  const salesOrderLines = await client
+    .from("salesOrderLines")
+    .select("*")
+    .eq("salesOrderId", orderId)
+    .order("itemReadableId", { ascending: true });
+
+  if (companyId !== salesOrder.data?.companyId) {
+    return { data: null, error: "Company ID mismatch" };
+  }
+
+  if (salesOrder.error) {
+    return salesOrder;
+  }
+
+  if (salesOrderLines.error) {
+    return salesOrderLines;
+  }
+
+  const serviceRole = getCarbonServiceRole();
+
+  const lines = salesOrderLines.data;
+  if (!lines) {
+    return { data: null, error: "No lines found" };
+  }
+
+  const opportunity = await serviceRole
+    .from("opportunity")
+    .select("*, quotes(*), salesOrders(*)")
+    .eq("id", salesOrder.data?.opportunityId ?? "")
+    .single();
+
+  const quoteId = opportunity.data?.quotes[0]?.id;
+  const salesOrderId = opportunity.data?.salesOrders[0]?.id;
+
+  for await (const line of lines) {
+    if (line.methodType === "Make" && line.itemId) {
+      const itemManufacturing = await serviceRole
+        .from("itemReplenishment")
+        .select("*")
+        .eq("itemId", line.itemId)
+        .eq("companyId", companyId)
+        .single();
+
+      const lotSize = itemManufacturing.data?.lotSize ?? 0;
+      const totalQuantity = line.saleQuantity ?? 0;
+      const totalJobs = lotSize > 0 ? Math.ceil(totalQuantity / lotSize) : 1;
+
+      const jobsToCreate = Math.max(1, totalJobs);
+
+      const manufacturing = await serviceRole
+        .from("itemReplenishment")
+        .select("*")
+        .eq("itemId", line.itemId)
+        .eq("companyId", companyId)
+        .single();
+
+      for await (const index of Array.from({ length: jobsToCreate }).keys()) {
+        const nextSequence = await serviceRole.rpc("get_next_sequence", {
+          sequence_name: "job",
+          company_id: companyId,
+        });
+
+        if (!nextSequence.data) {
+          continue;
+        }
+
+        const isLastJob = index === jobsToCreate - 1;
+        const jobQuantity =
+          lotSize > 0
+            ? isLastJob
+              ? totalQuantity - lotSize * (jobsToCreate - 1)
+              : lotSize
+            : totalQuantity;
+
+        const dueDate = line.promisedDate ?? undefined;
+
+        const data = {
+          customerId: salesOrder.data?.customerId ?? undefined,
+          deadlineType: "Hard Deadline" as const,
+          dueDate,
+          startDate: dueDate
+            ? parseDate(dueDate)
+                .subtract({ days: manufacturing.data?.leadTime ?? 7 })
+                .toString()
+            : undefined,
+          itemId: line.itemId,
+          locationId: line.locationId ?? "",
+          modelUploadId: line.modelUploadId ?? undefined,
+          quantity: jobQuantity,
+          quoteId: quoteId ?? undefined,
+          quoteLineId: quoteId ? line.id : undefined,
+          salesOrderId: salesOrderId ?? undefined,
+          salesOrderLineId: line.id,
+          scrapQuantity: 0,
+          unitOfMeasureCode: line.unitOfMeasureCode ?? "EA",
+        };
+
+        const createJob = await serviceRole
+          .from("job")
+          .insert({
+            ...data,
+            jobId: nextSequence.data,
+            companyId,
+            createdBy: userId,
+          })
+          .select("id")
+          .single();
+
+        if (createJob.error) {
+          continue;
+        }
+
+        if (quoteId) {
+          const upsertMethod = await serviceRole.functions.invoke(
+            "get-method",
+            {
+              body: {
+                type: "quoteLineToJob",
+                sourceId: `${quoteId}:${line.id}`,
+                targetId: createJob.data.id,
+                companyId,
+                userId,
+              },
+            }
+          );
+
+          if (upsertMethod.error) {
+            continue;
+          }
+        } else {
+          const upsertMethod = await serviceRole.functions.invoke(
+            "get-method",
+            {
+              body: {
+                type: "itemToJob",
+                sourceId: data.itemId,
+                targetId: createJob.data.id,
+                companyId,
+                userId,
+              },
+            }
+          );
+
+          if (upsertMethod.error) {
+            continue;
+          }
+        }
+
+        await serviceRole.functions.invoke("recalculate", {
+          body: {
+            type: "jobRequirements",
+            id: createJob.data.id,
+            companyId,
+            userId,
+          },
+        });
+
+        await serviceRole.functions.invoke("scheduler", {
+          body: {
+            type: "dependencies",
+            id: createJob.data.id,
+            companyId,
+            userId,
+          },
+        });
+      }
+    }
+  }
+
+  return salesOrder;
+}
 
 export async function deleteJob(
   client: SupabaseClient<Database>,

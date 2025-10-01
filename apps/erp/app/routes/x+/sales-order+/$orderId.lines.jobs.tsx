@@ -1,16 +1,18 @@
-import { assertIsPost, success } from "@carbon/auth";
+import { assertIsPost, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
-import type { salesOrderToJobsTask } from "@carbon/jobs/trigger/sales-order-to-jobs";
-import { tasks } from "@trigger.dev/sdk/v3";
 import type { ActionFunctionArgs } from "@vercel/remix";
 import { redirect } from "@vercel/remix";
+import { convertSalesOrderLinesToJobs } from "~/modules/production/production.service";
 import { path, requestReferrer } from "~/utils/path";
 
-export const config = { runtime: "nodejs" };
+export const config = { runtime: "nodejs", timeout: 10000 };
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);
+  const { client } = await requirePermissions(request, {
+    create: "production",
+  });
 
   const { orderId } = params;
   if (!orderId) {
@@ -21,14 +23,24 @@ export async function action({ request, params }: ActionFunctionArgs) {
     create: "production",
   });
 
-  await tasks.trigger<typeof salesOrderToJobsTask>("sales-order-to-jobs", {
+  const salesOrder = await convertSalesOrderLinesToJobs(client, {
     orderId,
     companyId,
     userId,
   });
 
+  if (salesOrder.error) {
+    throw redirect(
+      path.to.salesOrder(orderId),
+      await flash(
+        request,
+        error(salesOrder.error, "Failed to convert sales order lines to jobs")
+      )
+    );
+  }
+
   throw redirect(
     requestReferrer(request) ?? path.to.salesOrder(orderId),
-    await flash(request, success("Jobs queued for creation"))
+    await flash(request, success("Jobs created"))
   );
 }
