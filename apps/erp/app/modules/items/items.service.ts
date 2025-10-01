@@ -741,8 +741,7 @@ export async function getMaterialUsedIn(
       )
       .eq("itemId", itemId)
       .eq("companyId", companyId)
-      .limit(100)
-      .order("createdAt", { ascending: false }),
+      .limit(100),
   ]);
 
   return {
@@ -1422,8 +1421,8 @@ export async function getPartUsedIn(
       )
       .eq("itemId", itemId)
       .eq("companyId", companyId)
-      .limit(100)
-      .order("createdAt", { ascending: false }),
+      .limit(100),
+
     client
       .from("quoteMaterial")
       .select(
@@ -1456,8 +1455,7 @@ export async function getPartUsedIn(
       )
       .eq("itemId", itemId)
       .eq("companyId", companyId)
-      .limit(100)
-      .order("createdAt", { ascending: false }),
+      .limit(100),
   ]);
 
   return {
