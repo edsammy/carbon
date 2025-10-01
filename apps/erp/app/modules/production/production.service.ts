@@ -85,6 +85,9 @@ export async function convertSalesOrderLinesToJobs(
   const quoteId = opportunity.data?.quotes[0]?.id;
   const salesOrderId = opportunity.data?.salesOrders[0]?.id;
 
+  const errors: string[] = [];
+  let jobsCreated = 0;
+
   for await (const line of lines) {
     if (line.methodType === "Make" && line.itemId) {
       const itemManufacturing = await serviceRole
@@ -114,6 +117,7 @@ export async function convertSalesOrderLinesToJobs(
         });
 
         if (!nextSequence.data) {
+          errors.push(`Failed to get sequence for line ${line.itemReadableId}`);
           continue;
         }
 
@@ -155,11 +159,15 @@ export async function convertSalesOrderLinesToJobs(
             jobId: nextSequence.data,
             companyId,
             createdBy: userId,
+            updatedBy: userId,
           })
           .select("id")
           .single();
 
         if (createJob.error) {
+          errors.push(
+            `Failed to create job for line ${line.itemReadableId}: ${createJob.error.message}`
+          );
           continue;
         }
 
@@ -178,6 +186,9 @@ export async function convertSalesOrderLinesToJobs(
           );
 
           if (upsertMethod.error) {
+            errors.push(
+              `Failed to create method for job ${nextSequence.data}: ${upsertMethod.error.message}`
+            );
             continue;
           }
         } else {
@@ -195,6 +206,9 @@ export async function convertSalesOrderLinesToJobs(
           );
 
           if (upsertMethod.error) {
+            errors.push(
+              `Failed to create method for job ${nextSequence.data}: ${upsertMethod.error.message}`
+            );
             continue;
           }
         }
@@ -216,8 +230,35 @@ export async function convertSalesOrderLinesToJobs(
             userId,
           },
         });
+
+        jobsCreated++;
       }
     }
+  }
+
+  if (errors.length > 0) {
+    console.error(errors);
+    return {
+      data: null,
+      error: {
+        message: `Failed to create ${errors.length} job(s). ${errors.join(
+          "; "
+        )}`,
+        details: errors.join("; "),
+        code: "JOB_CREATION_ERROR",
+      } as PostgrestError,
+    };
+  }
+
+  if (jobsCreated === 0) {
+    return {
+      data: null,
+      error: {
+        message: "No jobs were created",
+        details: "No Make items found on sales order lines",
+        code: "NO_JOBS_CREATED",
+      } as PostgrestError,
+    };
   }
 
   return salesOrder;
