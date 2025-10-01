@@ -622,7 +622,7 @@ export const paperlessPartsTask = task({
         // Insert order lines after successful sales order creation
         try {
           await insertOrderLines(carbon, {
-            integration: salesOrderId,
+            salesOrderId: salesOrderId,
             opportunityId: orderOpportunity.data?.id,
             locationId: orderLocationId!,
             companyId: payload.companyId,
