@@ -28,7 +28,7 @@ export default $config({
           { listen: "443/https", forward: "3000/http" },
         ],
         health: {
-          "3000/http": {
+          "443/https": {
             path: "/health",
             healthyThreshold: 2,
             unhealthyThreshold: 2,
@@ -111,7 +111,7 @@ export default $config({
           { listen: "443/https", forward: "3000/http" },
         ],
         health: {
-          "3000/http": {
+          "443/https": {
             path: "/health",
             healthyThreshold: 2,
             unhealthyThreshold: 2,
