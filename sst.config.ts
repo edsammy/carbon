@@ -28,6 +28,12 @@ export default $config({
           { listen: "443/https", forward: "3000/http" },
         ],
       },
+      scaling: {
+        min: 1,
+        max: 10,
+        cpuUtilization: 70,
+        memoryUtilization: 80,
+      },
       environment: {
         AUTODESK_BUCKET_NAME: process.env.AUTODESK_BUCKET_NAME,
         AUTODESK_CLIENT_ID: process.env.AUTODESK_CLIENT_ID,
@@ -85,6 +91,12 @@ export default $config({
           { listen: "443/https", forward: "3000/http" },
         ],
       },
+      scaling: {
+        min: 1,
+        max: 10,
+        cpuUtilization: 70,
+        memoryUtilization: 80,
+      },
       environment: {
         AUTODESK_BUCKET_NAME: process.env.AUTODESK_BUCKET_NAME,
         AUTODESK_CLIENT_ID: process.env.AUTODESK_CLIENT_ID,
@@ -124,7 +136,7 @@ export default $config({
       name: "RateLimitRule",
       statement: {
         rateBasedStatement: {
-          limit: 200,
+          limit: 1000,
           aggregateKeyType: "IP",
         },
       },
