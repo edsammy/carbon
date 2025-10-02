@@ -591,6 +591,14 @@ export const modules: Config = [
                   "Learn how different reorder-policies affect planning",
                 duration: 236,
               },
+              {
+                id: "kanbans",
+                loomUrl:
+                  "https://www.loom.com/share/fc22c1b734bc49c990e7e1fcea654853?sid=e88f5a81-ba6e-4dc5-83fe-3ef83241d529",
+                name: "Kanbans",
+                description: "Learn how to use kanbans to replenish inventory.",
+                duration: 376,
+              },
             ],
           },
         ],
