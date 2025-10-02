@@ -27,6 +27,26 @@ export default $config({
           { listen: "80/http", redirect: "443/https" },
           { listen: "443/https", forward: "3000/http" },
         ],
+        health: {
+          "3000/http": {
+            path: "/health",
+            healthyThreshold: 2,
+            unhealthyThreshold: 2,
+            timeout: "5 seconds",
+            interval: "10 seconds",
+            successCodes: "200",
+          },
+        },
+      },
+      health: {
+        command: [
+          "CMD-SHELL",
+          "curl -f http://localhost:3000/health || exit 1",
+        ],
+        interval: "10 seconds",
+        timeout: "5 seconds",
+        startPeriod: "60 seconds",
+        retries: 2,
       },
       scaling: {
         min: 1,
@@ -90,6 +110,26 @@ export default $config({
           { listen: "80/http", redirect: "443/https" },
           { listen: "443/https", forward: "3000/http" },
         ],
+        health: {
+          "3000/http": {
+            path: "/health",
+            healthyThreshold: 2,
+            unhealthyThreshold: 2,
+            timeout: "5 seconds",
+            interval: "10 seconds",
+            successCodes: "200",
+          },
+        },
+      },
+      health: {
+        command: [
+          "CMD-SHELL",
+          "curl -f http://localhost:3000/health || exit 1",
+        ],
+        interval: "10 seconds",
+        timeout: "5 seconds",
+        startPeriod: "60 seconds",
+        retries: 2,
       },
       scaling: {
         min: 1,
