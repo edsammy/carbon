@@ -287,7 +287,6 @@ export async function getBillingPortalRedirectUrl({
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: `${getAppUrl()}/x/settings/company`,
-    configuration: "",
   });
 
   if (!portalSession.url) {
