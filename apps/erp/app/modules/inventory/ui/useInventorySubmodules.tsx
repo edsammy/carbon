@@ -17,12 +17,6 @@ const inventoryRoutes: AuthenticatedRouteGroup[] = [
     name: "Manage",
     routes: [
       {
-        name: "Kanbans",
-        to: path.to.kanbans,
-        role: "employee",
-        icon: <LuQrCode />,
-      },
-      {
         name: "Receipts",
         to: path.to.receipts,
         icon: <LuHandCoins />,
@@ -45,6 +39,12 @@ const inventoryRoutes: AuthenticatedRouteGroup[] = [
   {
     name: "Track",
     routes: [
+      {
+        name: "Kanbans",
+        to: path.to.kanbans,
+        role: "employee",
+        icon: <LuQrCode />,
+      },
       {
         name: "Quantities",
         to: path.to.inventory,
