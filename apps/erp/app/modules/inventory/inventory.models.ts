@@ -267,3 +267,32 @@ export const warehouseTransferLineValidator = z
     message: "From and To locations must be different",
     path: ["toLocationId"],
   });
+
+export const pickListStatusType = [
+  "Draft",
+  "Released",
+  "In Progress",
+  "Completed",
+] as const;
+
+export const pickListValidator = z.object({
+  id: zfd.text(z.string().optional()),
+  locationId: z.string().min(1, { message: "Location is required" }),
+  status: z.enum(pickListStatusType).optional(),
+  createdDate: zfd.text(z.string().optional()),
+  completedDate: zfd.text(z.string().optional()),
+});
+
+export const pickListLineValidator = z.object({
+  id: zfd.text(z.string().optional()),
+  pickListId: z.string().min(1, { message: "Pick list is required" }),
+  jobId: zfd.text(z.string().optional()),
+  jobMaterialId: zfd.text(z.string().optional()),
+  itemId: z.string().min(1, { message: "Item is required" }),
+  fromShelfId: zfd.text(z.string().optional()),
+  toShelfId: zfd.text(z.string().optional()),
+  quantity: zfd.numeric(
+    z.number().min(0, { message: "Quantity must be greater than or equal to 0" })
+  ),
+  pickedQuantity: zfd.numeric(z.number().min(0).optional()),
+});

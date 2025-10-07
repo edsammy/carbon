@@ -211,6 +211,7 @@ export const methodMaterialValidator = z.object({
   unitOfMeasureCode: z
     .string()
     .min(1, { message: "Unit of Measure is required" }),
+  shelfId: z.string().optional().nullable(),
 });
 
 export const methodOperationValidator = z
