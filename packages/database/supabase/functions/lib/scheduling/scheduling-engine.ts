@@ -281,7 +281,6 @@ class SchedulingEngine {
         .selectAll()
         .where("jobId", "=", this.jobId)
         .where("status", "not in", ["Done", "Canceled"])
-        .where("operationType", "not in", ["Outside"])
         .orderBy("order")
         .execute(),
     ]);
