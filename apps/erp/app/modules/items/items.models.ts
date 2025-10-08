@@ -211,8 +211,13 @@ export const methodMaterialValidator = z.object({
   unitOfMeasureCode: z
     .string()
     .min(1, { message: "Unit of Measure is required" }),
-  useDefaultShelf: zfd.checkbox(),
-  shelfId: zfd.text(z.string().optional()),
+  shelfIds: z.string().transform((val) => {
+    try {
+      return JSON.parse(val) as Record<string, string>;
+    } catch {
+      return {};
+    }
+  }),
 });
 
 export const methodOperationValidator = z

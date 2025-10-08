@@ -17,11 +17,14 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
   HStack,
+  IconButton,
+  Label,
   toast,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   useDebounce,
+  useDisclosure,
   VStack,
 } from "@carbon/react";
 import { getItemReadableId } from "@carbon/utils";
@@ -31,8 +34,14 @@ import { nanoid } from "nanoid";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useState } from "react";
 import {
+  LuArrowLeft,
   LuChevronDown,
+  LuChevronRight,
+  LuCog,
   LuExternalLink,
+  LuGitPullRequest,
+  LuGitPullRequestCreate,
+  LuGitPullRequestCreateArrow,
   LuSettings2,
   LuX,
 } from "react-icons/lu";
@@ -46,9 +55,11 @@ import {
   Number,
   NumberControlled,
   Select,
+  Shelf,
   Submit,
   UnitOfMeasure,
 } from "~/components/Form";
+import { useShelves } from "~/components/Form/Shelf";
 import type {
   Item as SortableItem,
   SortableItemRenderProps,
@@ -549,11 +560,7 @@ const QuoteBillOfMaterial = ({
         <CardAction>
           <Button
             variant="secondary"
-            isDisabled={
-              isDisabled ||
-              !permissions.can("update", "sales") ||
-              selectedItemId !== null
-            }
+            isDisabled={isDisabled || !permissions.can("update", "sales")}
             onClick={onAddItem}
           >
             Add Material
@@ -587,6 +594,7 @@ function MaterialForm({
 }: {
   item: ItemWithData;
   isDisabled: boolean;
+
   setSelectedItemId: Dispatch<SetStateAction<string | null>>;
   quoteOperations: Operation[];
   temporaryItems: TemporaryItems;
@@ -603,6 +611,7 @@ function MaterialForm({
   const methodMaterialFetcher = useFetcher<{ id: string }>();
   const params = useParams();
   const { company } = useUser();
+  const routeData = useRouteData<{ quote: Quotation }>(path.to.quote(quoteId));
 
   const baseCurrency = company?.baseCurrencyCode ?? "USD";
 
@@ -626,6 +635,8 @@ function MaterialForm({
     unitOfMeasureCode: string;
     quantity: number;
     kit: boolean;
+    shelfId?: string;
+    quoteOperationId?: string;
   }>({
     itemId: item.data.itemId ?? "",
     methodType: item.data.methodType ?? "Buy",
@@ -634,6 +645,8 @@ function MaterialForm({
     unitOfMeasureCode: item.data.unitOfMeasureCode ?? "EA",
     quantity: item.data.quantity ?? 1,
     kit: item.data.kit ?? false,
+    shelfId: item.data.shelfId,
+    quoteOperationId: item.data.quoteOperationId,
   });
 
   const onTypeChange = (value: MethodItemType | "Item") => {
@@ -641,7 +654,7 @@ function MaterialForm({
     setItemType(value as MethodItemType);
     setItemData({
       itemId: "",
-      methodType: "" as "Buy",
+      methodType: "Buy",
       quantity: 1,
       unitCost: 0,
       description: "",
@@ -661,7 +674,7 @@ function MaterialForm({
       carbon
         .from("item")
         .select(
-          "name, readableIdWithRevision, type, unitOfMeasureCode, defaultMethodType"
+          "name, readableIdWithRevision, type, unitOfMeasureCode, defaultMethodType, itemTrackingType"
         )
         .eq("id", itemId)
         .eq("companyId", company.id)
@@ -681,12 +694,19 @@ function MaterialForm({
       unitCost: itemCost.data?.unitCost ?? 0,
       unitOfMeasureCode: item.data?.unitOfMeasureCode ?? "EA",
       methodType: item.data?.defaultMethodType ?? "Buy",
+      requiresBatchTracking: item.data?.itemTrackingType === "Batch",
+      requiresSerialTracking: item.data?.itemTrackingType === "Serial",
     }));
 
     if (item.data?.type) {
       setItemType(item.data.type as MethodItemType);
     }
   };
+
+  const sourceDisclosure = useDisclosure();
+  const backflushDisclosure = useDisclosure();
+  const locationId = routeData?.quote?.locationId ?? undefined;
+  const shelves = useShelves(locationId);
 
   return (
     <ValidatedForm
@@ -698,40 +718,177 @@ function MaterialForm({
       method="post"
       defaultValues={item.data}
       validator={quoteMaterialValidator}
-      className="w-full"
+      className="w-full flex flex-col gap-y-4"
       fetcher={methodMaterialFetcher}
     >
-      <Hidden name="id" />
-      <Hidden name="quoteMakeMethodId" />
-      <Hidden name="order" />
-      <Hidden name="kit" value={itemData.kit.toString()} />
-      {itemData.methodType === "Make" && (
-        <Hidden name="unitCost" value={itemData.unitCost} />
-      )}
-      <VStack>
-        <div className="grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3">
-          <Item
-            disabledItems={[params.itemId!]}
-            isReadOnly={isDisabled}
-            name="itemId"
-            label={itemType}
-            includeInactive
-            validItemTypes={["Consumable", "Material", "Part"]}
-            type={itemType}
-            onChange={(value) => {
-              onItemChange(value?.value as string);
-            }}
-            onTypeChange={onTypeChange}
-          />
-          <InputControlled
-            name="description"
-            label="Description"
-            value={itemData.description}
-            onChange={(newValue) => {
-              setItemData((d) => ({ ...d, description: newValue }));
-            }}
-          />
+      <div>
+        <Hidden name="id" />
+        <Hidden name="quoteMakeMethodId" />
+        <Hidden name="kit" value={itemData.kit.toString()} />
+        <Hidden name="order" />
 
+        {itemData.methodType === "Make" && (
+          <Hidden name="unitCost" value={itemData.unitCost} />
+        )}
+      </div>
+
+      <div className="grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3">
+        <Item
+          disabledItems={[params.itemId!]}
+          isReadOnly={isDisabled}
+          name="itemId"
+          label={itemType}
+          includeInactive
+          validItemTypes={["Consumable", "Material", "Part"]}
+          type={itemType}
+          onChange={(value) => {
+            onItemChange(value?.value as string);
+          }}
+          onTypeChange={onTypeChange}
+        />
+
+        <Number name="quantity" label="Quantity" />
+        <UnitOfMeasure
+          name="unitOfMeasureCode"
+          value={itemData.unitOfMeasureCode}
+          onChange={(newValue) =>
+            setItemData((d) => ({
+              ...d,
+              unitOfMeasureCode: newValue?.value ?? "EA",
+            }))
+          }
+        />
+        <InputControlled
+          name="description"
+          label="Description"
+          value={itemData.description}
+          onChange={(newValue) => {
+            setItemData((d) => ({ ...d, description: newValue }));
+          }}
+          className="col-span-2"
+        />
+        {itemData.methodType !== "Make" && (
+          <NumberControlled
+            name="unitCost"
+            label="Unit Cost"
+            value={itemData.unitCost}
+            minValue={0}
+            formatOptions={{
+              style: "currency",
+              currency: baseCurrency,
+            }}
+          />
+        )}
+      </div>
+
+      <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
+        <HStack
+          className="w-full justify-between cursor-pointer"
+          onClick={sourceDisclosure.onToggle}
+        >
+          <HStack>
+            {itemData.methodType === "Make" ? (
+              <>
+                <LuGitPullRequestCreate />
+                <Label>Finish To</Label>
+              </>
+            ) : (
+              <>
+                <LuGitPullRequest />
+                <Label>Pull From</Label>
+              </>
+            )}
+          </HStack>
+          <HStack>
+            <Badge variant="secondary">
+              <MethodIcon type={itemData.methodType} className="size-3 mr-1" />
+              {itemData.methodType}
+            </Badge>
+            <LuArrowLeft
+              className={cn(itemData.methodType === "Make" ? "rotate-180" : "")}
+            />
+            <Badge variant="secondary">
+              <LuGitPullRequest className="size-3 mr-1" />
+              {shelves.options?.find((s) => s.value === itemData.shelfId)
+                ?.label ??
+                (itemData.methodType === "Make" ? "WIP" : "Default Shelf")}
+            </Badge>
+            <IconButton
+              icon={<LuChevronRight />}
+              aria-label={
+                sourceDisclosure.isOpen ? "Collapse Source" : "Expand Source"
+              }
+              variant="ghost"
+              size="md"
+              onClick={(e) => {
+                e.stopPropagation();
+                sourceDisclosure.onToggle();
+              }}
+              className={`transition-transform ${
+                sourceDisclosure.isOpen ? "rotate-90" : ""
+              }`}
+            />
+          </HStack>
+        </HStack>
+        <div
+          className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
+            sourceDisclosure.isOpen ? "" : "hidden"
+          }`}
+        >
+          <DefaultMethodType
+            name="methodType"
+            label="Method Type"
+            value={itemData.methodType}
+            replenishmentSystem="Buy and Make"
+          />
+          <Shelf name="shelfId" label="Shelf" locationId={locationId} />
+        </div>
+      </div>
+
+      <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
+        <HStack
+          className="w-full justify-between cursor-pointer"
+          onClick={backflushDisclosure.onToggle}
+        >
+          <HStack>
+            <LuGitPullRequestCreateArrow />
+            <Label>Backflush</Label>
+          </HStack>
+          <HStack>
+            <Badge
+              variant={quoteOperations.length > 0 ? "secondary" : "destructive"}
+            >
+              <LuCog className="size-3 mr-1" />
+              {itemData.quoteOperationId
+                ? quoteOperations.find(
+                    (o) => o.id === itemData.quoteOperationId
+                  )?.description || "Selected Operation"
+                : "First Operation"}
+            </Badge>
+            <IconButton
+              icon={<LuChevronRight />}
+              aria-label={
+                backflushDisclosure.isOpen
+                  ? "Collapse Backflush"
+                  : "Expand Backflush"
+              }
+              variant="ghost"
+              size="md"
+              onClick={(e) => {
+                e.stopPropagation();
+                backflushDisclosure.onToggle();
+              }}
+              className={`transition-transform ${
+                backflushDisclosure.isOpen ? "rotate-90" : ""
+              }`}
+            />
+          </HStack>
+        </HStack>
+        <div
+          className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
+            backflushDisclosure.isOpen ? "" : "hidden"
+          }`}
+        >
           <Select
             name="quoteOperationId"
             label="Operation"
@@ -740,93 +897,66 @@ function MaterialForm({
               value: o.id!,
               label: o.description,
             }))}
-          />
-
-          <DefaultMethodType
-            name="methodType"
-            label="Method Type"
-            value={itemData.methodType}
-            replenishmentSystem="Buy and Make"
-          />
-          <Number name="quantity" label="Quantity per Parent" />
-          <UnitOfMeasure
-            name="unitOfMeasureCode"
-            value={itemData.unitOfMeasureCode}
-            onChange={(newValue) =>
+            onChange={(newValue) => {
               setItemData((d) => ({
                 ...d,
-                unitOfMeasureCode: newValue?.value ?? "EA",
-              }))
-            }
+                quoteOperationId: newValue?.value as string,
+              }));
+            }}
           />
-
-          {itemData.methodType !== "Make" && (
-            <NumberControlled
-              name="unitCost"
-              label="Unit Cost"
-              value={itemData.unitCost}
-              minValue={0}
-              formatOptions={{
-                style: "currency",
-                currency: baseCurrency,
-              }}
-            />
-          )}
         </div>
+      </div>
 
+      <motion.div
+        className="flex flex-1 items-center justify-end w-full pt-2"
+        initial={{ opacity: 0, filter: "blur(4px)" }}
+        animate={{ opacity: 1, filter: "blur(0px)" }}
+        transition={{
+          type: "spring",
+          bounce: 0,
+          duration: 0.55,
+        }}
+      >
         <motion.div
-          className="flex flex-1 items-center justify-end w-full pt-2"
-          initial={{ opacity: 0, filter: "blur(4px)" }}
-          animate={{ opacity: 1, filter: "blur(0px)" }}
-          transition={{
-            type: "spring",
-            bounce: 0,
-            duration: 0.55,
-          }}
+          layout
+          className="flex items-center justify-between gap-2 w-full"
         >
-          <motion.div
-            layout
-            className="flex items-center justify-between gap-2 w-full"
-          >
-            {itemData.methodType === "Make" ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    leftIcon={<MethodIcon type={"Make"} isKit={itemData.kit} />}
-                    variant="secondary"
-                    size="sm"
-                    rightIcon={<LuChevronDown />}
-                  >
-                    {itemData.kit ? "Kit" : "Subassembly"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuRadioGroup
-                    value={itemData.kit ? "Kit" : "Subassembly"}
-                    onValueChange={(value) => {
-                      setItemData((d) => ({
-                        ...d,
-                        kit: value === "Kit",
-                      }));
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="Subassembly">
-                      Subassembly
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="Kit">
-                      Kit
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div />
-            )}
+          {itemData.methodType === "Make" ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  leftIcon={<MethodIcon type={"Make"} isKit={itemData.kit} />}
+                  variant="secondary"
+                  size="sm"
+                  rightIcon={<LuChevronDown />}
+                >
+                  {itemData.kit ? "Kit" : "Subassembly"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuRadioGroup
+                  value={itemData.kit ? "Kit" : "Subassembly"}
+                  onValueChange={(value) => {
+                    setItemData((d) => ({
+                      ...d,
+                      kit: value === "Kit",
+                    }));
+                  }}
+                >
+                  <DropdownMenuRadioItem value="Subassembly">
+                    Subassembly
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="Kit">Kit</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div />
+          )}
 
-            <Submit isDisabled={isDisabled}>Save</Submit>
-          </motion.div>
+          <Submit isDisabled={isDisabled}>Save</Submit>
         </motion.div>
-      </VStack>
+      </motion.div>
     </ValidatedForm>
   );
 }

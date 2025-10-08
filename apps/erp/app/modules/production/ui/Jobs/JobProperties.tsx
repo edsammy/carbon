@@ -10,7 +10,7 @@ import {
 } from "@carbon/react";
 import { Await, useFetcher, useParams } from "@remix-run/react";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { LuBox, LuCopy, LuLink, LuUnlink2 } from "react-icons/lu";
+import { LuCopy, LuLink, LuUnlink2 } from "react-icons/lu";
 import { usePermissions, useRouteData } from "~/hooks";
 import type { action } from "~/routes/x+/items+/update";
 
@@ -288,10 +288,24 @@ const JobProperties = () => {
             </Button>
           </HStack>
         ) : (
-          <Badge variant="secondary">
-            <LuBox className="w-3 h-3 mr-1" />
-            Inventory
-          </Badge>
+          <ValidatedForm
+            defaultValues={{ shelfId: routeData?.job?.shelfId ?? undefined }}
+            validator={z.object({
+              shelfId: zfd.text(z.string().optional()),
+            })}
+            className="w-full"
+          >
+            <Shelf
+              label=""
+              name="shelfId"
+              inline
+              locationId={routeData?.job?.locationId ?? undefined}
+              isReadOnly={isDisabled}
+              onChange={(value) => {
+                onUpdate("shelfId", value?.id ?? null);
+              }}
+            />
+          </ValidatedForm>
         )}
       </VStack>
 
@@ -497,25 +511,6 @@ const JobProperties = () => {
             if (value?.value) {
               onUpdate("locationId", value.value);
             }
-          }}
-        />
-      </ValidatedForm>
-
-      <ValidatedForm
-        defaultValues={{ shelfId: routeData?.job?.shelfId ?? undefined }}
-        validator={z.object({
-          shelfId: zfd.text(z.string().optional()),
-        })}
-        className="w-full"
-      >
-        <Shelf
-          label="Shelf"
-          name="shelfId"
-          inline
-          locationId={routeData?.job?.locationId ?? undefined}
-          isReadOnly={isDisabled}
-          onChange={(value) => {
-            onUpdate("shelfId", value?.id ?? null);
           }}
         />
       </ValidatedForm>

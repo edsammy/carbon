@@ -13100,7 +13100,7 @@ export type Database = {
           productionQuantity: number | null
           quantity: number
           scrapQuantity: number
-          shelfId: string | null
+          shelfIds: Json
           tags: string[] | null
           unitOfMeasureCode: string
           updatedAt: string | null
@@ -13123,7 +13123,7 @@ export type Database = {
           productionQuantity?: number | null
           quantity: number
           scrapQuantity?: number
-          shelfId?: string | null
+          shelfIds?: Json
           tags?: string[] | null
           unitOfMeasureCode: string
           updatedAt?: string | null
@@ -13146,7 +13146,7 @@ export type Database = {
           productionQuantity?: number | null
           quantity?: number
           scrapQuantity?: number
-          shelfId?: string | null
+          shelfIds?: Json
           tags?: string[] | null
           unitOfMeasureCode?: string
           updatedAt?: string | null
@@ -13312,13 +13312,6 @@ export type Database = {
             columns: ["methodOperationId"]
             isOneToOne: false
             referencedRelation: "methodOperation"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "methodMaterial_shelfId_fkey"
-            columns: ["shelfId"]
-            isOneToOne: false
-            referencedRelation: "shelf"
             referencedColumns: ["id"]
           },
           {
@@ -18509,9 +18502,12 @@ export type Database = {
           createdAt: string
           createdBy: string
           createdDate: string
+          customFields: Json | null
           id: string
           locationId: string
+          pickListId: string
           status: Database["public"]["Enums"]["pickListStatus"]
+          tags: string[] | null
           updatedAt: string | null
           updatedBy: string | null
         }
@@ -18521,9 +18517,12 @@ export type Database = {
           createdAt?: string
           createdBy: string
           createdDate?: string
+          customFields?: Json | null
           id?: string
           locationId: string
+          pickListId: string
           status?: Database["public"]["Enums"]["pickListStatus"]
+          tags?: string[] | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -18533,9 +18532,12 @@ export type Database = {
           createdAt?: string
           createdBy?: string
           createdDate?: string
+          customFields?: Json | null
           id?: string
           locationId?: string
+          pickListId?: string
           status?: Database["public"]["Enums"]["pickListStatus"]
+          tags?: string[] | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -24896,6 +24898,7 @@ export type Database = {
           quoteMakeMethodId: string
           quoteOperationId: string | null
           scrapQuantity: number
+          shelfId: string | null
           tags: string[] | null
           unitCost: number
           unitOfMeasureCode: string | null
@@ -24921,6 +24924,7 @@ export type Database = {
           quoteMakeMethodId: string
           quoteOperationId?: string | null
           scrapQuantity?: number
+          shelfId?: string | null
           tags?: string[] | null
           unitCost?: number
           unitOfMeasureCode?: string | null
@@ -24946,6 +24950,7 @@ export type Database = {
           quoteMakeMethodId?: string
           quoteOperationId?: string | null
           scrapQuantity?: number
+          shelfId?: string | null
           tags?: string[] | null
           unitCost?: number
           unitOfMeasureCode?: string | null
@@ -25119,6 +25124,13 @@ export type Database = {
             columns: ["quoteOperationId"]
             isOneToOne: false
             referencedRelation: "quoteOperationsWithMakeMethods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quoteMaterial_shelfId_fkey"
+            columns: ["shelfId"]
+            isOneToOne: false
+            referencedRelation: "shelf"
             referencedColumns: ["id"]
           },
           {
@@ -44090,6 +44102,7 @@ export type Database = {
           quoteMaterialMakeMethodId: string | null
           quoteOperationId: string | null
           scrapQuantity: number | null
+          shelfId: string | null
           tags: string[] | null
           unitCost: number | null
           unitOfMeasureCode: string | null
@@ -44264,6 +44277,13 @@ export type Database = {
             columns: ["quoteOperationId"]
             isOneToOne: false
             referencedRelation: "quoteOperationsWithMakeMethods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quoteMaterial_shelfId_fkey"
+            columns: ["shelfId"]
+            isOneToOne: false
+            referencedRelation: "shelf"
             referencedColumns: ["id"]
           },
           {
@@ -48699,6 +48719,7 @@ export type Database = {
           parentMaterialId: string
           quantity: number
           revision: string
+          shelfIds: Json
           unitCost: number
           unitOfMeasureCode: string
           version: number
@@ -49041,6 +49062,7 @@ export type Database = {
           quoteMakeMethodId: string
           quoteMaterialMakeMethodId: string
           revision: string
+          shelfId: string
           unitCost: number
           version: number
         }[]
@@ -49066,6 +49088,7 @@ export type Database = {
           quoteMakeMethodId: string
           quoteMaterialMakeMethodId: string
           revision: string
+          shelfId: string
           unitCost: number
           unitOfMeasureCode: string
           version: number
@@ -49467,12 +49490,6 @@ export type Database = {
         | "Audio"
         | "Other"
         | "Model"
-        | "Pick Transfer"
-        | "Vehicle Transfer"
-        | "Scrap Transfer"
-        | "Quarantine Transfer"
-        | "Customer Transfer"
-        | "Rejection Transfer"
       externalLinkDocumentType: "Quote" | "SupplierQuote" | "Customer"
       factor:
         | "Hours/Piece"
@@ -49578,7 +49595,6 @@ export type Database = {
         | "Waiting"
       jobStatus:
         | "Draft"
-        | "Staged"
         | "Ready"
         | "In Progress"
         | "Paused"
@@ -50557,12 +50573,6 @@ export const Constants = {
         "Audio",
         "Other",
         "Model",
-        "Pick Transfer",
-        "Vehicle Transfer",
-        "Scrap Transfer",
-        "Quarantine Transfer",
-        "Customer Transfer",
-        "Rejection Transfer",
       ],
       externalLinkDocumentType: ["Quote", "SupplierQuote", "Customer"],
       factor: [
@@ -50678,7 +50688,6 @@ export const Constants = {
       ],
       jobStatus: [
         "Draft",
-        "Staged",
         "Ready",
         "In Progress",
         "Paused",

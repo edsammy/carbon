@@ -9181,7 +9181,7 @@ export default {
             $ref: "#/parameters/rowFilter.methodMaterial.kit",
           },
           {
-            $ref: "#/parameters/rowFilter.methodMaterial.shelfId",
+            $ref: "#/parameters/rowFilter.methodMaterial.shelfIds",
           },
           {
             $ref: "#/parameters/select",
@@ -9303,7 +9303,7 @@ export default {
             $ref: "#/parameters/rowFilter.methodMaterial.kit",
           },
           {
-            $ref: "#/parameters/rowFilter.methodMaterial.shelfId",
+            $ref: "#/parameters/rowFilter.methodMaterial.shelfIds",
           },
           {
             $ref: "#/parameters/preferReturn",
@@ -9379,7 +9379,7 @@ export default {
             $ref: "#/parameters/rowFilter.methodMaterial.kit",
           },
           {
-            $ref: "#/parameters/rowFilter.methodMaterial.shelfId",
+            $ref: "#/parameters/rowFilter.methodMaterial.shelfIds",
           },
           {
             $ref: "#/parameters/body.methodMaterial",
@@ -47815,6 +47815,9 @@ export default {
             $ref: "#/parameters/rowFilter.pickList.id",
           },
           {
+            $ref: "#/parameters/rowFilter.pickList.pickListId",
+          },
+          {
             $ref: "#/parameters/rowFilter.pickList.locationId",
           },
           {
@@ -47840,6 +47843,12 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.customFields",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.tags",
           },
           {
             $ref: "#/parameters/select",
@@ -47904,6 +47913,9 @@ export default {
             $ref: "#/parameters/rowFilter.pickList.id",
           },
           {
+            $ref: "#/parameters/rowFilter.pickList.pickListId",
+          },
+          {
             $ref: "#/parameters/rowFilter.pickList.locationId",
           },
           {
@@ -47929,6 +47941,12 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.customFields",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.tags",
           },
           {
             $ref: "#/parameters/preferReturn",
@@ -47947,6 +47965,9 @@ export default {
             $ref: "#/parameters/rowFilter.pickList.id",
           },
           {
+            $ref: "#/parameters/rowFilter.pickList.pickListId",
+          },
+          {
             $ref: "#/parameters/rowFilter.pickList.locationId",
           },
           {
@@ -47972,6 +47993,12 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.customFields",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.tags",
           },
           {
             $ref: "#/parameters/body.pickList",
@@ -63694,6 +63721,7 @@ export default {
         "order",
         "scrapQuantity",
         "kit",
+        "shelfIds",
       ],
       properties: {
         id: {
@@ -63801,11 +63829,8 @@ export default {
           format: "boolean",
           type: "boolean",
         },
-        shelfId: {
-          description:
-            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
-          format: "text",
-          type: "string",
+        shelfIds: {
+          format: "jsonb",
         },
       },
       type: "object",
@@ -64906,7 +64931,6 @@ export default {
         status: {
           enum: [
             "Draft",
-            "Staged",
             "Ready",
             "In Progress",
             "Paused",
@@ -69276,7 +69300,6 @@ export default {
           default: "Draft",
           enum: [
             "Draft",
-            "Staged",
             "Ready",
             "In Progress",
             "Paused",
@@ -71135,12 +71158,6 @@ export default {
             "Audio",
             "Other",
             "Model",
-            "Pick Transfer",
-            "Vehicle Transfer",
-            "Scrap Transfer",
-            "Quarantine Transfer",
-            "Customer Transfer",
-            "Rejection Transfer",
           ],
           format: 'public."documentType"',
           type: "string",
@@ -80488,12 +80505,6 @@ export default {
             "Audio",
             "Other",
             "Model",
-            "Pick Transfer",
-            "Vehicle Transfer",
-            "Scrap Transfer",
-            "Quarantine Transfer",
-            "Customer Transfer",
-            "Rejection Transfer",
           ],
           format: 'public."documentType"',
           type: "string",
@@ -82137,6 +82148,7 @@ export default {
     pickList: {
       required: [
         "id",
+        "pickListId",
         "locationId",
         "status",
         "createdDate",
@@ -82148,6 +82160,10 @@ export default {
         id: {
           default: "public.xid()",
           description: "Note:\nThis is a Primary Key.<pk/>",
+          format: "text",
+          type: "string",
+        },
+        pickListId: {
           format: "text",
           type: "string",
         },
@@ -82198,6 +82214,16 @@ export default {
             "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
           format: "text",
           type: "string",
+        },
+        customFields: {
+          format: "jsonb",
+        },
+        tags: {
+          format: "text[]",
+          items: {
+            type: "string",
+          },
+          type: "array",
         },
       },
       type: "object",
@@ -90847,8 +90873,8 @@ export default {
       in: "query",
       type: "string",
     },
-    "rowFilter.methodMaterial.shelfId": {
-      name: "shelfId",
+    "rowFilter.methodMaterial.shelfIds": {
+      name: "shelfIds",
       required: false,
       in: "query",
       type: "string",
@@ -111562,6 +111588,12 @@ export default {
       in: "query",
       type: "string",
     },
+    "rowFilter.pickList.pickListId": {
+      name: "pickListId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
     "rowFilter.pickList.locationId": {
       name: "locationId",
       required: false,
@@ -111612,6 +111644,18 @@ export default {
     },
     "rowFilter.pickList.updatedBy": {
       name: "updatedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.customFields": {
+      name: "customFields",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.tags": {
+      name: "tags",
       required: false,
       in: "query",
       type: "string",

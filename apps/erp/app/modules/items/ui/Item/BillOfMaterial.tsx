@@ -39,11 +39,13 @@ import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import {
+  LuArrowLeft,
   LuChevronDown,
   LuChevronRight,
   LuCog,
   LuExternalLink,
   LuGitPullRequest,
+  LuGitPullRequestCreate,
   LuGitPullRequestCreateArrow,
   LuLock,
   LuSettings2,
@@ -57,6 +59,7 @@ import {
   DefaultMethodType,
   Hidden,
   Item,
+  Location,
   Number,
   Select,
   Shelf,
@@ -73,6 +76,7 @@ import { usePermissions, useUser } from "~/hooks";
 import type { Database } from "@carbon/database";
 import { getItemReadableId } from "@carbon/utils";
 import { ConfigurationEditor } from "~/components/Configurator/ConfigurationEditor";
+import { useShelves } from "~/components/Form/Shelf";
 import { useUnitOfMeasure } from "~/components/Form/UnitOfMeasure";
 import {
   methodType,
@@ -135,8 +139,7 @@ const initialMethodMaterial: Omit<Material, "makeMethodId" | "order"> & {
   description: "",
   quantity: 1,
   unitOfMeasureCode: "EA",
-  useDefaultShelf: true,
-  shelfId: undefined,
+  shelfIds: {},
 };
 
 const BillOfMaterial = ({
@@ -481,7 +484,7 @@ const BillOfMaterial = ({
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
-              isDisabled={isReadOnly || selectedItemId !== null}
+              isDisabled={isReadOnly}
               onClick={onAddItem}
             >
               Add Material
@@ -569,7 +572,18 @@ function MaterialForm({
   const { carbon } = useCarbon();
   const methodMaterialFetcher = useFetcher<{ id: string }>();
   const params = useParams();
-  const { company } = useUser();
+  const { company, defaults } = useUser();
+  const [locationId, setLocationId] = useState<string | undefined>(
+    defaults.locationId ?? undefined
+  );
+
+  const shelves = useShelves(locationId);
+
+  useEffect(() => {
+    if (defaults.locationId) {
+      setLocationId(defaults.locationId);
+    }
+  }, [defaults.locationId]);
 
   const unitOfMeasures = useUnitOfMeasure();
 
@@ -598,8 +612,7 @@ function MaterialForm({
     methodOperationId: string | undefined;
     quantity: number;
     kit: boolean;
-    useDefaultShelf: boolean;
-    shelfId: string | undefined;
+    shelfIds: Record<string, string>;
   }>({
     itemId: item.data.itemId ?? "",
     methodType: item.data.methodType ?? "Buy",
@@ -608,8 +621,7 @@ function MaterialForm({
     methodOperationId: item.data.methodOperationId ?? undefined,
     quantity: item.data.quantity ?? 1,
     kit: item.data.kit ?? false,
-    useDefaultShelf: item.data.useDefaultShelf ?? true,
-    shelfId: item.data.shelfId ?? undefined,
+    shelfIds: item.data.shelfIds ?? {},
   });
 
   const onTypeChange = (value: MethodItemType | "Item") => {
@@ -623,8 +635,7 @@ function MaterialForm({
       description: "",
       unitOfMeasureCode: "EA",
       kit: false,
-      useDefaultShelf: true,
-      shelfId: undefined,
+      shelfIds: {},
       methodOperationId: undefined,
     });
   };
@@ -673,7 +684,9 @@ function MaterialForm({
           : path.to.methodMaterial(item.id!)
       }
       method="post"
-      defaultValues={item.data}
+      defaultValues={{
+        ...item.data,
+      }}
       validator={methodMaterialValidator}
       className="w-full flex flex-col gap-y-4"
       fetcher={methodMaterialFetcher}
@@ -683,6 +696,7 @@ function MaterialForm({
         <Hidden name="makeMethodId" />
         <Hidden name="order" />
         <Hidden name="kit" value={itemData.kit.toString()} />
+        <Hidden name="shelfIds" value={JSON.stringify(itemData.shelfIds)} />
       </div>
 
       <div className="grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3">
@@ -760,138 +774,172 @@ function MaterialForm({
           }
         />
       </div>
-      {itemData.methodType !== "Make" && (
-        <>
-          <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
-            <HStack
-              className="w-full justify-between cursor-pointer"
-              onClick={sourceDisclosure.onToggle}
-            >
-              <HStack>
+      <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
+        <HStack
+          className="w-full justify-between cursor-pointer"
+          onClick={sourceDisclosure.onToggle}
+        >
+          <HStack>
+            {itemData.methodType === "Make" ? (
+              <>
+                <LuGitPullRequestCreate />
+                <Label>Finish To</Label>
+              </>
+            ) : (
+              <>
                 <LuGitPullRequest />
                 <Label>Pull From</Label>
-              </HStack>
-              <HStack>
-                <Badge variant="secondary">
-                  <MethodIcon
-                    type={itemData.methodType}
-                    className="size-3 mr-1"
-                  />
-                  {itemData.methodType}
-                </Badge>
-                <Badge variant="secondary">
-                  <LuGitPullRequest className="size-3 mr-1" />
-                  Default Shelf
-                </Badge>
-                <IconButton
-                  icon={<LuChevronRight />}
-                  aria-label={
-                    sourceDisclosure.isOpen
-                      ? "Collapse Source"
-                      : "Expand Source"
-                  }
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    sourceDisclosure.onToggle();
-                  }}
-                  className={`transition-transform ${
-                    sourceDisclosure.isOpen ? "rotate-90" : ""
-                  }`}
-                />
-              </HStack>
-            </HStack>
-            <div
-              className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
-                sourceDisclosure.isOpen ? "" : "hidden"
+              </>
+            )}
+          </HStack>
+          <HStack>
+            <Badge variant="secondary">
+              <MethodIcon type={itemData.methodType} className="size-3 mr-1" />
+              {itemData.methodType}
+            </Badge>
+            <LuArrowLeft
+              className={cn(itemData.methodType === "Make" ? "rotate-180" : "")}
+            />
+            <Badge variant="secondary">
+              <LuGitPullRequest className="size-3 mr-1" />
+              {shelves.options?.find(
+                (s) => s.value === itemData.shelfIds[locationId ?? ""]
+              )?.label ??
+                (itemData.methodType === "Make" ? "WIP" : "Default Shelf")}
+            </Badge>
+            <IconButton
+              icon={<LuChevronRight />}
+              aria-label={
+                sourceDisclosure.isOpen ? "Collapse Source" : "Expand Source"
+              }
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                sourceDisclosure.onToggle();
+              }}
+              className={`transition-transform ${
+                sourceDisclosure.isOpen ? "rotate-90" : ""
               }`}
-            >
-              <DefaultMethodType
-                name="methodType"
-                label="Method Type"
-                value={itemData.methodType}
-                isConfigured={rulesByField.has(key("methodType"))}
-                onConfigure={
-                  configurable && !temporaryItems[item.id]
-                    ? () =>
-                        onConfigure({
-                          label: "Method Type",
-                          field: key("methodType"),
-                          code: rulesByField.get(key("methodType"))?.code,
-                          defaultValue: itemData.methodType,
-                          returnType: {
-                            type: "enum",
-                            listOptions: methodType,
-                          },
-                        })
-                    : undefined
-                }
-                replenishmentSystem="Buy and Make"
-              />
+            />
+          </HStack>
+        </HStack>
+        <div
+          className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
+            sourceDisclosure.isOpen ? "" : "hidden"
+          }`}
+        >
+          <DefaultMethodType
+            name="methodType"
+            label="Method Type"
+            value={itemData.methodType}
+            isConfigured={rulesByField.has(key("methodType"))}
+            onConfigure={
+              configurable && !temporaryItems[item.id]
+                ? () =>
+                    onConfigure({
+                      label: "Method Type",
+                      field: key("methodType"),
+                      code: rulesByField.get(key("methodType"))?.code,
+                      defaultValue: itemData.methodType,
+                      returnType: {
+                        type: "enum",
+                        listOptions: methodType,
+                      },
+                    })
+                : undefined
+            }
+            replenishmentSystem="Buy and Make"
+          />
+          <Location
+            name="locationId"
+            label="Location"
+            value={locationId}
+            onChange={(value) => {
+              setLocationId(value?.value as string);
+            }}
+          />
+          <Shelf
+            name="shelfId"
+            label="Shelf"
+            value={itemData.shelfIds[locationId ?? ""]}
+            locationId={locationId}
+            onChange={(value) => {
+              setItemData((d) => ({
+                ...d,
+                shelfIds: {
+                  ...d.shelfIds,
+                  [locationId ?? ""]: value?.id ?? "",
+                },
+              }));
+            }}
+            isOptional
+          />
+        </div>
+      </div>
 
-              <Shelf name="shelfId" label="Shelf" isOptional />
-            </div>
-          </div>
-
-          <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
-            <HStack
-              className="w-full justify-between cursor-pointer"
-              onClick={backflushDisclosure.onToggle}
+      <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
+        <HStack
+          className="w-full justify-between cursor-pointer"
+          onClick={backflushDisclosure.onToggle}
+        >
+          <HStack>
+            <LuGitPullRequestCreateArrow />
+            <Label>Backflush</Label>
+          </HStack>
+          <HStack>
+            <Badge
+              variant={
+                methodOperations.length > 0 ? "secondary" : "destructive"
+              }
             >
-              <HStack>
-                <LuGitPullRequestCreateArrow />
-                <Label>Backflush</Label>
-              </HStack>
-              <HStack>
-                <Badge
-                  variant={
-                    methodOperations.length > 0 ? "secondary" : "destructive"
-                  }
-                >
-                  <LuCog className="size-3 mr-1" />
-                  {itemData.methodOperationId
-                    ? methodOperations.find(
-                        (o) => o.id === itemData.methodOperationId
-                      )?.description || "Selected Operation"
-                    : "First Operation"}
-                </Badge>
-                <IconButton
-                  icon={<LuChevronRight />}
-                  aria-label={
-                    backflushDisclosure.isOpen
-                      ? "Collapse Backflush"
-                      : "Expand Backflush"
-                  }
-                  variant="ghost"
-                  size="md"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    backflushDisclosure.onToggle();
-                  }}
-                  className={`transition-transform ${
-                    backflushDisclosure.isOpen ? "rotate-90" : ""
-                  }`}
-                />
-              </HStack>
-            </HStack>
-            <div
-              className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
-                backflushDisclosure.isOpen ? "" : "hidden"
+              <LuCog className="size-3 mr-1" />
+              {itemData.methodOperationId
+                ? methodOperations.find(
+                    (o) => o.id === itemData.methodOperationId
+                  )?.description || "Selected Operation"
+                : "First Operation"}
+            </Badge>
+            <IconButton
+              icon={<LuChevronRight />}
+              aria-label={
+                backflushDisclosure.isOpen
+                  ? "Collapse Backflush"
+                  : "Expand Backflush"
+              }
+              variant="ghost"
+              size="md"
+              onClick={(e) => {
+                e.stopPropagation();
+                backflushDisclosure.onToggle();
+              }}
+              className={`transition-transform ${
+                backflushDisclosure.isOpen ? "rotate-90" : ""
               }`}
-            >
-              <Select
-                name="methodOperationId"
-                label="Operation"
-                isOptional
-                options={methodOperations.map((o) => ({
-                  value: o.id!,
-                  label: o.description,
-                }))}
-              />
-            </div>
-          </div>
-        </>
-      )}
+            />
+          </HStack>
+        </HStack>
+        <div
+          className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
+            backflushDisclosure.isOpen ? "" : "hidden"
+          }`}
+        >
+          <Select
+            name="methodOperationId"
+            label="Operation"
+            isOptional
+            options={methodOperations.map((o) => ({
+              value: o.id!,
+              label: o.description,
+            }))}
+            onChange={(value) => {
+              setItemData((d) => ({
+                ...d,
+                methodOperationId: value?.value,
+              }));
+            }}
+          />
+        </div>
+      </div>
 
       <motion.div
         className="flex flex-1 items-center justify-end w-full"

@@ -5,9 +5,8 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'methodMaterial' AND column_name = 'shelfId'
   ) THEN
-    ALTER TABLE "methodMaterial" ADD COLUMN "shelfId" TEXT;
-    ALTER TABLE "methodMaterial" ADD CONSTRAINT "methodMaterial_shelfId_fkey"
-      FOREIGN KEY ("shelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    ALTER TABLE "methodMaterial" ADD COLUMN "shelfIds" JSONB NOT NULL DEFAULT '{}';
+    
   END IF;
 END $$;
 
@@ -20,6 +19,19 @@ BEGIN
   ) THEN
     ALTER TABLE "jobMaterial" ADD COLUMN "shelfId" TEXT;
     ALTER TABLE "jobMaterial" ADD CONSTRAINT "jobMaterial_shelfId_fkey"
+      FOREIGN KEY ("shelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
+
+-- Add shelfId to quoteMaterial table for pick-from location
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'quoteMaterial' AND column_name = 'shelfId'
+  ) THEN
+    ALTER TABLE "quoteMaterial" ADD COLUMN "shelfId" TEXT;
+    ALTER TABLE "quoteMaterial" ADD CONSTRAINT "quoteMaterial_shelfId_fkey"
       FOREIGN KEY ("shelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
 END $$;
@@ -37,6 +49,17 @@ CREATE OR REPLACE VIEW "jobMaterialWithMakeMethodId" WITH(SECURITY_INVOKER=true)
   LEFT JOIN "jobMakeMethod" jmm
     ON jmm."parentMaterialId" = jm."id"
   INNER JOIN "item" i ON i.id = jm."itemId";
+
+
+DROP VIEW IF EXISTS "quoteMaterialWithMakeMethodId";
+CREATE OR REPLACE VIEW "quoteMaterialWithMakeMethodId" WITH(SECURITY_INVOKER=true) AS
+  SELECT 
+    qm.*, 
+    qmm."id" AS "quoteMaterialMakeMethodId",
+    qmm.version AS "version"
+  FROM "quoteMaterial" qm 
+  LEFT JOIN "quoteMakeMethod" qmm 
+    ON qmm."parentMaterialId" = qm."id";
 
 -- Create pick list status enum
 CREATE TYPE "pickListStatus" AS ENUM (
@@ -188,3 +211,4 @@ FOR DELETE USING (
     )::text[]
   )
 );
+

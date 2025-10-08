@@ -280,7 +280,7 @@ serve(async (req: Request) => {
         const itemId = sourceId;
         const isConfigured = !!configuration;
 
-        const [makeMethod, jobMakeMethod, workCenters, supplierProcesses] =
+        const [makeMethod, jobMakeMethod, workCenters, supplierProcesses, job] =
           await Promise.all([
             client
               .from("activeMakeMethods")
@@ -300,6 +300,12 @@ serve(async (req: Request) => {
               .from("supplierProcess")
               .select("*")
               .eq("companyId", companyId),
+            client
+              .from("job")
+              .select("locationId")
+              .eq("id", jobId)
+              .eq("companyId", companyId)
+              .single(),
           ]);
 
         if (makeMethod.error) {
@@ -312,6 +318,10 @@ serve(async (req: Request) => {
 
         if (workCenters.error) {
           throw new Error("Failed to get related work centers");
+        }
+
+        if (job.error) {
+          throw new Error("Failed to get job");
         }
 
         const hydratedConfiguration = await hydrateConfiguration(
@@ -674,6 +684,8 @@ serve(async (req: Request) => {
                 ) ?? {};
             }
 
+            const locationId = job.data?.locationId;
+
             const mapMethodMaterialToJobMaterial = async (
               child: MethodTreeItem
             ) => {
@@ -755,6 +767,10 @@ serve(async (req: Request) => {
                 order: child.data.order,
                 description,
                 quantity,
+                shelfId: locationId
+                  ? // @ts-ignore
+                    (child.data.shelfIds?.[locationId] as string) || null
+                  : null,
                 requiresSerialTracking,
                 requiresBatchTracking,
                 unitOfMeasureCode,
@@ -909,7 +925,13 @@ serve(async (req: Request) => {
           companyId
         );
 
-        const [methodTrees, configurationRules] = await Promise.all([
+        const [job, methodTrees, configurationRules] = await Promise.all([
+          client
+            .from("job")
+            .select("locationId")
+            .eq("id", jobMakeMethod.data.jobId)
+            .eq("companyId", companyId)
+            .single(),
           getMethodTree(client, makeMethod.data.id!),
           isConfigured
             ? client
@@ -959,38 +981,6 @@ serve(async (req: Request) => {
               .where("id", "=", jobMakeMethodId)
               .execute(),
           ]);
-
-          function getFieldKey(field: string, id: string) {
-            return `${field}:${id}`;
-          }
-
-          async function getConfiguredValue<T>({
-            id,
-            field,
-            defaultValue,
-          }: {
-            id: string;
-            field: string;
-            defaultValue: T;
-          }): Promise<T> {
-            if (!configurationCodeByField) return defaultValue;
-            const fieldKey = getFieldKey(field, id);
-
-            if (configurationCodeByField?.[fieldKey]) {
-              try {
-                const mod = await importTypeScript(
-                  configurationCodeByField[fieldKey]
-                );
-                const result = await mod.configure(hydratedConfiguration);
-                return (result ?? defaultValue) as T;
-              } catch (err) {
-                console.error(err);
-                return defaultValue;
-              }
-            }
-
-            return defaultValue;
-          }
 
           // traverse method tree and create:
           // - jobMakeMethod
@@ -1153,6 +1143,8 @@ serve(async (req: Request) => {
               requiresSerialTracking: child.data.itemTrackingType === "Serial",
               unitOfMeasureCode: child.data.unitOfMeasureCode,
               unitCost: child.data.unitCost,
+              // @ts-ignore
+              shelfId: child.data.shelfIds?.[job.data.locationId] || null,
               companyId,
               createdBy: userId,
               customFields: {},
@@ -1236,6 +1228,7 @@ serve(async (req: Request) => {
           workCenters,
           supplierProcesses,
           configurationRules,
+          quote,
         ] = await Promise.all([
           client
             .from("activeMakeMethods")
@@ -1259,6 +1252,12 @@ serve(async (req: Request) => {
                 .eq("itemId", itemId)
                 .eq("companyId", companyId)
             : Promise.resolve({ data: null, error: null }),
+          client
+            .from("quote")
+            .select("locationId")
+            .eq("id", quoteId)
+            .eq("companyId", companyId)
+            .single(),
         ]);
 
         const configurationCodeByField = configurationRules?.data?.reduce<
@@ -1267,6 +1266,8 @@ serve(async (req: Request) => {
           acc[rule.field] = rule.code;
           return acc;
         }, {});
+
+        const quoteLocationId = quote.data?.locationId;
 
         if (makeMethod.error) {
           throw new Error("Failed to get make method");
@@ -1715,6 +1716,10 @@ serve(async (req: Request) => {
                 methodType,
                 description,
                 quantity,
+                shelfId: quoteLocationId
+                  ? // @ts-ignore: shelfIds is a dynamic object with location keys
+                    (child.data.shelfIds?.[quoteLocationId] as string) || null
+                  : null,
                 unitOfMeasureCode,
                 unitCost,
                 companyId,
@@ -2104,6 +2109,7 @@ serve(async (req: Request) => {
               order: child.data.order,
               description: child.data.description,
               quantity: child.data.quantity,
+              shelfId: (child.data as any).shelfId || null, // @ts-ignore: shelfId field exists in database but types may not be updated
               unitOfMeasureCode: child.data.unitOfMeasureCode,
               unitCost: child.data.unitCost,
               companyId,
@@ -2204,7 +2210,13 @@ serve(async (req: Request) => {
 
         const itemId = makeMethod.data?.itemId;
 
-        const [jobOperations, itemReplenishment] = await Promise.all([
+        const [job, jobOperations, itemReplenishment] = await Promise.all([
+          client
+            .from("job")
+            .select("locationId")
+            .eq("id", jobMakeMethod.data.jobId)
+            .eq("companyId", companyId)
+            .single(),
           client
             .from("jobOperationsWithMakeMethods")
             .select(
@@ -2295,7 +2307,11 @@ serve(async (req: Request) => {
                 order: child.data.order,
                 quantity: child.data.quantity,
                 unitOfMeasureCode: child.data.unitOfMeasureCode,
-                shelfId: child.data.shelfId || null,
+                shelfIds: job.data?.locationId
+                  ? {
+                      [job.data.locationId]: child.data.shelfId || null,
+                    }
+                  : {},
                 companyId,
                 createdBy: userId,
                 customFields: {},
@@ -2465,28 +2481,35 @@ serve(async (req: Request) => {
         }
         const makeMethodId = targetId;
 
-        const [makeMethod, jobMakeMethod, jobOperations] = await Promise.all([
-          client
-            .from("makeMethod")
-            .select("*")
-            .eq("id", makeMethodId)
-            .eq("companyId", companyId)
-            .single(),
-          client
-            .from("jobMakeMethod")
-            .select("*")
-            .eq("jobId", jobId)
-            .is("parentMaterialId", null)
-            .eq("companyId", companyId)
-            .single(),
-          client
-            .from("jobOperationsWithMakeMethods")
-            .select(
-              "*, jobOperationTool(*), jobOperationParameter(*), jobOperationStep(*)"
-            )
-            .eq("jobId", jobId)
-            .eq("companyId", companyId),
-        ]);
+        const [makeMethod, jobMakeMethod, jobOperations, job] =
+          await Promise.all([
+            client
+              .from("makeMethod")
+              .select("*")
+              .eq("id", makeMethodId)
+              .eq("companyId", companyId)
+              .single(),
+            client
+              .from("jobMakeMethod")
+              .select("*")
+              .eq("jobId", jobId)
+              .is("parentMaterialId", null)
+              .eq("companyId", companyId)
+              .single(),
+            client
+              .from("jobOperationsWithMakeMethods")
+              .select(
+                "*, jobOperationTool(*), jobOperationParameter(*), jobOperationStep(*)"
+              )
+              .eq("jobId", jobId)
+              .eq("companyId", companyId),
+            client
+              .from("job")
+              .select("locationId")
+              .eq("id", jobId)
+              .eq("companyId", companyId)
+              .single(),
+          ]);
 
         if (makeMethod.error) {
           throw new Error("Failed to get make method");
@@ -2575,7 +2598,11 @@ serve(async (req: Request) => {
                 order: child.data.order,
                 quantity: child.data.quantity,
                 unitOfMeasureCode: child.data.unitOfMeasureCode,
-                shelfId: child.data.shelfId || null,
+                shelfIds: job.data?.locationId
+                  ? {
+                      [job.data.locationId]: child.data.shelfId || null,
+                    }
+                  : {},
                 companyId,
                 createdBy: userId,
                 customFields: {},
@@ -3073,7 +3100,13 @@ serve(async (req: Request) => {
 
         const itemId = makeMethod.data?.itemId;
 
-        const [quoteMethodTrees, itemReplenishment] = await Promise.all([
+        const [quote, quoteMethodTrees, itemReplenishment] = await Promise.all([
+          client
+            .from("quote")
+            .select("locationId")
+            .eq("id", quoteId)
+            .eq("companyId", companyId)
+            .single(),
           getQuoteMethodTree(client, quoteMakeMethod.data.id),
           client
             .from("itemReplenishment")
@@ -3151,8 +3184,11 @@ serve(async (req: Request) => {
                   methodType: child.data.methodType,
                   order: child.data.order,
                   quantity: child.data.quantity,
+                  shelfIds: quote.data?.locationId
+                    ? // @ts-ignore: shelfIds is a dynamic object with location keys
+                      { [quote.data.locationId]: child.data.shelfId || null }
+                    : {},
                   unitOfMeasureCode: child.data.unitOfMeasureCode,
-                  shelfId: child.data.shelfId || null,
                   companyId,
                   createdBy: userId,
                   customFields: {},
@@ -3443,7 +3479,6 @@ serve(async (req: Request) => {
                   order: child.data.order,
                   quantity: child.data.quantity,
                   unitOfMeasureCode: child.data.unitOfMeasureCode,
-                  shelfId: child.data.shelfId || null,
                   companyId,
                   createdBy: userId,
                   customFields: {},
@@ -3733,6 +3768,7 @@ serve(async (req: Request) => {
                           child.data.quoteMakeMethodId
                         ],
                   quantity: child.data.quantity,
+                  shelfId: child.data.shelfId,
                   requiresBatchTracking:
                     child.data.itemTrackingType === "Batch",
                   requiresSerialTracking:
@@ -4021,6 +4057,7 @@ serve(async (req: Request) => {
                           child.data.quoteMakeMethodId
                         ],
                   quantity: child.data.quantity,
+                  shelfId: child.data.shelfId,
                   unitOfMeasureCode: child.data.unitOfMeasureCode,
                   unitCost: child.data.unitCost, // TODO: get unit cost
                   companyId,
@@ -4495,6 +4532,7 @@ serve(async (req: Request) => {
                             child.data.quoteMakeMethodId
                           ],
                     quantity: child.data.quantity,
+                    shelfId: child.data.shelfId,
                     unitCost: child.data.unitCost, // TODO: get unit cost
                     unitOfMeasureCode: child.data.unitOfMeasureCode,
                     companyId,
