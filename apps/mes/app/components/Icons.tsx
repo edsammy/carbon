@@ -200,7 +200,7 @@ export function OperationStatusIcon({
       return <TodoStatusIcon className="text-blue-600" />;
     case "Waiting":
     case "Canceled":
-      return <LuCircleX className="text-muted-foreground" />;
+      return <LuCircleX className="text-red-600" />;
     case "Done":
       return <LuCircleCheck className="text-green-600" />;
     case "In Progress":

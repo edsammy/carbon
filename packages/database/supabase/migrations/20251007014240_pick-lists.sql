@@ -36,11 +36,12 @@ BEGIN
   END IF;
 END $$;
 
--- Update jobMaterialWithMakeMethodId view to include shelfId
+-- Update jobMaterialWithMakeMethodId view to include shelfId and shelfName
 DROP VIEW IF EXISTS "jobMaterialWithMakeMethodId";
 CREATE OR REPLACE VIEW "jobMaterialWithMakeMethodId" WITH(SECURITY_INVOKER=true) AS
   SELECT
     jm.*,
+    s."name" AS "shelfName",
     jmm."id" AS "jobMaterialMakeMethodId",
     jmm.version AS "version",
     i."readableIdWithRevision" as "itemReadableId",
@@ -48,6 +49,7 @@ CREATE OR REPLACE VIEW "jobMaterialWithMakeMethodId" WITH(SECURITY_INVOKER=true)
   FROM "jobMaterial" jm
   LEFT JOIN "jobMakeMethod" jmm
     ON jmm."parentMaterialId" = jm."id"
+  LEFT JOIN "shelf" s ON s.id = jm."shelfId"
   INNER JOIN "item" i ON i.id = jm."itemId";
 
 

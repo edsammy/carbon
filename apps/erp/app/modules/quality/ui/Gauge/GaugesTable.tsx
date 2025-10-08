@@ -101,7 +101,7 @@ const GaugesTable = memo(({ data, types, count }: GaugesTableProps) => {
       },
       {
         id: "supplierId",
-        header: "Supplier",
+        header: "Manufacturer",
         cell: ({ row }) => {
           return <SupplierAvatar supplierId={row.original.supplierId} />;
         },

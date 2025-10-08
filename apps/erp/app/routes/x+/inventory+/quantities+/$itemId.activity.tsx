@@ -6,6 +6,7 @@ import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
 import { useCallback, useState } from "react";
 import InfiniteScroll from "~/components/InfiniteScroll";
+import type { ItemLedger } from "~/modules/inventory";
 import { getItemLedgerPage, InventoryActivity } from "~/modules/inventory";
 import { getLocationsList } from "~/modules/resources";
 import { getUserDefaults } from "~/modules/users/users.server";
@@ -83,7 +84,8 @@ export default function ItemInventoryActivityRoute() {
 
   const { carbon } = useCarbon();
 
-  const [itemLedgers, setItemLedgers] = useState<any[]>(initialItemLedgers);
+  const [itemLedgers, setItemLedgers] =
+    useState<ItemLedger[]>(initialItemLedgers);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);

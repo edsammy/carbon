@@ -4,8 +4,11 @@ import { z } from "npm:zod@^3.24.1";
 import { DB, getConnectionPool, getDatabaseClient } from "../lib/database.ts";
 
 import { nanoid } from "https://deno.land/x/nanoid@v3.0.0/nanoid.ts";
-import { Transaction } from "https://esm.sh/v135/kysely@0.26.3/dist/cjs/kysely.d.ts";
 import { corsHeaders } from "../lib/headers.ts";
+import {
+  getShelfWithHighestQuantity,
+  updatePickMethodDefaultShelfIfNeeded,
+} from "../lib/shelves.ts";
 import { getSupabaseServiceRole } from "../lib/supabase.ts";
 import { Database } from "../lib/types.ts";
 import { TrackedEntityAttributes } from "../lib/utils.ts";
@@ -332,20 +335,6 @@ serve(async (req: Request) => {
           }
 
           if (materialsToIssue.length > 0) {
-            const itemIds = new Set(
-              materialsToIssue.map((material) => material.itemId)
-            );
-            const itemIdsWithDefaultShelf = new Set(
-              materialsToIssue
-                .filter((material) => material.defaultShelf)
-                .map((material) => material.itemId)
-            );
-            const itemIdsWithoutDefaultShelf = new Set(
-              materialsToIssue
-                .filter((material) => !material.defaultShelf)
-                .map((material) => material.itemId)
-            );
-
             const jobId = materialsToIssue[0].jobId;
 
             const [job, items] = await Promise.all([
@@ -356,62 +345,17 @@ serve(async (req: Request) => {
                 .executeTakeFirst(),
               trx
                 .selectFrom("item")
-                .where("id", "in", Array.from(itemIds))
+                .where(
+                  "id",
+                  "in",
+                  materialsToIssue.map((material) => material.itemId)
+                )
                 .select(["id", "item.itemTrackingType"])
                 .execute(),
             ]);
 
             if (!job?.locationId) {
               throw new Error("Job location is required");
-            }
-
-            const pickMethods = await trx
-              .selectFrom("pickMethod")
-              .select(["itemId", "defaultShelfId"])
-              .where("itemId", "in", Array.from(itemIdsWithDefaultShelf))
-              .where("locationId", "=", job?.locationId!)
-              .where("companyId", "=", companyId)
-              .execute();
-
-            // For items without defaultShelf, find the shelf with the last positive adjustment
-            const shelfIdsForItemsWithoutDefault = new Map<
-              string,
-              string | null
-            >();
-
-            if (itemIdsWithoutDefaultShelf.size > 0) {
-              for (const itemId of itemIdsWithoutDefaultShelf) {
-                const shelfId = await getShelfWithHighestQuantity(
-                  trx,
-                  itemId,
-                  job?.locationId!
-                );
-                shelfIdsForItemsWithoutDefault.set(itemId, shelfId);
-              }
-            }
-
-            const shelfIdsToUse = new Map(
-              pickMethods.map((pickMethod) => [
-                pickMethod.itemId,
-                pickMethod.defaultShelfId,
-              ])
-            );
-
-            // Handle items with defaultShelf=true but null defaultShelfId
-            for (const pickMethod of pickMethods) {
-              if (pickMethod.defaultShelfId === null) {
-                const shelfId = await getShelfWithHighestQuantity(
-                  trx,
-                  pickMethod.itemId,
-                  job?.locationId!
-                );
-                shelfIdsToUse.set(pickMethod.itemId, shelfId);
-              }
-            }
-
-            // Add shelf IDs for items without default shelf
-            for (const [itemId, shelfId] of shelfIdsForItemsWithoutDefault) {
-              shelfIdsToUse.set(itemId, shelfId);
             }
 
             const itemIdIsTracked = new Map(
@@ -426,8 +370,39 @@ serve(async (req: Request) => {
                 // Calculate the quantity to issue based on payload quantity multiplied by the material quantity
                 const quantityToIssue = Number(material.quantity) * quantity;
 
-                const proposedShelfId =
-                  shelfIdsToUse.get(material.itemId) ?? material.shelfId;
+                // Determine shelf to use - prioritize material.shelfId, then fetch if needed
+                let proposedShelfId = material.shelfId;
+
+                if (!proposedShelfId) {
+                  if (material.defaultShelf) {
+                    // Fetch pick method default shelf
+                    const pickMethod = await trx
+                      .selectFrom("pickMethod")
+                      .where("itemId", "=", material.itemId)
+                      .where("locationId", "=", job?.locationId!)
+                      .where("companyId", "=", companyId)
+                      .select("defaultShelfId")
+                      .executeTakeFirst();
+
+                    proposedShelfId = pickMethod?.defaultShelfId;
+
+                    // If defaultShelfId is null, get shelf with highest quantity
+                    if (!proposedShelfId) {
+                      proposedShelfId = await getShelfWithHighestQuantity(
+                        trx,
+                        material.itemId,
+                        job?.locationId!
+                      );
+                    }
+                  } else {
+                    // Get shelf with highest quantity
+                    proposedShelfId = await getShelfWithHighestQuantity(
+                      trx,
+                      material.itemId,
+                      job?.locationId!
+                    );
+                  }
+                }
 
                 // Get current quantity on this shelf for diagnostics
                 const currentShelfQuantity = await trx
@@ -466,7 +441,7 @@ serve(async (req: Request) => {
                       ? current
                       : best
                   );
-                  finalShelfId = bestShelf.shelfId;
+                  finalShelfId = bestShelf.shelfId ?? null;
                 }
 
                 const isTracked = itemIdIsTracked.get(material.itemId);
@@ -803,7 +778,10 @@ serve(async (req: Request) => {
               .executeTakeFirst();
 
             let shelfId: string | null | undefined;
-            if (material?.defaultShelf) {
+            // Prioritize material.shelfId if available
+            if (material?.shelfId) {
+              shelfId = material.shelfId;
+            } else if (material?.defaultShelf) {
               const pickMethod = await trx
                 .selectFrom("pickMethod")
                 .where("itemId", "=", itemId)
@@ -812,13 +790,11 @@ serve(async (req: Request) => {
                 .executeTakeFirst();
               shelfId = pickMethod?.defaultShelfId;
             } else {
-              shelfId =
-                material?.shelfId ??
-                (await getShelfWithHighestQuantity(
-                  trx,
-                  itemId,
-                  job?.locationId!
-                ));
+              shelfId = await getShelfWithHighestQuantity(
+                trx,
+                itemId,
+                job?.locationId!
+              );
             }
 
             const quantityToIssue =
@@ -2049,83 +2025,3 @@ serve(async (req: Request) => {
     });
   }
 });
-
-// Utility function to get the shelf with the highest quantity
-async function getShelfWithHighestQuantity(
-  trx: Transaction<DB>,
-  itemId: string,
-  locationId: string
-): Promise<string | null> {
-  const shelfWithHighestQuantity = await trx
-    .selectFrom("itemLedger")
-    .where("itemId", "=", itemId)
-    .where("locationId", "=", locationId)
-    .where("shelfId", "is not", null)
-    .groupBy("shelfId")
-    .select(["shelfId", (eb) => eb.fn.sum("quantity").as("totalQuantity")])
-    .having((eb) => eb.fn.sum("quantity"), ">", 0)
-    .orderBy("totalQuantity", "desc")
-    .executeTakeFirst();
-
-  return shelfWithHighestQuantity?.shelfId ?? null;
-}
-
-// Utility function to update pickMethod defaultShelfId if this is the only non-null shelf
-async function updatePickMethodDefaultShelfIfNeeded(
-  trx: Transaction<DB>,
-  itemId: string,
-  locationId: string | null | undefined,
-  shelfId: string | null | undefined,
-  companyId: string,
-  userId: string
-): Promise<void> {
-  // Only proceed if shelfId and locationId are not null
-  if (!shelfId || !locationId) return;
-
-  // Check if there are other non-null shelves for this item/location
-  const otherShelves = await trx
-    .selectFrom("itemLedger")
-    .where("itemId", "=", itemId)
-    .where("locationId", "=", locationId)
-    .where("shelfId", "is not", null)
-    .where("shelfId", "!=", shelfId)
-    .select("shelfId")
-    .executeTakeFirst();
-
-  // If there are no other non-null shelves, update or insert pickMethod
-  if (!otherShelves) {
-    const existingPickMethod = await trx
-      .selectFrom("pickMethod")
-      .where("itemId", "=", itemId)
-      .where("locationId", "=", locationId)
-      .select("defaultShelfId")
-      .executeTakeFirst();
-
-    if (existingPickMethod) {
-      // Update existing pickMethod
-      await trx
-        .updateTable("pickMethod")
-        .set({
-          defaultShelfId: shelfId,
-          updatedBy: userId,
-          updatedAt: new Date().toISOString(),
-        })
-        .where("itemId", "=", itemId)
-        .where("locationId", "=", locationId)
-        .execute();
-    } else {
-      // Insert new pickMethod
-      await trx
-        .insertInto("pickMethod")
-        .values({
-          itemId,
-          locationId,
-          defaultShelfId: shelfId,
-          companyId,
-          createdBy: userId,
-          createdAt: new Date().toISOString(),
-        })
-        .execute();
-    }
-  }
-}

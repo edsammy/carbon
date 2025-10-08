@@ -370,7 +370,7 @@ function GaugeFormContent({
             value: type.id,
           }))}
         />
-        <Supplier name="supplierId" label="Supplier" />
+        <Supplier name="supplierId" label="Manufacturer" />
         <Input name="modelNumber" label="Model Number" />
         <Input name="serialNumber" label="Serial Number" />
         {/* <Select

@@ -78,6 +78,7 @@ import { flushSync } from "react-dom";
 import { FaTasks } from "react-icons/fa";
 import { FaCheck, FaPlus, FaTrash } from "react-icons/fa6";
 import {
+  LuArrowLeft,
   LuAxis3D,
   LuBarcode,
   LuCheck,
@@ -88,6 +89,7 @@ import {
   LuDownload,
   LuEllipsisVertical,
   LuGitBranchPlus,
+  LuGitPullRequest,
   LuHammer,
   LuHardHat,
   LuPrinter,
@@ -806,7 +808,7 @@ export const JobOperation = ({
                             <Thead>
                               <Tr>
                                 <Th>Part</Th>
-                                <Th className="lg:table-cell hidden">Method</Th>
+                                <Th className="lg:table-cell hidden">Source</Th>
                                 <Th>Estimated</Th>
                                 <Th>Actual</Th>
                                 <Th className="text-right" />
@@ -882,7 +884,7 @@ export const JobOperation = ({
                                             ) : null}
                                           </HStack>
                                         </Td>
-                                        <Td className="lg:table-cell hidden">
+                                        <Td className="flex flex-row items-center gap-1">
                                           <Badge variant="secondary">
                                             <MethodIcon
                                               type={material.methodType ?? ""}
@@ -893,6 +895,20 @@ export const JobOperation = ({
                                             material.kit
                                               ? "Kit"
                                               : material.methodType}
+                                          </Badge>
+                                          <LuArrowLeft
+                                            className={cn(
+                                              material.methodType === "Make"
+                                                ? "rotate-180"
+                                                : ""
+                                            )}
+                                          />
+                                          <Badge variant="secondary">
+                                            <LuGitPullRequest className="size-3 mr-1" />
+                                            {material.shelfName ??
+                                              (material.methodType === "Make"
+                                                ? "WIP"
+                                                : "Default Shelf")}
                                           </Badge>
                                         </Td>
 

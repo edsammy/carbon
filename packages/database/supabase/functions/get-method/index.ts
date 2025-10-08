@@ -29,6 +29,7 @@ import {
   traverseQuoteMethod,
 } from "../lib/methods.ts";
 import { importTypeScript } from "../lib/sandbox.ee.ts";
+import { getShelfId } from "../lib/shelves.ts";
 import {
   getNextRevisionSequence,
   getNextSequence,
@@ -768,9 +769,14 @@ serve(async (req: Request) => {
                 description,
                 quantity,
                 shelfId: locationId
-                  ? // @ts-ignore
-                    (child.data.shelfIds?.[locationId] as string) || null
-                  : null,
+                  ? await getShelfId(
+                      trx,
+                      child.data.itemId,
+                      locationId,
+                      // @ts-ignore
+                      child.data.shelfIds?.[locationId] as string
+                    )
+                  : undefined,
                 requiresSerialTracking,
                 requiresBatchTracking,
                 unitOfMeasureCode,
@@ -1127,7 +1133,9 @@ serve(async (req: Request) => {
                 ) ?? {};
             }
 
-            const mapMethodMaterialToJobMaterial = (child: MethodTreeItem) => ({
+            const mapMethodMaterialToJobMaterial = async (
+              child: MethodTreeItem
+            ) => ({
               jobId: jobMakeMethod.data?.jobId!,
               jobMakeMethodId: parentJobMakeMethodId!,
               jobOperationId:
@@ -1143,26 +1151,32 @@ serve(async (req: Request) => {
               requiresSerialTracking: child.data.itemTrackingType === "Serial",
               unitOfMeasureCode: child.data.unitOfMeasureCode,
               unitCost: child.data.unitCost,
-              // @ts-ignore
-              shelfId: child.data.shelfIds?.[job.data.locationId] || null,
+              shelfId: await getShelfId(
+                trx,
+                child.data.itemId,
+                job.data?.locationId ?? "",
+                // @ts-ignore
+                child.data.shelfIds?.[job.data.locationId] ?? undefined
+              ),
               companyId,
               createdBy: userId,
               customFields: {},
             });
 
-            const madeChildren = node.children.filter(
-              (child) => child.data.methodType === "Make"
-            );
-            const unmadeChildren = node.children.filter(
-              (child) => child.data.methodType !== "Make"
-            );
+            const madeMaterials: Database["public"]["Tables"]["jobMaterial"]["Insert"][] =
+              [];
+            const pickedOrBoughtMaterials: Database["public"]["Tables"]["jobMaterial"]["Insert"][] =
+              [];
 
-            const madeMaterials = madeChildren.map(
-              mapMethodMaterialToJobMaterial
-            );
-            const pickedOrBoughtMaterials = unmadeChildren.map(
-              mapMethodMaterialToJobMaterial
-            );
+            for await (const child of node.children) {
+              const material = await mapMethodMaterialToJobMaterial(child);
+              if (child.data.methodType === "Make") {
+                madeMaterials.push(material);
+              } else {
+                pickedOrBoughtMaterials.push(material);
+              }
+            }
+
             if (madeMaterials.length > 0) {
               const madeMaterialIds = await trx
                 .insertInto("jobMaterial")
@@ -1189,7 +1203,9 @@ serve(async (req: Request) => {
               });
 
               // Use proper correlation instead of index-based assumption
-              for (const [index, child] of madeChildren.entries()) {
+              for (const [index, child] of node.children
+                .filter((child) => child.data.methodType === "Make")
+                .entries()) {
                 const materialId = madeMaterialIds[index]?.id;
                 const jobMakeMethodId = materialId
                   ? materialIdToJobMakeMethodId[materialId]
@@ -3654,11 +3670,18 @@ serve(async (req: Request) => {
         }
 
         const [
+          job,
           jobMakeMethod,
           quoteMakeMethod,
           quoteMaterials,
           quoteOperations,
         ] = await Promise.all([
+          client
+            .from("job")
+            .select("locationId")
+            .eq("id", jobId)
+            .eq("companyId", companyId)
+            .single(),
           client
             .from("jobMakeMethod")
             .select("*")
@@ -3686,6 +3709,10 @@ serve(async (req: Request) => {
             .eq("quoteLineId", quoteLineId)
             .eq("companyId", companyId),
         ]);
+
+        if (job.error) {
+          throw new Error("Failed to get job");
+        }
 
         if (jobMakeMethod.error || !jobMakeMethod.data) {
           throw new Error("Failed to get job make method");
@@ -3768,7 +3795,12 @@ serve(async (req: Request) => {
                           child.data.quoteMakeMethodId
                         ],
                   quantity: child.data.quantity,
-                  shelfId: child.data.shelfId,
+                  shelfId: await getShelfId(
+                    trx,
+                    child.data.itemId,
+                    job.data.locationId,
+                    child.data.shelfId
+                  ),
                   requiresBatchTracking:
                     child.data.itemTrackingType === "Batch",
                   requiresSerialTracking:
