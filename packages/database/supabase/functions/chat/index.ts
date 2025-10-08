@@ -5,7 +5,7 @@ import { z } from "npm:zod@3.24.2";
 import { corsHeaders } from "../lib/headers.ts";
 
 import SupabaseClient from "https://esm.sh/v135/@supabase/supabase-js@2.33.1/dist/module/SupabaseClient.d.ts";
-import { getAuthFromAPIKey, getSupabase } from "../lib/supabase.ts";
+import { getSupabase } from "../lib/supabase.ts";
 import { Database } from "../lib/types.ts";
 
 const model = createAnthropic({
@@ -20,16 +20,6 @@ serve(async (req: Request) => {
   let client: SupabaseClient<Database> | null = null;
   let userId: string | null = null;
   let companyId: string | null = null;
-
-  const CARBON_MCP_API_KEY = Deno.env.get("CARBON_MCP_API_KEY");
-  if (CARBON_MCP_API_KEY) {
-    const auth = await getAuthFromAPIKey(CARBON_MCP_API_KEY);
-    if (auth) {
-      client = auth.client;
-      userId = auth.userId;
-      companyId = auth.companyId;
-    }
-  }
 
   const authHeader = req.headers.get("Authorization");
   const token = authHeader?.replace("Bearer ", "") ?? null;

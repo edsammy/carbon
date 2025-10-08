@@ -29,18 +29,17 @@ serve(async (req: Request) => {
   let userId: string | null = null;
   let companyId: string | null = null;
 
-  const CARBON_MCP_API_KEY = Deno.env.get("CARBON_MCP_API_KEY");
-  if (CARBON_MCP_API_KEY) {
-    const auth = await getAuthFromAPIKey(CARBON_MCP_API_KEY);
+  const authHeader = req.headers.get("Authorization");
+  const token = authHeader?.replace("Bearer ", "") ?? null;
+
+  if (token && token.startsWith("crbn_")) {
+    const auth = await getAuthFromAPIKey(token);
     if (auth) {
       client = auth.client;
       userId = auth.userId;
       companyId = auth.companyId;
     }
   }
-
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "") ?? null;
 
   if (token && !client) {
     client = getSupabase(token);
