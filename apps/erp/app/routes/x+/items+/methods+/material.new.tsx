@@ -21,14 +21,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
-  const { id, ...data } = validation.data;
-
   const insertMethodMaterial = await upsertMethodMaterial(client, {
-    ...data,
+    ...validation.data,
     companyId,
     createdBy: userId,
     customFields: setCustomFields(formData),
   });
+
   if (insertMethodMaterial.error) {
     return json(
       {

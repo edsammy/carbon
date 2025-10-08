@@ -2309,7 +2309,7 @@ export async function upsertQuoteLineMethod(
 export async function upsertQuoteMaterial(
   client: SupabaseClient<Database>,
   quoteMaterial:
-    | (Omit<z.infer<typeof quoteMaterialValidator>, "id"> & {
+    | (z.infer<typeof quoteMaterialValidator> & {
         quoteId: string;
         quoteLineId: string;
         quoteOperationId?: string;
@@ -2317,8 +2317,7 @@ export async function upsertQuoteMaterial(
         createdBy: string;
         customFields?: Json;
       })
-    | (Omit<z.infer<typeof quoteMaterialValidator>, "id"> & {
-        id: string;
+    | (z.infer<typeof quoteMaterialValidator> & {
         quoteId: string;
         quoteLineId: string;
         quoteOperationId?: string;
@@ -2326,7 +2325,7 @@ export async function upsertQuoteMaterial(
         customFields?: Json;
       })
 ) {
-  if ("id" in quoteMaterial) {
+  if ("updatedBy" in quoteMaterial) {
     return client
       .from("quoteMaterial")
       .update(sanitize(quoteMaterial))

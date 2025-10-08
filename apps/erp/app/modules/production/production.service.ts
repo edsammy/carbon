@@ -1635,22 +1635,21 @@ export async function upsertJob(
 export async function upsertJobMaterial(
   client: SupabaseClient<Database>,
   jobMaterial:
-    | (Omit<z.infer<typeof jobMaterialValidator>, "id"> & {
+    | (z.infer<typeof jobMaterialValidator> & {
         jobId: string;
         jobOperationId?: string;
         companyId: string;
         createdBy: string;
         customFields?: Json;
       })
-    | (Omit<z.infer<typeof jobMaterialValidator>, "id"> & {
-        id: string;
+    | (z.infer<typeof jobMaterialValidator> & {
         jobId: string;
         jobOperationId?: string;
         updatedBy: string;
         customFields?: Json;
       })
 ) {
-  if ("id" in jobMaterial) {
+  if ("updatedBy" in jobMaterial) {
     return client
       .from("jobMaterial")
       .update(sanitize(jobMaterial))

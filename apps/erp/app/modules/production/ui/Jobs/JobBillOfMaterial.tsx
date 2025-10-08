@@ -26,6 +26,7 @@ import {
 import { getItemReadableId } from "@carbon/utils";
 import { Link, useFetcher, useFetchers, useParams } from "@remix-run/react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { nanoid } from "nanoid";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -299,47 +300,50 @@ const JobBillOfMaterial = ({
 
   const onAddItem = () => {
     if (!permissions.can("update", "production") || isDisabled) return;
-    const temporaryId = Math.random().toString(16).slice(2);
-    setSelectedItemId(temporaryId);
+    const materialId = nanoid();
+    setSelectedItemId(materialId);
 
     let newOrder = 1;
     if (items.length) {
       newOrder = Math.max(...items.map((item) => item.data.order)) + 1;
     }
 
+    const newMaterial: Material = {
+      ...initialMethodMaterial,
+      id: materialId,
+      order: newOrder,
+      jobMakeMethodId,
+    };
+
     setTemporaryItems((prev) => ({
       ...prev,
-      [temporaryId]: {
-        ...initialMethodMaterial,
-        id: temporaryId,
-        order: newOrder,
-        jobMakeMethodId,
-      } as Material,
+      [materialId]: newMaterial,
     }));
 
     setOrderState((prev) => ({
       ...prev,
-      [temporaryId]: newOrder,
+      [materialId]: newOrder,
     }));
   };
 
   const onRemoveItem = async (id: string) => {
     if (!permissions.can("update", "production") || isDisabled) return;
 
-    if (isTemporaryId(id)) {
+    // Check if this is a temporary item (exists in temporaryItems state)
+    if (temporaryItems[id]) {
       setTemporaryItems((prev) => {
         const { [id]: _, ...rest } = prev;
         return rest;
       });
-      return;
+    } else {
+      fetcher.submit(new FormData(), {
+        method: "post",
+        action: path.to.deleteJobMaterial(jobId, id),
+      });
     }
 
-    fetcher.submit(new FormData(), {
-      method: "post",
-      action: path.to.deleteJobMaterial(jobId, id),
-    });
-
-    setTemporaryItems((prev) => {
+    setSelectedItemId(null);
+    setOrderState((prev) => {
       const { [id]: _, ...rest } = prev;
       return rest;
     });
@@ -358,7 +362,7 @@ const JobBillOfMaterial = ({
     const updates = Object.entries(newOrderState).reduce<
       Record<string, number>
     >((acc, [id, order]) => {
-      if (!isTemporaryId(id)) {
+      if (!temporaryItems[id]) {
         acc[id] = order;
       }
       return acc;
@@ -433,7 +437,7 @@ const JobBillOfMaterial = ({
               onClick={
                 isOpen
                   ? () => {
-                      if (isTemporaryId(item.id)) {
+                      if (temporaryItems[item.id]) {
                         setTemporaryItems((prev) => {
                           const { [item.id]: _, ...rest } = prev;
                           return rest;
@@ -577,10 +581,6 @@ const JobBillOfMaterial = ({
 
 export default JobBillOfMaterial;
 
-function isTemporaryId(id: string) {
-  return id.length < 20;
-}
-
 function MaterialForm({
   item,
   isDisabled,
@@ -613,31 +613,15 @@ function MaterialForm({
   const baseCurrency = company?.baseCurrencyCode ?? "USD";
 
   useEffect(() => {
+    // Remove from temporary items after successful submission
     if (methodMaterialFetcher.data && methodMaterialFetcher.data.id) {
-      if (isTemporaryId(item.id)) {
-        setTemporaryItems((prev) => {
-          const { [item.id]: _, ...rest } = prev;
-          return rest;
-        });
-
-        setOrderState((prev) => {
-          const order = prev[item.id];
-          const { [item.id]: _, ...rest } = prev;
-          return {
-            ...rest,
-            [methodMaterialFetcher.data!.id!]: order,
-          };
-        });
-      }
-      setSelectedItemId(null);
+      // Clear temporary item after successful save
+      setTemporaryItems((prev) => {
+        const { [item.id]: _, ...rest } = prev;
+        return rest;
+      });
     }
-  }, [
-    item.id,
-    methodMaterialFetcher.data,
-    setTemporaryItems,
-    setOrderState,
-    setSelectedItemId,
-  ]);
+  }, [item.id, methodMaterialFetcher.data, setTemporaryItems]);
 
   const [itemType, setItemType] = useState<MethodItemType>(item.data.itemType);
   const [itemData, setItemData] = useState<{
@@ -722,7 +706,7 @@ function MaterialForm({
   return (
     <ValidatedForm
       action={
-        isTemporaryId(item.id)
+        temporaryItems[item.id]
           ? path.to.newJobMaterial(jobId)
           : path.to.jobMaterial(jobId, item.id!)
       }
@@ -736,11 +720,6 @@ function MaterialForm({
       }
       className="w-full"
       fetcher={methodMaterialFetcher}
-      onSubmit={() => {
-        if (!isTemporaryId(item.id)) {
-          setSelectedItemId(null);
-        }
-      }}
     >
       <Hidden name="id" />
       <Hidden name="jobMakeMethodId" />

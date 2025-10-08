@@ -30,11 +30,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
-  const { id, ...data } = validation.data;
-
   const serviceRole = getCarbonServiceRole();
   const insertJobMaterial = await upsertJobMaterial(serviceRole, {
-    ...data,
+    ...validation.data,
     jobId,
     companyId,
     createdBy: userId,
@@ -65,7 +63,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
-  if (data.methodType === "Make") {
+  if (validation.data.methodType === "Make") {
     const materialMakeMethod = await serviceRole
       .from("jobMaterialWithMakeMethodId")
       .select("*")
@@ -83,7 +81,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       );
     }
     const makeMethod = await upsertJobMaterialMakeMethod(serviceRole, {
-      sourceId: data.itemId,
+      sourceId: validation.data.itemId,
       targetId: materialMakeMethod.data?.jobMaterialMakeMethodId!,
       companyId,
       userId,

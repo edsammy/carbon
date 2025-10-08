@@ -556,7 +556,7 @@ export const jobOperationValidatorForReleasedJob = baseJobOperationValidator
   );
 
 const baseMaterialValidator = z.object({
-  id: zfd.text(z.string().optional()),
+  id: z.string().min(1, { message: "Material ID is required" }),
   description: z.string().min(1, { message: "Description is required" }),
   jobMakeMethodId: z.string().min(1, { message: "Make method is required" }),
   itemType: z.enum(methodItemType, {

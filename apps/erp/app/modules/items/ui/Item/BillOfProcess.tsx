@@ -13,6 +13,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  cn,
   Count,
   DropdownMenu,
   DropdownMenuContent,
@@ -22,17 +23,16 @@ import {
   IconButton,
   Label,
   Loading,
+  toast,
   ToggleGroup,
   ToggleGroupItem,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  VStack,
-  cn,
-  toast,
   useDebounce,
   useDisclosure,
   useThrottle,
+  VStack,
 } from "@carbon/react";
 import { Editor, generateHTML } from "@carbon/react/Editor";
 import { formatRelativeTime } from "@carbon/utils";
@@ -1236,7 +1236,7 @@ function OperationForm({
                     setupDisclosure.isOpen ? "Collapse Setup" : "Expand Setup"
                   }
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={(e) => {
                     e.stopPropagation();
                     setupDisclosure.onToggle();
@@ -1347,7 +1347,7 @@ function OperationForm({
                     laborDisclosure.isOpen ? "Collapse Labor" : "Expand Labor"
                   }
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={(e) => {
                     e.stopPropagation();
                     laborDisclosure.onToggle();
@@ -1459,7 +1459,7 @@ function OperationForm({
                       : "Expand Machine"
                   }
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={(e) => {
                     e.stopPropagation();
                     machineDisclosure.onToggle();
@@ -1572,7 +1572,7 @@ function OperationForm({
                       : "Expand Procedure"
                   }
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={(e) => {
                     e.stopPropagation();
                     procedureDisclosure.onToggle();

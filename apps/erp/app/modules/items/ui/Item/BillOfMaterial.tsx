@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
   HStack,
   IconButton,
+  Label,
   toast,
   Tooltip,
   TooltipContent,
@@ -33,12 +34,17 @@ import {
   useSearchParams,
 } from "@remix-run/react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { nanoid } from "nanoid";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import {
   LuChevronDown,
+  LuChevronRight,
+  LuCog,
   LuExternalLink,
+  LuGitPullRequest,
+  LuGitPullRequestCreateArrow,
   LuLock,
   LuSettings2,
   LuSquareFunction,
@@ -50,10 +56,10 @@ import type { Configuration } from "~/components/Configurator/types";
 import {
   DefaultMethodType,
   Hidden,
-  InputControlled,
   Item,
   Number,
   Select,
+  Shelf,
   Submit,
   UnitOfMeasure,
 } from "~/components/Form";
@@ -123,13 +129,14 @@ const initialMethodMaterial: Omit<Material, "makeMethodId" | "order"> & {
   description: string;
 } = {
   itemId: "",
-
   // @ts-expect-error
   itemType: "Item" as const,
   methodType: "Buy" as const,
   description: "",
   quantity: 1,
   unitOfMeasureCode: "EA",
+  useDefaultShelf: true,
+  shelfId: undefined,
 };
 
 const BillOfMaterial = ({
@@ -213,48 +220,50 @@ const BillOfMaterial = ({
 
   const onAddItem = () => {
     if (isReadOnly) return;
-    const temporaryId = Math.random().toString(16).slice(2);
-    setSelectedItemId(temporaryId);
+    const materialId = nanoid();
+    setSelectedItemId(materialId);
 
     let newOrder = 1;
     if (materials.length) {
       newOrder = Math.max(...materials.map((item) => item.data.order)) + 1;
     }
 
+    const newMaterial: Material = {
+      ...initialMethodMaterial,
+      id: materialId,
+      order: newOrder,
+      makeMethodId,
+    };
+
     setTemporaryItems((prev) => ({
       ...prev,
-      [temporaryId]: {
-        ...initialMethodMaterial,
-        id: temporaryId,
-        order: newOrder,
-        makeMethodId,
-      } as Material,
+      [materialId]: newMaterial,
     }));
 
     setOrderState((prev) => ({
       ...prev,
-      [temporaryId]: newOrder,
+      [materialId]: newOrder,
     }));
   };
 
   const onRemoveItem = async (id: string) => {
     if (isReadOnly) return;
 
-    if (isTemporaryId(id)) {
+    // Check if this is a temporary item (exists in temporaryItems state)
+    if (temporaryItems[id]) {
       setTemporaryItems((prev) => {
         const { [id]: _, ...rest } = prev;
         return rest;
       });
-      return;
+    } else {
+      fetcher.submit(new FormData(), {
+        method: "post",
+        action: path.to.deleteMethodMaterial(id),
+      });
     }
 
-    fetcher.submit(new FormData(), {
-      method: "post",
-      action: path.to.deleteMethodMaterial(id),
-    });
-
-    // Optimistically remove from state
-    setTemporaryItems((prev) => {
+    setSelectedItemId(null);
+    setOrderState((prev) => {
       const { [id]: _, ...rest } = prev;
       return rest;
     });
@@ -285,7 +294,7 @@ const BillOfMaterial = ({
     const updates = Object.entries(newOrderState).reduce<
       Record<string, number>
     >((acc, [id, order]) => {
-      if (!isTemporaryId(id)) {
+      if (!temporaryItems[id]) {
         acc[id] = order;
       }
       return acc;
@@ -423,8 +432,8 @@ const BillOfMaterial = ({
                             item={item}
                             methodOperations={operations}
                             orderState={orderState}
-                            rulesByField={rulesByField}
                             temporaryItems={temporaryItems}
+                            rulesByField={rulesByField}
                             onConfigure={onConfigure}
                             setOrderState={setOrderState}
                             setSelectedItemId={setSelectedItemId}
@@ -500,7 +509,7 @@ const BillOfMaterial = ({
                         .map(
                           (m) => getItemReadableId(items, m.data.itemId) ?? ""
                         )
-                        .filter(Boolean),
+                        .filter((i) => !!i),
                     },
                   })
                 }
@@ -533,15 +542,12 @@ const BillOfMaterial = ({
 
 export default BillOfMaterial;
 
-function isTemporaryId(id: string) {
-  return id.length < 20;
-}
-
 function MaterialForm({
   configurable,
   isReadOnly,
   item,
   methodOperations,
+  temporaryItems,
   rulesByField,
   onConfigure,
   setOrderState,
@@ -567,33 +573,21 @@ function MaterialForm({
 
   const unitOfMeasures = useUnitOfMeasure();
 
-  useEffect(() => {
-    // replace the temporary id with the actual id
-    if (methodMaterialFetcher.data && methodMaterialFetcher.data.id) {
-      if (isTemporaryId(item.id)) {
-        setTemporaryItems((prev) => {
-          const { [item.id]: _, ...rest } = prev;
-          return rest;
-        });
+  const sourceDisclosure = useDisclosure({
+    defaultIsOpen: true,
+  });
+  const backflushDisclosure = useDisclosure();
 
-        setOrderState((prev) => {
-          const order = prev[item.id];
-          const { [item.id]: _, ...rest } = prev;
-          return {
-            ...rest,
-            [methodMaterialFetcher.data!.id!]: order,
-          };
-        });
-      }
-      setSelectedItemId(null);
+  useEffect(() => {
+    // Remove from temporary items after successful submission
+    if (methodMaterialFetcher.data && methodMaterialFetcher.data.id) {
+      // Clear temporary item after successful save
+      setTemporaryItems((prev) => {
+        const { [item.id]: _, ...rest } = prev;
+        return rest;
+      });
     }
-  }, [
-    item.id,
-    methodMaterialFetcher.data,
-    setTemporaryItems,
-    setOrderState,
-    setSelectedItemId,
-  ]);
+  }, [item.id, methodMaterialFetcher.data, setTemporaryItems]);
 
   const [itemType, setItemType] = useState<MethodItemType>(item.data.itemType);
   const [itemData, setItemData] = useState<{
@@ -601,15 +595,21 @@ function MaterialForm({
     methodType: MethodType;
     description: string;
     unitOfMeasureCode: string;
+    methodOperationId: string | undefined;
     quantity: number;
     kit: boolean;
+    useDefaultShelf: boolean;
+    shelfId: string | undefined;
   }>({
     itemId: item.data.itemId ?? "",
     methodType: item.data.methodType ?? "Buy",
     description: item.data.description ?? "",
     unitOfMeasureCode: item.data.unitOfMeasureCode ?? "EA",
+    methodOperationId: item.data.methodOperationId ?? undefined,
     quantity: item.data.quantity ?? 1,
     kit: item.data.kit ?? false,
+    useDefaultShelf: item.data.useDefaultShelf ?? true,
+    shelfId: item.data.shelfId ?? undefined,
   });
 
   const onTypeChange = (value: MethodItemType | "Item") => {
@@ -623,6 +623,9 @@ function MaterialForm({
       description: "",
       unitOfMeasureCode: "EA",
       kit: false,
+      useDefaultShelf: true,
+      shelfId: undefined,
+      methodOperationId: undefined,
     });
   };
 
@@ -665,20 +668,15 @@ function MaterialForm({
   return (
     <ValidatedForm
       action={
-        isTemporaryId(item.id)
+        temporaryItems[item.id]
           ? path.to.newMethodMaterial
           : path.to.methodMaterial(item.id!)
       }
       method="post"
       defaultValues={item.data}
       validator={methodMaterialValidator}
-      className="w-full py-2"
+      className="w-full flex flex-col gap-y-4"
       fetcher={methodMaterialFetcher}
-      onSubmit={() => {
-        if (!isTemporaryId(item.id)) {
-          setSelectedItemId(null);
-        }
-      }}
     >
       <div>
         <Hidden name="id" />
@@ -686,193 +684,267 @@ function MaterialForm({
         <Hidden name="order" />
         <Hidden name="kit" value={itemData.kit.toString()} />
       </div>
-      <VStack>
-        <div className="grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3">
-          <Item
-            disabledItems={[params.itemId!]}
-            name="itemId"
-            label={itemType}
-            includeInactive
-            type={itemType}
-            validItemTypes={["Consumable", "Material", "Part"]}
-            isConfigured={rulesByField.has(key("itemId"))}
-            onChange={(value) => {
-              onItemChange(value?.value as string);
-            }}
-            onConfigure={
-              configurable && !isTemporaryId(item.id)
-                ? () =>
-                    onConfigure({
-                      label: "Part",
-                      field: key("itemId"),
-                      code: rulesByField.get(key("itemId"))?.code,
-                      defaultValue: itemData.itemId,
-                      returnType: {
-                        type: "text",
-                        helperText:
-                          "the unique item identifier of the item (not the part number). you can get the item id from the key icon in the properties panel.",
-                      },
-                    })
-                : undefined
-            }
-            onTypeChange={onTypeChange}
-          />
-          <InputControlled
-            name="description"
-            label="Description"
-            isDisabled
-            value={itemData.description}
-            isConfigured={rulesByField.has(key("description"))}
-            onConfigure={
-              configurable && !isTemporaryId(item.id)
-                ? () =>
-                    onConfigure({
-                      label: "Description",
-                      field: key("description"),
-                      code: rulesByField.get(key("description"))?.code,
-                      defaultValue: itemData.description,
-                      returnType: {
-                        type: "text",
-                      },
-                    })
-                : undefined
-            }
-            onChange={(newValue) => {
-              setItemData((d) => ({ ...d, description: newValue }));
-            }}
-          />
-          <Select
-            name="methodOperationId"
-            label="Operation"
-            isOptional
-            options={methodOperations.map((o) => ({
-              value: o.id!,
-              label: o.description,
-            }))}
-          />
 
-          <DefaultMethodType
-            name="methodType"
-            label="Method Type"
-            value={itemData.methodType}
-            isConfigured={rulesByField.has(key("methodType"))}
-            onConfigure={
-              configurable && !isTemporaryId(item.id)
-                ? () =>
-                    onConfigure({
-                      label: "Method Type",
-                      field: key("methodType"),
-                      code: rulesByField.get(key("methodType"))?.code,
-                      defaultValue: itemData.methodType,
-                      returnType: {
-                        type: "enum",
-                        listOptions: methodType,
-                      },
-                    })
-                : undefined
-            }
-            replenishmentSystem="Buy and Make"
-          />
-          <Number
-            name="quantity"
-            label="Quantity"
-            isConfigured={rulesByField.has(key("quantity"))}
-            onConfigure={
-              configurable && !isTemporaryId(item.id)
-                ? () =>
-                    onConfigure({
-                      label: "Quantity",
-                      field: key("quantity"),
-                      code: rulesByField.get(key("quantity"))?.code,
-                      defaultValue: itemData.quantity,
-                      returnType: { type: "numeric" },
-                    })
-                : undefined
-            }
-          />
-          <UnitOfMeasure
-            name="unitOfMeasureCode"
-            value={itemData.unitOfMeasureCode}
-            onChange={(newValue) =>
-              setItemData((d) => ({
-                ...d,
-                unitOfMeasureCode: newValue?.value ?? "EA",
-              }))
-            }
-            isConfigured={rulesByField.has(key("unitOfMeasureCode"))}
-            onConfigure={
-              configurable && !isTemporaryId(item.id)
-                ? () =>
-                    onConfigure({
-                      label: "Unit of Measure",
-                      field: key("unitOfMeasureCode"),
-                      code: rulesByField.get(key("unitOfMeasureCode"))?.code,
-                      defaultValue: itemData.unitOfMeasureCode,
-                      returnType: {
-                        type: "enum",
-                        listOptions: unitOfMeasures.map((u) => u.value),
-                      },
-                    })
-                : undefined
-            }
-          />
-        </div>
-
-        <motion.div
-          className="flex flex-1 items-center justify-end w-full pt-2"
-          initial={{ opacity: 0, filter: "blur(4px)" }}
-          animate={{ opacity: 1, filter: "blur(0px)" }}
-          transition={{
-            type: "spring",
-            bounce: 0,
-            duration: 0.55,
+      <div className="grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3">
+        <Item
+          disabledItems={[params.itemId!]}
+          name="itemId"
+          label={itemType}
+          includeInactive
+          type={itemType}
+          validItemTypes={["Consumable", "Material", "Part"]}
+          isConfigured={rulesByField.has(key("itemId"))}
+          onChange={(value) => {
+            onItemChange(value?.value as string);
           }}
-        >
-          <motion.div
-            layout
-            className="flex items-center justify-between gap-2 w-full"
-          >
-            {itemData.methodType === "Make" ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    leftIcon={<MethodIcon type={"Make"} isKit={itemData.kit} />}
-                    variant="secondary"
-                    size="sm"
-                    rightIcon={<LuChevronDown />}
-                  >
-                    {itemData.kit ? "Kit" : "Subassembly"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuRadioGroup
-                    value={itemData.kit ? "Kit" : "Subassembly"}
-                    onValueChange={(value) => {
-                      setItemData((d) => ({
-                        ...d,
-                        kit: value === "Kit",
-                      }));
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="Subassembly">
-                      Subassembly
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="Kit">
-                      Kit
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div />
-            )}
+          onConfigure={
+            configurable && !temporaryItems[item.id]
+              ? () =>
+                  onConfigure({
+                    label: "Part",
+                    field: key("itemId"),
+                    code: rulesByField.get(key("itemId"))?.code,
+                    defaultValue: itemData.itemId,
+                    returnType: {
+                      type: "text",
+                      helperText:
+                        "the unique item identifier of the item (not the part number). you can get the item id from the key icon in the properties panel.",
+                    },
+                  })
+              : undefined
+          }
+          onTypeChange={onTypeChange}
+        />
+        <Number
+          name="quantity"
+          label="Quantity"
+          isConfigured={rulesByField.has(key("quantity"))}
+          onConfigure={
+            configurable && !temporaryItems[item.id]
+              ? () =>
+                  onConfigure({
+                    label: "Quantity",
+                    field: key("quantity"),
+                    code: rulesByField.get(key("quantity"))?.code,
+                    defaultValue: itemData.quantity,
+                    returnType: { type: "numeric" },
+                  })
+              : undefined
+          }
+        />
+        <UnitOfMeasure
+          name="unitOfMeasureCode"
+          value={itemData.unitOfMeasureCode}
+          onChange={(newValue) =>
+            setItemData((d) => ({
+              ...d,
+              unitOfMeasureCode: newValue?.value ?? "EA",
+            }))
+          }
+          isReadOnly={true}
+          isConfigured={rulesByField.has(key("unitOfMeasureCode"))}
+          onConfigure={
+            configurable && !temporaryItems[item.id]
+              ? () =>
+                  onConfigure({
+                    label: "Unit of Measure",
+                    field: key("unitOfMeasureCode"),
+                    code: rulesByField.get(key("unitOfMeasureCode"))?.code,
+                    defaultValue: itemData.unitOfMeasureCode,
+                    returnType: {
+                      type: "enum",
+                      listOptions: unitOfMeasures.map((u) => u.value),
+                    },
+                  })
+              : undefined
+          }
+        />
+      </div>
+      {itemData.methodType !== "Make" && (
+        <>
+          <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
+            <HStack
+              className="w-full justify-between cursor-pointer"
+              onClick={sourceDisclosure.onToggle}
+            >
+              <HStack>
+                <LuGitPullRequest />
+                <Label>Pull From</Label>
+              </HStack>
+              <HStack>
+                <Badge variant="secondary">
+                  <MethodIcon
+                    type={itemData.methodType}
+                    className="size-3 mr-1"
+                  />
+                  {itemData.methodType}
+                </Badge>
+                <Badge variant="secondary">
+                  <LuGitPullRequest className="size-3 mr-1" />
+                  Default Shelf
+                </Badge>
+                <IconButton
+                  icon={<LuChevronRight />}
+                  aria-label={
+                    sourceDisclosure.isOpen
+                      ? "Collapse Source"
+                      : "Expand Source"
+                  }
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    sourceDisclosure.onToggle();
+                  }}
+                  className={`transition-transform ${
+                    sourceDisclosure.isOpen ? "rotate-90" : ""
+                  }`}
+                />
+              </HStack>
+            </HStack>
+            <div
+              className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
+                sourceDisclosure.isOpen ? "" : "hidden"
+              }`}
+            >
+              <DefaultMethodType
+                name="methodType"
+                label="Method Type"
+                value={itemData.methodType}
+                isConfigured={rulesByField.has(key("methodType"))}
+                onConfigure={
+                  configurable && !temporaryItems[item.id]
+                    ? () =>
+                        onConfigure({
+                          label: "Method Type",
+                          field: key("methodType"),
+                          code: rulesByField.get(key("methodType"))?.code,
+                          defaultValue: itemData.methodType,
+                          returnType: {
+                            type: "enum",
+                            listOptions: methodType,
+                          },
+                        })
+                    : undefined
+                }
+                replenishmentSystem="Buy and Make"
+              />
 
-            <div className="flex items-center gap-2">
-              <Submit isDisabled={isReadOnly}>Save</Submit>
+              <Shelf name="shelfId" label="Shelf" isOptional />
             </div>
-          </motion.div>
+          </div>
+
+          <div className="border border-border rounded-md shadow-sm p-4 flex flex-col gap-4 w-full">
+            <HStack
+              className="w-full justify-between cursor-pointer"
+              onClick={backflushDisclosure.onToggle}
+            >
+              <HStack>
+                <LuGitPullRequestCreateArrow />
+                <Label>Backflush</Label>
+              </HStack>
+              <HStack>
+                <Badge
+                  variant={
+                    methodOperations.length > 0 ? "secondary" : "destructive"
+                  }
+                >
+                  <LuCog className="size-3 mr-1" />
+                  {itemData.methodOperationId
+                    ? methodOperations.find(
+                        (o) => o.id === itemData.methodOperationId
+                      )?.description || "Selected Operation"
+                    : "First Operation"}
+                </Badge>
+                <IconButton
+                  icon={<LuChevronRight />}
+                  aria-label={
+                    backflushDisclosure.isOpen
+                      ? "Collapse Backflush"
+                      : "Expand Backflush"
+                  }
+                  variant="ghost"
+                  size="md"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    backflushDisclosure.onToggle();
+                  }}
+                  className={`transition-transform ${
+                    backflushDisclosure.isOpen ? "rotate-90" : ""
+                  }`}
+                />
+              </HStack>
+            </HStack>
+            <div
+              className={`grid w-full gap-x-8 gap-y-4 grid-cols-1 lg:grid-cols-3 pb-4 ${
+                backflushDisclosure.isOpen ? "" : "hidden"
+              }`}
+            >
+              <Select
+                name="methodOperationId"
+                label="Operation"
+                isOptional
+                options={methodOperations.map((o) => ({
+                  value: o.id!,
+                  label: o.description,
+                }))}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      <motion.div
+        className="flex flex-1 items-center justify-end w-full"
+        initial={{ opacity: 0, filter: "blur(4px)" }}
+        animate={{ opacity: 1, filter: "blur(0px)" }}
+        transition={{
+          type: "spring",
+          bounce: 0,
+          duration: 0.55,
+        }}
+      >
+        <motion.div
+          layout
+          className="flex items-center justify-between gap-2 w-full"
+        >
+          {itemData.methodType === "Make" ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  leftIcon={<MethodIcon type={"Make"} isKit={itemData.kit} />}
+                  variant="secondary"
+                  size="sm"
+                  rightIcon={<LuChevronDown />}
+                >
+                  {itemData.kit ? "Kit" : "Subassembly"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuRadioGroup
+                  value={itemData.kit ? "Kit" : "Subassembly"}
+                  onValueChange={(value) => {
+                    setItemData((d) => ({
+                      ...d,
+                      kit: value === "Kit",
+                    }));
+                  }}
+                >
+                  <DropdownMenuRadioItem value="Subassembly">
+                    Subassembly
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="Kit">Kit</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2">
+            <Submit isDisabled={isReadOnly}>Save</Submit>
+          </div>
         </motion.div>
-      </VStack>
+      </motion.div>
     </ValidatedForm>
   );
 }

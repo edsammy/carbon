@@ -31,11 +31,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
-  const { id, ...data } = validation.data;
-
   const serviceRole = getCarbonServiceRole();
   const insertQuoteMaterial = await upsertQuoteMaterial(serviceRole, {
-    ...data,
+    ...validation.data,
     quoteId,
     quoteLineId: lineId,
     companyId,
@@ -67,7 +65,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
-  if (data.methodType === "Make") {
+  if (validation.data.methodType === "Make") {
     const materialMakeMethod = await serviceRole
       .from("quoteMaterialWithMakeMethodId")
       .select("*")
@@ -85,7 +83,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       );
     }
     const makeMethod = await upsertQuoteMaterialMakeMethod(serviceRole, {
-      sourceId: data.itemId,
+      sourceId: validation.data.itemId,
       targetId: materialMakeMethod.data?.quoteMaterialMakeMethodId!,
       companyId,
       userId,

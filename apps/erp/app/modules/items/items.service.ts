@@ -2382,12 +2382,12 @@ export async function upsertMethodMaterial(
   client: SupabaseClient<Database>,
 
   methodMaterial:
-    | (Omit<z.infer<typeof methodMaterialValidator>, "id"> & {
+    | (z.infer<typeof methodMaterialValidator> & {
         companyId: string;
         createdBy: string;
         customFields?: Json;
       })
-    | (Omit<z.infer<typeof methodMaterialValidator>, "id"> & {
+    | (z.infer<typeof methodMaterialValidator> & {
         id: string;
         updatedBy: string;
         customFields?: Json;

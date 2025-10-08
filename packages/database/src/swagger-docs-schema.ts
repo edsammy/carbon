@@ -9181,6 +9181,9 @@ export default {
             $ref: "#/parameters/rowFilter.methodMaterial.kit",
           },
           {
+            $ref: "#/parameters/rowFilter.methodMaterial.shelfId",
+          },
+          {
             $ref: "#/parameters/select",
           },
           {
@@ -9300,6 +9303,9 @@ export default {
             $ref: "#/parameters/rowFilter.methodMaterial.kit",
           },
           {
+            $ref: "#/parameters/rowFilter.methodMaterial.shelfId",
+          },
+          {
             $ref: "#/parameters/preferReturn",
           },
         ],
@@ -9371,6 +9377,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.methodMaterial.kit",
+          },
+          {
+            $ref: "#/parameters/rowFilter.methodMaterial.shelfId",
           },
           {
             $ref: "#/parameters/body.methodMaterial",
@@ -47799,6 +47808,186 @@ export default {
         tags: ["nonConformanceJobOperation"],
       },
     },
+    "/pickList": {
+      get: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.pickList.id",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.locationId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.status",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdDate",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.completedDate",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/select",
+          },
+          {
+            $ref: "#/parameters/order",
+          },
+          {
+            $ref: "#/parameters/range",
+          },
+          {
+            $ref: "#/parameters/rangeUnit",
+          },
+          {
+            $ref: "#/parameters/offset",
+          },
+          {
+            $ref: "#/parameters/limit",
+          },
+          {
+            $ref: "#/parameters/preferCount",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            schema: {
+              items: {
+                $ref: "#/definitions/pickList",
+              },
+              type: "array",
+            },
+          },
+          "206": {
+            description: "Partial Content",
+          },
+        },
+        tags: ["pickList"],
+      },
+      post: {
+        parameters: [
+          {
+            $ref: "#/parameters/body.pickList",
+          },
+          {
+            $ref: "#/parameters/select",
+          },
+          {
+            $ref: "#/parameters/preferPost",
+          },
+        ],
+        responses: {
+          "201": {
+            description: "Created",
+          },
+        },
+        tags: ["pickList"],
+      },
+      delete: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.pickList.id",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.locationId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.status",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdDate",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.completedDate",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/preferReturn",
+          },
+        ],
+        responses: {
+          "204": {
+            description: "No Content",
+          },
+        },
+        tags: ["pickList"],
+      },
+      patch: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.pickList.id",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.locationId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.status",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdDate",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.completedDate",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/body.pickList",
+          },
+          {
+            $ref: "#/parameters/preferReturn",
+          },
+        ],
+        responses: {
+          "204": {
+            description: "No Content",
+          },
+        },
+        tags: ["pickList"],
+      },
+    },
     "/salesInvoiceShipment": {
       get: {
         parameters: [
@@ -50638,6 +50827,222 @@ export default {
           },
         },
         tags: ["quoteOperationParameter"],
+      },
+    },
+    "/pickListLine": {
+      get: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.id",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.pickListId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.jobId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.jobMaterialId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.itemId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.fromShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.toShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.quantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.pickedQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.updatedBy",
+          },
+          {
+            $ref: "#/parameters/select",
+          },
+          {
+            $ref: "#/parameters/order",
+          },
+          {
+            $ref: "#/parameters/range",
+          },
+          {
+            $ref: "#/parameters/rangeUnit",
+          },
+          {
+            $ref: "#/parameters/offset",
+          },
+          {
+            $ref: "#/parameters/limit",
+          },
+          {
+            $ref: "#/parameters/preferCount",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            schema: {
+              items: {
+                $ref: "#/definitions/pickListLine",
+              },
+              type: "array",
+            },
+          },
+          "206": {
+            description: "Partial Content",
+          },
+        },
+        tags: ["pickListLine"],
+      },
+      post: {
+        parameters: [
+          {
+            $ref: "#/parameters/body.pickListLine",
+          },
+          {
+            $ref: "#/parameters/select",
+          },
+          {
+            $ref: "#/parameters/preferPost",
+          },
+        ],
+        responses: {
+          "201": {
+            description: "Created",
+          },
+        },
+        tags: ["pickListLine"],
+      },
+      delete: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.id",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.pickListId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.jobId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.jobMaterialId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.itemId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.fromShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.toShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.quantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.pickedQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.updatedBy",
+          },
+          {
+            $ref: "#/parameters/preferReturn",
+          },
+        ],
+        responses: {
+          "204": {
+            description: "No Content",
+          },
+        },
+        tags: ["pickListLine"],
+      },
+      patch: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.id",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.pickListId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.jobId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.jobMaterialId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.itemId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.fromShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.toShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.quantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.pickedQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickListLine.updatedBy",
+          },
+          {
+            $ref: "#/parameters/body.pickListLine",
+          },
+          {
+            $ref: "#/parameters/preferReturn",
+          },
+        ],
+        responses: {
+          "204": {
+            description: "No Content",
+          },
+        },
+        tags: ["pickListLine"],
       },
     },
     "/item": {
@@ -63396,6 +63801,12 @@ export default {
           format: "boolean",
           type: "boolean",
         },
+        shelfId: {
+          description:
+            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
+          format: "text",
+          type: "string",
+        },
       },
       type: "object",
     },
@@ -64495,6 +64906,7 @@ export default {
         status: {
           enum: [
             "Draft",
+            "Staged",
             "Ready",
             "In Progress",
             "Paused",
@@ -68864,6 +69276,7 @@ export default {
           default: "Draft",
           enum: [
             "Draft",
+            "Staged",
             "Ready",
             "In Progress",
             "Paused",
@@ -70722,6 +71135,12 @@ export default {
             "Audio",
             "Other",
             "Model",
+            "Pick Transfer",
+            "Vehicle Transfer",
+            "Scrap Transfer",
+            "Quarantine Transfer",
+            "Customer Transfer",
+            "Rejection Transfer",
           ],
           format: 'public."documentType"',
           type: "string",
@@ -80069,6 +80488,12 @@ export default {
             "Audio",
             "Other",
             "Model",
+            "Pick Transfer",
+            "Vehicle Transfer",
+            "Scrap Transfer",
+            "Quarantine Transfer",
+            "Customer Transfer",
+            "Rejection Transfer",
           ],
           format: 'public."documentType"',
           type: "string",
@@ -81709,6 +82134,74 @@ export default {
       },
       type: "object",
     },
+    pickList: {
+      required: [
+        "id",
+        "locationId",
+        "status",
+        "createdDate",
+        "companyId",
+        "createdAt",
+        "createdBy",
+      ],
+      properties: {
+        id: {
+          default: "public.xid()",
+          description: "Note:\nThis is a Primary Key.<pk/>",
+          format: "text",
+          type: "string",
+        },
+        locationId: {
+          description:
+            "Note:\nThis is a Foreign Key to `location.id`.<fk table='location' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        status: {
+          default: "Draft",
+          enum: ["Draft", "Released", "In Progress", "Completed"],
+          format: 'public."pickListStatus"',
+          type: "string",
+        },
+        createdDate: {
+          default: "now()",
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        completedDate: {
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        companyId: {
+          description:
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `company.id`.<fk table='company' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        createdAt: {
+          default: "now()",
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        createdBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        updatedAt: {
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        updatedBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+      },
+      type: "object",
+    },
     salesInvoiceShipment: {
       required: [
         "id",
@@ -83062,6 +83555,98 @@ export default {
           type: "string",
         },
         companyId: {
+          format: "text",
+          type: "string",
+        },
+        createdAt: {
+          default: "now()",
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        createdBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        updatedAt: {
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        updatedBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+      },
+      type: "object",
+    },
+    pickListLine: {
+      required: [
+        "id",
+        "pickListId",
+        "itemId",
+        "quantity",
+        "pickedQuantity",
+        "companyId",
+        "createdAt",
+        "createdBy",
+      ],
+      properties: {
+        id: {
+          default: "public.xid()",
+          description: "Note:\nThis is a Primary Key.<pk/>",
+          format: "text",
+          type: "string",
+        },
+        pickListId: {
+          format: "text",
+          type: "string",
+        },
+        jobId: {
+          description:
+            "Note:\nThis is a Foreign Key to `job.id`.<fk table='job' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        jobMaterialId: {
+          description:
+            "Note:\nThis is a Foreign Key to `jobMaterial.id`.<fk table='jobMaterial' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        itemId: {
+          description:
+            "Note:\nThis is a Foreign Key to `item.id`.<fk table='item' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        fromShelfId: {
+          description:
+            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        toShelfId: {
+          description:
+            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        quantity: {
+          default: 0,
+          format: "numeric",
+          type: "number",
+        },
+        pickedQuantity: {
+          default: 0,
+          format: "numeric",
+          type: "number",
+        },
+        companyId: {
+          description:
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `company.id`.<fk table='company' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -90258,6 +90843,12 @@ export default {
     },
     "rowFilter.methodMaterial.kit": {
       name: "kit",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.methodMaterial.shelfId": {
+      name: "shelfId",
       required: false,
       in: "query",
       type: "string",
@@ -110956,6 +111547,75 @@ export default {
       in: "query",
       type: "string",
     },
+    "body.pickList": {
+      name: "pickList",
+      description: "pickList",
+      required: false,
+      in: "body",
+      schema: {
+        $ref: "#/definitions/pickList",
+      },
+    },
+    "rowFilter.pickList.id": {
+      name: "id",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.locationId": {
+      name: "locationId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.status": {
+      name: "status",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.createdDate": {
+      name: "createdDate",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.completedDate": {
+      name: "completedDate",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.companyId": {
+      name: "companyId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.createdAt": {
+      name: "createdAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.createdBy": {
+      name: "createdBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.updatedAt": {
+      name: "updatedAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.updatedBy": {
+      name: "updatedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
     "body.salesInvoiceShipment": {
       name: "salesInvoiceShipment",
       description: "salesInvoiceShipment",
@@ -112493,6 +113153,99 @@ export default {
       type: "string",
     },
     "rowFilter.quoteOperationParameter.updatedBy": {
+      name: "updatedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "body.pickListLine": {
+      name: "pickListLine",
+      description: "pickListLine",
+      required: false,
+      in: "body",
+      schema: {
+        $ref: "#/definitions/pickListLine",
+      },
+    },
+    "rowFilter.pickListLine.id": {
+      name: "id",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.pickListId": {
+      name: "pickListId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.jobId": {
+      name: "jobId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.jobMaterialId": {
+      name: "jobMaterialId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.itemId": {
+      name: "itemId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.fromShelfId": {
+      name: "fromShelfId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.toShelfId": {
+      name: "toShelfId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.quantity": {
+      name: "quantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.pickedQuantity": {
+      name: "pickedQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.companyId": {
+      name: "companyId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.createdAt": {
+      name: "createdAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.createdBy": {
+      name: "createdBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.updatedAt": {
+      name: "updatedAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickListLine.updatedBy": {
       name: "updatedBy",
       required: false,
       in: "query",

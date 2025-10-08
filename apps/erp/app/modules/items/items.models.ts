@@ -190,7 +190,7 @@ export const materialValidatorWithGeneratedIds = z.object({
 });
 
 export const methodMaterialValidator = z.object({
-  id: zfd.text(z.string().optional()),
+  id: z.string().min(1, { message: "Material ID is required" }),
   makeMethodId: z.string().min(1, { message: "Make method is required" }),
   order: zfd.numeric(z.number().min(0)),
   itemType: z.enum(methodItemType, {
@@ -211,7 +211,8 @@ export const methodMaterialValidator = z.object({
   unitOfMeasureCode: z
     .string()
     .min(1, { message: "Unit of Measure is required" }),
-  shelfId: z.string().optional().nullable(),
+  useDefaultShelf: zfd.checkbox(),
+  shelfId: zfd.text(z.string().optional()),
 });
 
 export const methodOperationValidator = z

@@ -38,17 +38,6 @@ CREATE OR REPLACE VIEW "jobMaterialWithMakeMethodId" WITH(SECURITY_INVOKER=true)
     ON jmm."parentMaterialId" = jm."id"
   INNER JOIN "item" i ON i.id = jm."itemId";
 
--- Add Staged status to job status enum
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type t
-                 JOIN pg_enum e ON t.oid = e.enumtypid
-                 WHERE t.typname = 'jobStatus' AND e.enumlabel = 'Staged') THEN
-    -- Add 'Staged' value after 'Draft' in the enum
-    ALTER TYPE "jobStatus" ADD VALUE 'Staged' AFTER 'Draft';
-  END IF;
-END $$;
-
 -- Create pick list status enum
 CREATE TYPE "pickListStatus" AS ENUM (
   'Draft',
@@ -57,9 +46,10 @@ CREATE TYPE "pickListStatus" AS ENUM (
   'Completed'
 );
 
--- Create pickList table
+
 CREATE TABLE "pickList" (
   "id" TEXT NOT NULL DEFAULT xid(),
+  "pickListId" TEXT NOT NULL,
   "locationId" TEXT NOT NULL,
   "status" "pickListStatus" NOT NULL DEFAULT 'Draft',
   "createdDate" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -69,6 +59,8 @@ CREATE TABLE "pickList" (
   "createdBy" TEXT NOT NULL,
   "updatedAt" TIMESTAMP WITH TIME ZONE,
   "updatedBy" TEXT,
+  "customFields" JSONB,
+  "tags" TEXT[],
 
   CONSTRAINT "pickList_pkey" PRIMARY KEY ("id", "companyId"),
   CONSTRAINT "pickList_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -80,7 +72,48 @@ CREATE TABLE "pickList" (
 CREATE INDEX "pickList_locationId_idx" ON "pickList" ("locationId");
 CREATE INDEX "pickList_status_idx" ON "pickList" ("status");
 
--- Create pickListLine table
+
+CREATE POLICY "SELECT" ON "public"."pickList"
+FOR SELECT USING (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_role()
+    )::text[]
+  )
+);
+
+CREATE POLICY "INSERT" ON "public"."pickList"
+FOR INSERT WITH CHECK (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_permission ('inventory_create')
+    )::text[]
+  )
+);
+
+CREATE POLICY "UPDATE" ON "public"."pickList"
+FOR UPDATE USING (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_permission ('inventory_update')
+    )::text[]
+  )
+);
+
+CREATE POLICY "DELETE" ON "public"."pickList"
+FOR DELETE USING (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_permission ('inventory_delete')
+    )::text[]
+  )
+);
+
+
 CREATE TABLE "pickListLine" (
   "id" TEXT NOT NULL DEFAULT xid(),
   "pickListId" TEXT NOT NULL,
@@ -113,43 +146,45 @@ CREATE INDEX "pickListLine_pickListId_idx" ON "pickListLine" ("pickListId");
 CREATE INDEX "pickListLine_jobId_idx" ON "pickListLine" ("jobId");
 CREATE INDEX "pickListLine_itemId_idx" ON "pickListLine" ("itemId");
 
--- Extend itemLedger documentType enum with pick and transfer types
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type t
-                 JOIN pg_enum e ON t.oid = e.enumtypid
-                 WHERE t.typname = 'documentType' AND e.enumlabel = 'Pick Transfer') THEN
-    ALTER TYPE "documentType" ADD VALUE 'Pick Transfer';
-  END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_type t
-                 JOIN pg_enum e ON t.oid = e.enumtypid
-                 WHERE t.typname = 'documentType' AND e.enumlabel = 'Vehicle Transfer') THEN
-    ALTER TYPE "documentType" ADD VALUE 'Vehicle Transfer';
-  END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_type t
-                 JOIN pg_enum e ON t.oid = e.enumtypid
-                 WHERE t.typname = 'documentType' AND e.enumlabel = 'Scrap Transfer') THEN
-    ALTER TYPE "documentType" ADD VALUE 'Scrap Transfer';
-  END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_type t
-                 JOIN pg_enum e ON t.oid = e.enumtypid
-                 WHERE t.typname = 'documentType' AND e.enumlabel = 'Quarantine Transfer') THEN
-    ALTER TYPE "documentType" ADD VALUE 'Quarantine Transfer';
-  END IF;
+CREATE POLICY "SELECT" ON "public"."pickListLine"
+FOR SELECT USING (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_role()
+    )::text[]
+  )
+);
 
-  IF NOT EXISTS (SELECT 1 FROM pg_type t
-                 JOIN pg_enum e ON t.oid = e.enumtypid
-                 WHERE t.typname = 'documentType' AND e.enumlabel = 'Customer Transfer') THEN
-    ALTER TYPE "documentType" ADD VALUE 'Customer Transfer';
-  END IF;
+CREATE POLICY "INSERT" ON "public"."pickListLine"
+FOR INSERT WITH CHECK (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_permission ('inventory_create')
+    )::text[]
+  )
+);
 
-  IF NOT EXISTS (SELECT 1 FROM pg_type t
-                 JOIN pg_enum e ON t.oid = e.enumtypid
-                 WHERE t.typname = 'documentType' AND e.enumlabel = 'Rejection Transfer') THEN
-    ALTER TYPE "documentType" ADD VALUE 'Rejection Transfer';
-  END IF;
-END $$;
+CREATE POLICY "UPDATE" ON "public"."pickListLine"
+FOR UPDATE USING (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_permission ('inventory_update')
+    )::text[]
+  )
+);
 
+CREATE POLICY "DELETE" ON "public"."pickListLine"
+FOR DELETE USING (
+  "companyId" = ANY (
+    (
+      SELECT
+        get_companies_with_employee_permission ('inventory_delete')
+    )::text[]
+  )
+);
