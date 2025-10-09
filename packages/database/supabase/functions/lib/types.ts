@@ -48629,12 +48629,16 @@ export type Database = {
           jobMaterialItemId: string
           methodType: Database["public"]["Enums"]["methodType"]
           name: string
+          quantityFromProductionOrderInShelf: number
+          quantityFromProductionOrderNotInShelf: number
           quantityIssued: number
-          quantityOnHand: number
+          quantityOnHandInShelf: number
+          quantityOnHandNotInShelf: number
           quantityOnProductionOrder: number
           quantityOnPurchaseOrder: number
           quantityOnSalesOrder: number
           quantityPerParent: number
+          shelfName: string
           thumbnailPath: string
           type: Database["public"]["Enums"]["itemType"]
           unitOfMeasureCode: string

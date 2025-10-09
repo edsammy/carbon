@@ -320,6 +320,7 @@ const QuoteBillOfMaterial = ({
     if (!permissions.can("update", "sales") || isDisabled) return;
     const materialId = nanoid();
     setSelectedItemId(materialId);
+    setSelectedMaterialId(materialId);
 
     let newOrder = 1;
     if (items.length) {

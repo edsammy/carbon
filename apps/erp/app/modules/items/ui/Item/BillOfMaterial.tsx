@@ -225,6 +225,7 @@ const BillOfMaterial = ({
     if (isReadOnly) return;
     const materialId = nanoid();
     setSelectedItemId(materialId);
+    setSelectedMaterialId(materialId);
 
     let newOrder = 1;
     if (materials.length) {

@@ -313,6 +313,7 @@ const JobBillOfMaterial = ({
     if (!permissions.can("update", "production") || isDisabled) return;
     const materialId = nanoid();
     setSelectedItemId(materialId);
+    setSelectedMaterialId(materialId);
 
     let newOrder = 1;
     if (items.length) {
@@ -687,7 +688,7 @@ function MaterialForm({
       return;
     }
 
-    const [item, itemCost] = await Promise.all([
+    const [item, itemCost, pickMethod] = await Promise.all([
       carbon
         .from("item")
         .select(
@@ -697,6 +698,13 @@ function MaterialForm({
         .eq("companyId", company.id)
         .single(),
       carbon.from("itemCost").select("unitCost").eq("itemId", itemId).single(),
+      carbon
+        .from("pickMethod")
+        .select("defaultShelfId")
+        .eq("itemId", itemId)
+        .eq("companyId", company.id)
+        .eq("locationId", locationId!)
+        .maybeSingle(),
     ]);
 
     if (item.error) {
@@ -713,6 +721,7 @@ function MaterialForm({
       methodType: item.data?.defaultMethodType ?? "Buy",
       requiresBatchTracking: item.data?.itemTrackingType === "Batch",
       requiresSerialTracking: item.data?.itemTrackingType === "Serial",
+      shelfId: pickMethod.data?.defaultShelfId ?? undefined,
     }));
 
     if (item.data?.type) {

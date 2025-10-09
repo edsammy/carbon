@@ -1,17 +1,19 @@
-import { useCarbon } from "@carbon/auth";
-import { Badge, Button, HStack, VStack } from "@carbon/react";
+import { Badge, Button, cn, HStack, VStack } from "@carbon/react";
+import { useNumberFormatter } from "@react-aria/i18n";
 import { useFetcher, useParams } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useMemo } from "react";
 import {
+  LuArrowDown,
+  LuArrowLeft,
+  LuArrowUp,
   LuBookMarked,
   LuCircleCheck,
   LuFlag,
+  LuGitPullRequest,
   LuHash,
   LuRefreshCcwDot,
-  LuRuler,
 } from "react-icons/lu";
-import { RxCodesandboxLogo } from "react-icons/rx";
 import {
   Hyperlink,
   ItemThumbnail,
@@ -19,26 +21,26 @@ import {
   Table,
   TrackingTypeIcon,
 } from "~/components";
-import { EditableNumber, EditableText } from "~/components/Editable";
-import { Enumerable } from "~/components/Enumerable";
-import { useUnitOfMeasure } from "~/components/Form/UnitOfMeasure";
-import { usePermissions, useUser } from "~/hooks";
-import { methodType } from "~/modules/shared";
+import { usePermissions, useRouteData } from "~/hooks";
 import { useBom, useItems } from "~/stores";
 import { path } from "~/utils/path";
-import type { JobMaterial } from "../../types";
+import type { Job, JobMaterial } from "../../types";
 
 type JobMaterialsTableProps = {
   data: JobMaterial[];
   count: number;
 };
-
 const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
   const { jobId } = useParams();
   if (!jobId) throw new Error("Job ID is required");
 
+  const routeData = useRouteData<{ job: Job }>(path.to.job(jobId));
+  const isAllocated = ["Planned", "Ready", "In Progress", "Paused"].includes(
+    routeData?.job?.status ?? ""
+  );
+
   const fetcher = useFetcher<{}>();
-  const unitsOfMeasure = useUnitOfMeasure();
+  const formatter = useNumberFormatter();
 
   const [items] = useItems();
   const [, setSelectedMaterialId] = useBom();
@@ -84,69 +86,42 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         },
       },
       {
-        accessorKey: "methodType",
-        header: "Method Type",
-        cell: (item) => (
-          <Badge variant="secondary">
-            <MethodIcon type={item.getValue<string>()} className="mr-2" />
-            <span>{item.getValue<string>()}</span>
-          </Badge>
-        ),
-        meta: {
-          filter: {
-            type: "static",
-            options: methodType.map((value) => ({
-              value,
-              label: (
-                <Badge variant="secondary">
-                  <MethodIcon type={value} className="mr-2" />
-                  <span>{value}</span>
-                </Badge>
-              ),
-            })),
-          },
-          icon: <RxCodesandboxLogo />,
-        },
-      },
-
-      {
-        accessorKey: "unitOfMeasureCode",
-        header: "UoM",
-        cell: (item) => (
-          <Enumerable
-            value={
-              unitsOfMeasure.find((u) => u.value === item.getValue())?.label ??
-              null
-            }
-          />
-        ),
-        meta: {
-          icon: <LuRuler />,
-        },
-      },
-
-      {
-        accessorKey: "quantityPerParent",
-        header: "Qty. per Parent",
-        cell: (item) => item.getValue(),
-        meta: {
-          icon: <LuHash />,
-        },
-      },
-      {
         accessorKey: "estimatedQuantity",
-        header: "Estimated",
-        cell: (item) => item.getValue(),
+        header: "Quantity",
+        cell: ({ row }) => formatter.format(row.original.estimatedQuantity),
         meta: {
           icon: <LuHash />,
         },
       },
       {
-        id: "quantityOnHand",
-        header: "On Hand",
-        meta: {
-          icon: <LuHash />,
-        },
+        id: "method",
+        header: "Method",
+        cell: ({ row }) => (
+          <HStack>
+            <Badge variant="secondary">
+              <MethodIcon
+                type={row.original.methodType}
+                className="size-3 mr-1"
+              />
+              {row.original.methodType}
+            </Badge>
+            <LuArrowLeft
+              className={cn(
+                row.original.methodType === "Make" ? "rotate-180" : ""
+              )}
+            />
+            <Badge variant="secondary">
+              <LuGitPullRequest className="size-3 mr-1" />
+              {row.original.shelfName ??
+                (row.original.methodType === "Make" ? "WIP" : "Default Shelf")}
+            </Badge>
+          </HStack>
+        ),
+      },
+
+      {
+        id: "quantityOnHandInShelf",
+        header: "On Hand (Shelf)",
         cell: ({ row }) => {
           const isInventoried =
             row.original.itemTrackingType !== "Non-Inventory";
@@ -158,75 +133,102 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
               </Badge>
             );
 
+          const quantityRequiredByShelf = isAllocated
+            ? row.original.quantityFromProductionOrderInShelf
+            : row.original.quantityFromProductionOrderInShelf +
+              row.original.estimatedQuantity;
+
           if (row.original.methodType === "Make") {
             return null;
           }
 
-          const quantityOnHand = row.original.quantityOnHand;
+          const quantityOnHandInShelf = row.original.quantityOnHandInShelf;
 
-          if (quantityOnHand < (row.original.estimatedQuantity ?? 0))
+          if (quantityOnHandInShelf < quantityRequiredByShelf)
             return (
               <Badge variant="destructive">
                 <LuFlag className="mr-2" />
-                <span className="group-hover:hidden">Insufficient</span>
-                <span className="hidden group-hover:block">
-                  {quantityOnHand}
-                </span>
+                {quantityOnHandInShelf}
               </Badge>
             );
 
           return (
             <Badge variant="green">
               <LuCircleCheck className="mr-2" />
-              <span className="group-hover:hidden">In Stock</span>
-              <span className="hidden group-hover:block">{quantityOnHand}</span>
+              {quantityOnHandInShelf}
             </Badge>
           );
         },
-      },
-      {
-        id: "quantityOnPurchaseOrder",
-        header: "On PO",
-        cell: ({ row }) => row.original.quantityOnPurchaseOrder,
         meta: {
           icon: <LuHash />,
         },
       },
       {
-        id: "quantityOnProductionOrder",
-        header: "In Prod.",
-        cell: ({ row }) => row.original.quantityOnProductionOrder,
+        id: "quantityOnHand",
+        header: "On Hand (Total)",
+        cell: ({ row }) => {
+          if (
+            row.original.itemTrackingType === "Non-Inventory" ||
+            row.original.methodType === "Make"
+          ) {
+            return null;
+          }
+          const quantityOnHand =
+            row.original.quantityOnHandInShelf +
+            row.original.quantityOnHandNotInShelf;
+
+          const incoming =
+            row.original.quantityOnPurchaseOrder +
+            row.original.quantityOnProductionOrder;
+
+          const allocated =
+            row.original.quantityFromProductionOrderInShelf +
+            row.original.quantityFromProductionOrderNotInShelf +
+            row.original.quantityOnSalesOrder;
+
+          if (
+            quantityOnHand + incoming - allocated <
+            (row.original.estimatedQuantity ?? 0)
+          ) {
+            return (
+              <Badge variant="destructive">
+                <LuFlag className="mr-2" />
+                {quantityOnHand}
+              </Badge>
+            );
+          }
+          return quantityOnHand;
+        },
         meta: {
           icon: <LuHash />,
+        },
+      },
+      {
+        id: "allocated",
+        header: "Allocated",
+        cell: ({ row }) =>
+          row.original.quantityFromProductionOrderInShelf +
+          row.original.quantityFromProductionOrderNotInShelf +
+          row.original.quantityOnSalesOrder,
+
+        meta: {
+          icon: <LuArrowDown className="text-red-600" />,
+        },
+      },
+      {
+        id: "incoming",
+        header: "Incoming",
+        cell: ({ row }) =>
+          row.original.quantityOnPurchaseOrder +
+          row.original.quantityOnProductionOrder,
+        meta: {
+          icon: <LuArrowUp className="text-emerald-600" />,
         },
       },
     ];
-  }, [items, jobId, setSelectedMaterialId, unitsOfMeasure]);
+  }, [items, jobId, setSelectedMaterialId]);
 
   const permissions = usePermissions();
-  const { carbon } = useCarbon();
-  const { id: userId } = useUser();
-  const onCellEdit = useCallback(
-    async (id: string, value: unknown, row: JobMaterial) => {
-      if (!carbon) throw new Error("Carbon client not found");
-      return await carbon
-        .from("jobMaterial")
-        .update({
-          [id]: value,
-          updatedBy: userId,
-        })
-        .eq("id", row.id!);
-    },
-    [carbon, userId]
-  );
-
-  const editableComponents = useMemo(() => {
-    return {
-      description: EditableText(onCellEdit),
-      quantity: EditableNumber(onCellEdit),
-      estimatedQuantity: EditableNumber(onCellEdit),
-    };
-  }, [onCellEdit]);
 
   return (
     <Table<JobMaterial>
@@ -249,9 +251,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
           </fetcher.Form>
         ) : undefined
       }
-      editableComponents={editableComponents}
       title="Materials"
-      withInlineEditing={permissions.can("update", "production")}
     />
   );
 });
