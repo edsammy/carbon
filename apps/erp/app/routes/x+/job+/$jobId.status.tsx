@@ -138,6 +138,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
+  if (status === "Planned") {
+    throw redirect(
+      path.to.jobMaterials(id),
+      await flash(request, success("Job marked as planned"))
+    );
+  }
+
   throw redirect(
     requestReferrer(request) ?? path.to.job(id),
     await flash(request, success("Updated job status"))

@@ -21,7 +21,7 @@ interface SplitButtonProps {
   isDisabled?: boolean;
   onClick?: () => void;
   dropdownItems: {
-    label: string;
+    label: React.ReactNode;
     onClick: () => void;
     icon?: React.ReactElement;
   }[];

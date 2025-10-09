@@ -287,7 +287,7 @@ const JobHeader = () => {
             }
             dropdownItems={[
               {
-                label: "Mark as Planned",
+                label: <JobStatus status="Planned" />,
                 icon: <LuCheckCheck />,
                 onClick: markAsPlanned,
               },
