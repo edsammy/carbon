@@ -173,14 +173,15 @@ export function OperationStatusIcon({
   className?: string;
 }) {
   switch (status) {
-    case "Ready":
     case "Todo":
       return <TodoStatusIcon className={cn("text-foreground", className)} />;
+    case "Ready":
+      return <TodoStatusIcon className={cn("text-blue-600", className)} />;
     case "Waiting":
     case "Canceled":
       return <LuCircleX className={cn("text-red-600", className)} />;
     case "Done":
-      return <LuCircleCheck className={cn("text-blue-600", className)} />;
+      return <LuCircleCheck className={cn("text-green-600", className)} />;
     case "In Progress":
       return <AlmostDoneIcon className={className} />;
     case "Paused":

@@ -270,7 +270,7 @@ const JobHeader = () => {
             onClick={releaseModal.onOpen}
             isLoading={
               statusFetcher.state !== "idle" &&
-              ["Ready", "Planned"].includes(status ?? "")
+              statusFetcher.formData?.get("status") === "Ready"
             }
             isDisabled={
               !["Draft", "Planned"].includes(status ?? "") ||
