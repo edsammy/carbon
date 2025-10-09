@@ -1,6 +1,5 @@
 import { PaperlessPartsClient } from "./client";
 
-export { OrderSchema } from "./schemas";
 export {
   createPartFromComponent,
   findPartByExternalId,
@@ -11,7 +10,8 @@ export {
   getOrCreatePart,
   getOrderLocationId,
   insertOrderLines,
-} from "./utils";
+} from "./lib";
+export { OrderSchema } from "./schemas";
 
 export async function getPaperlessParts(apiKey: string) {
   const client = new PaperlessPartsClient(apiKey);
