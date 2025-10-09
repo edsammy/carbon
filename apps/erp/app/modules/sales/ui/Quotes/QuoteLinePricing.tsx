@@ -1,3 +1,4 @@
+import { useCarbon } from "@carbon/auth";
 import {
   Button,
   Card,
@@ -28,7 +29,8 @@ import {
   Tr,
   VStack,
 } from "@carbon/react";
-import { useFetcher, useParams, useSubmit } from "@remix-run/react";
+import { getLocalTimeZone, today } from "@internationalized/date";
+import { useFetcher, useParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   LuChevronDown,
@@ -37,7 +39,6 @@ import {
   LuRefreshCcw,
   LuTrash,
 } from "react-icons/lu";
-import type { z } from "zod";
 import {
   useCurrencyFormatter,
   usePermissions,
@@ -81,8 +82,6 @@ const QuoteLinePricing = ({
     taxPercent: line.taxPercent ?? 0,
   });
 
-  const submit = useSubmit();
-
   useEffect(() => {
     setEditableFields((prev) => ({
       ...prev,
@@ -116,22 +115,7 @@ const QuoteLinePricing = ({
     }
   }, [fetcher.data]);
 
-  const optimisticUnitCost = useMemo<number>(() => {
-    if (!line.itemId) return editableFields.unitCost;
-    if (fetcher.formAction === path.to.itemCostUpdate(line.itemId)) {
-      const submitted = fetcher.formData?.get("unitCost");
-      if (submitted) {
-        return Number(submitted);
-      }
-    }
-    return editableFields.unitCost;
-  }, [
-    line.itemId,
-    editableFields.unitCost,
-    fetcher.formAction,
-    fetcher.formData,
-  ]);
-
+  const { carbon } = useCarbon();
   const { id: userId, company } = useUser();
   const baseCurrency = company?.baseCurrencyCode ?? "USD";
 
@@ -146,25 +130,13 @@ const QuoteLinePricing = ({
   });
 
   const additionalCharges = useMemo(() => {
-    if (fetcher.formAction === path.to.quoteLineCost(quoteId, lineId)) {
-      // get the optimistic update
-      return JSON.parse(
-        (fetcher.formData?.get("additionalCharges") as string) ?? "{}"
-      ) as z.infer<typeof quoteLineAdditionalChargesValidator>;
-    }
     const parsedAdditionalCharges =
       quoteLineAdditionalChargesValidator.safeParse(
         editableFields.additionalCharges
       );
 
     return parsedAdditionalCharges.success ? parsedAdditionalCharges.data : {};
-  }, [
-    editableFields.additionalCharges,
-    fetcher.formAction,
-    fetcher.formData,
-    lineId,
-    quoteId,
-  ]);
+  }, [editableFields.additionalCharges]);
 
   const additionalChargesByQuantity = quantities.map((quantity) => {
     const charges = Object.values(additionalCharges).reduce((acc, charge) => {
@@ -174,29 +146,8 @@ const QuoteLinePricing = ({
     return charges;
   });
 
-  // Submission function using useSubmit with fetcherKey
-  const submitFieldUpdates = useCallback(
-    (action: string, data: Record<string, any>) => {
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(
-          key,
-          typeof value === "object" ? JSON.stringify(value) : String(value)
-        );
-      });
-
-      submit(formData, {
-        method: "post",
-        action,
-        navigate: false,
-        fetcherKey: `quote-line-pricing-${lineId}`,
-      });
-    },
-    [submit, lineId]
-  );
-
   const onUpdateChargeDescription = useCallback(
-    (chargeId: string, description: string) => {
+    async (chargeId: string, description: string) => {
       const updatedCharges = {
         ...additionalCharges,
         [chargeId]: {
@@ -205,22 +156,30 @@ const QuoteLinePricing = ({
         },
       };
 
-      // Update local state
-      setEditableFields((prev) => ({
-        ...prev,
-        additionalCharges: updatedCharges,
-      }));
-
-      // Submit using the new submission function
-      submitFieldUpdates(path.to.quoteLineCost(quoteId, lineId), {
-        additionalCharges: updatedCharges,
+      setEditableFields((prev) => {
+        return {
+          ...prev,
+          additionalCharges: updatedCharges,
+        };
       });
+
+      const costUpdate = await carbon
+        ?.from("quoteLine")
+        .update({
+          additionalCharges: updatedCharges,
+        })
+        .eq("id", lineId);
+
+      if (costUpdate?.error) {
+        console.error(costUpdate.error);
+        toast.error("Failed to update quote line");
+      }
     },
-    [additionalCharges, submitFieldUpdates, lineId, quoteId]
+    [additionalCharges, lineId, carbon]
   );
 
   const onUpdateChargeAmount = useCallback(
-    (chargeId: string, quantity: number, amount: number) => {
+    async (chargeId: string, quantity: number, amount: number) => {
       const updatedCharges = {
         ...additionalCharges,
         [chargeId]: {
@@ -232,18 +191,24 @@ const QuoteLinePricing = ({
         },
       };
 
-      // Update local state
       setEditableFields((prev) => ({
         ...prev,
         additionalCharges: updatedCharges,
       }));
 
-      // Submit using the new submission function
-      submitFieldUpdates(path.to.quoteLineCost(quoteId, lineId), {
-        additionalCharges: updatedCharges,
-      });
+      const costUpdate = await carbon
+        ?.from("quoteLine")
+        .update({
+          additionalCharges: updatedCharges,
+        })
+        .eq("id", lineId);
+
+      if (costUpdate?.error) {
+        console.error(costUpdate.error);
+        toast.error("Failed to update quote line");
+      }
     },
-    [additionalCharges, submitFieldUpdates, lineId, quoteId]
+    [additionalCharges, carbon, lineId]
   );
 
   const unitCostsByQuantity = quantities.map((quantity, index) => {
@@ -290,25 +255,34 @@ const QuoteLinePricing = ({
   };
 
   const onUpdateCost = useCallback(
-    (value: number) => {
+    async (value: number) => {
       if (!line.itemId) return;
 
-      // Update local state
       setEditableFields((prev) => ({
         ...prev,
         unitCost: value,
       }));
 
-      // Submit using the new submission function
-      submitFieldUpdates(path.to.itemCostUpdate(line.itemId), {
-        unitCost: value,
-      });
+      const costUpdate = await carbon
+        ?.from("itemCost")
+        .update({
+          unitCost: value,
+          costIsAdjusted: true,
+          updatedAt: today(getLocalTimeZone()).toString(),
+        })
+        .eq("itemId", line.itemId)
+        .single();
+
+      if (costUpdate?.error) {
+        console.error(costUpdate.error);
+        toast.error("Failed to update item cost");
+      }
     },
-    [line.itemId, submitFieldUpdates]
+    [carbon, line.itemId]
   );
 
   const onUpdatePrice = useCallback(
-    (
+    async (
       key: "leadTime" | "unitPrice" | "discountPercent" | "shippingCost",
       quantity: number,
       value: number
@@ -338,39 +312,46 @@ const QuoteLinePricing = ({
       }
       newPrices[quantity] = { ...newPrices[quantity], [key]: roundedValue };
 
-      // Update local state
       setEditableFields((prev) => ({
         ...prev,
         prices: newPrices,
       }));
 
-      // Submit using the new submission function
-      const submitData: Record<string, any> = {
-        hasPrice: hasPrice.toString(),
-        quantity: quantity.toString(),
-        quoteLineId: lineId,
-      };
-
       if (hasPrice) {
-        submitData.key = key;
-        submitData.value = roundedValue.toString();
+        const update = await carbon
+          ?.from("quoteLinePrice")
+          .update({
+            [key]: roundedValue,
+            quoteLineId: lineId,
+            quantity,
+          })
+          .eq("quoteLineId", lineId)
+          .eq("quantity", quantity);
+        if (update?.error) {
+          console.error(update.error);
+          toast.error("Failed to update quote line");
+        }
       } else {
-        submitData.price = JSON.stringify(newPrices[quantity]);
-      }
+        const insert = await carbon?.from("quoteLinePrice").insert({
+          ...newPrices[quantity],
+          quoteLineId: lineId,
+          quantity,
+        });
 
-      submitFieldUpdates(
-        path.to.quoteLinePriceUpdate(quoteId, lineId),
-        submitData
-      );
+        if (insert?.error) {
+          console.error(insert.error);
+          toast.error("Failed to insert quote line");
+        }
+      }
     },
     [
-      editableFields.prices,
       line.unitPricePrecision,
+      editableFields.prices,
       quoteId,
       lineId,
       exchangeRate,
       userId,
-      submitFieldUpdates,
+      carbon,
     ]
   );
 
@@ -553,14 +534,17 @@ const QuoteLinePricing = ({
                   ) : (
                     <Td key={index} className="group-hover:bg-muted/50">
                       <NumberField
-                        value={optimisticUnitCost}
+                        value={editableFields.unitCost}
                         formatOptions={{
                           style: "currency",
                           currency: baseCurrency,
                         }}
                         minValue={0}
                         onChange={(value) => {
-                          if (Number.isFinite(value) && value !== cost) {
+                          if (
+                            Number.isFinite(value) &&
+                            value !== editableFields.unitCost
+                          ) {
                             onUpdateCost(value);
                           }
                         }}
@@ -997,13 +981,7 @@ const QuoteLinePricing = ({
                             taxPercent: value,
                           }));
 
-                          // Use the quote line update endpoint for tax percent
-                          submitFieldUpdates(
-                            path.to.quoteLine(quoteId, lineId),
-                            {
-                              taxPercent: value,
-                            }
-                          );
+                          // TODO: handle mutation
                         }
                       }}
                     >

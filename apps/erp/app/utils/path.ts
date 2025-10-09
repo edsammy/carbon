@@ -1140,9 +1140,6 @@ export const path = {
       generatePath(`${x}/quote/${quoteId}/${id}/details`),
     quoteLineConfigure: (quoteId: string, lineId: string) =>
       generatePath(`${x}/quote/${quoteId}/${lineId}/configure`),
-    quoteLineCost: (quoteId: string, lineId: string) =>
-      generatePath(`${x}/quote/${quoteId}/${lineId}/cost/update`),
-
     quoteLineMakeMethod: (
       quoteId: string,
       lineId: string,
@@ -1150,8 +1147,6 @@ export const path = {
     ) => generatePath(`${x}/quote/${quoteId}/${lineId}/make/${makeMethodId}`),
     quoteLineMethod: (quoteId: string, quoteLineId: string, methodId: string) =>
       generatePath(`${x}/quote/${quoteId}/${quoteLineId}/method/${methodId}`),
-    quoteLinePriceUpdate: (quoteId: string, lineId: string) =>
-      generatePath(`${x}/quote/${quoteId}/${lineId}/price/update`),
     quoteLineRecalculatePrice: (quoteId: string, lineId: string) =>
       generatePath(`${x}/quote/${quoteId}/${lineId}/recalculate-price`),
     quoteLineUpdatePrecision: (quoteId: string, lineId: string) =>
@@ -1347,8 +1342,6 @@ export const path = {
       generatePath(`${x}/supplier-quote/${id}/exchange-rate`),
     supplierQuoteLine: (id: string, lineId: string) =>
       generatePath(`${x}/supplier-quote/${id}/${lineId}/details`),
-    supplierQuoteLinePriceUpdate: (id: string, lineId: string) =>
-      generatePath(`${x}/supplier-quote/${id}/${lineId}/price/update`),
     supplierRoot: `${x}/supplier`,
     supplierStatus: (id: string) =>
       generatePath(`${x}/purchasing/supplier-statuses/${id}`),

@@ -1,3 +1,4 @@
+import { useCarbon } from "@carbon/auth";
 import {
   Card,
   CardContent,
@@ -15,8 +16,8 @@ import {
   Tr,
   VStack,
 } from "@carbon/react";
-import { useFetcher, useParams } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useParams } from "@remix-run/react";
+import { useCallback, useEffect, useState } from "react";
 import { Enumerable } from "~/components/Enumerable";
 import { useUnitOfMeasure } from "~/components/Form/UnitOfMeasure";
 import {
@@ -48,11 +49,17 @@ const SupplierQuoteLinePricing = ({
   const { id, lineId } = useParams();
   if (!id) throw new Error("Could not find id");
   if (!lineId) throw new Error("Could not find lineId");
-  const [prices, setPrices] =
-    useState<Record<number, SupplierQuoteLinePrice>>(pricesByQuantity);
+
+  // Consolidated state for all editable fields
+  const [editableFields, setEditableFields] = useState({
+    prices: pricesByQuantity,
+  });
 
   useEffect(() => {
-    setPrices(pricesByQuantity);
+    setEditableFields((prev) => ({
+      ...prev,
+      prices: pricesByQuantity,
+    }));
   }, [pricesByQuantity]);
 
   const routeData = useRouteData<{
@@ -62,13 +69,7 @@ const SupplierQuoteLinePricing = ({
     permissions.can("update", "purchasing") &&
     ["Active"].includes(routeData?.quote?.status ?? "");
 
-  const fetcher = useFetcher<{ id?: string; error: string | null }>();
-  useEffect(() => {
-    if (fetcher.data?.error) {
-      toast.error(fetcher.data.error);
-    }
-  }, [fetcher.data]);
-
+  const { carbon } = useCarbon();
   const { id: userId, company } = useUser();
   const baseCurrency = company?.baseCurrencyCode ?? "USD";
 
@@ -77,52 +78,70 @@ const SupplierQuoteLinePricing = ({
     currency: routeData?.quote?.currencyCode ?? baseCurrency,
   });
 
-  const onUpdatePrice = async (
-    key:
-      | "leadTime"
-      | "supplierUnitPrice"
-      | "supplierShippingCost"
-      | "supplierTaxAmount",
-    quantity: number,
-    value: number
-  ) => {
-    const hasPrice = !!prices[quantity];
+  const onUpdatePrice = useCallback(
+    async (
+      key:
+        | "leadTime"
+        | "supplierUnitPrice"
+        | "supplierShippingCost"
+        | "supplierTaxAmount",
+      quantity: number,
+      value: number
+    ) => {
+      const hasPrice = !!editableFields.prices[quantity];
 
-    const oldPrices = { ...prices };
-    const newPrices = { ...oldPrices };
-    if (!hasPrice) {
-      newPrices[quantity] = {
-        supplierQuoteId: id,
-        supplierQuoteLineId: lineId,
-        quantity,
-        leadTime: 0,
-        exchangeRate: exchangeRate ?? 1,
-        supplierUnitPrice: 0,
-        supplierShippingCost: 0,
-        supplierTaxAmount: 0,
-        createdBy: userId,
-      } as unknown as SupplierQuoteLinePrice;
-    }
-    newPrices[quantity] = { ...newPrices[quantity], [key]: value };
+      const oldPrices = { ...editableFields.prices };
+      const newPrices = { ...oldPrices };
+      if (!hasPrice) {
+        newPrices[quantity] = {
+          supplierQuoteId: id,
+          supplierQuoteLineId: lineId,
+          quantity,
+          leadTime: 0,
+          exchangeRate: exchangeRate ?? 1,
+          supplierUnitPrice: 0,
+          supplierShippingCost: 0,
+          supplierTaxAmount: 0,
+          createdBy: userId,
+        } as unknown as SupplierQuoteLinePrice;
+      }
+      newPrices[quantity] = { ...newPrices[quantity], [key]: value };
 
-    setPrices(newPrices);
+      setEditableFields((prev) => ({
+        ...prev,
+        prices: newPrices,
+      }));
 
-    const formData = new FormData();
-    formData.append("hasPrice", hasPrice ? "true" : "false");
-    formData.append("quantity", quantity.toString());
-    formData.append("supplierQuoteLineId", lineId);
-    if (hasPrice) {
-      formData.append("key", key);
-      formData.append("value", value.toString());
-    } else {
-      formData.append("price", JSON.stringify(newPrices[quantity]));
-    }
+      if (hasPrice) {
+        const update = await carbon
+          ?.from("supplierQuoteLinePrice")
+          .update({
+            [key]: value,
+            supplierQuoteLineId: lineId,
+            quantity,
+          })
+          .eq("supplierQuoteLineId", lineId)
+          .eq("quantity", quantity);
 
-    fetcher.submit(formData, {
-      method: "post",
-      action: path.to.supplierQuoteLinePriceUpdate(id, lineId),
-    });
-  };
+        if (update?.error) {
+          console.error(update.error);
+          toast.error("Failed to update supplier quote line");
+        }
+      } else {
+        const insert = await carbon?.from("supplierQuoteLinePrice").insert({
+          ...newPrices[quantity],
+          supplierQuoteLineId: lineId,
+          quantity,
+        });
+
+        if (insert?.error) {
+          console.error(insert.error);
+          toast.error("Failed to insert supplier quote line");
+        }
+      }
+    },
+    [editableFields.prices, id, lineId, exchangeRate, userId, carbon]
+  );
 
   const unitOfMeasures = useUnitOfMeasure();
 
@@ -150,7 +169,7 @@ const SupplierQuoteLinePricing = ({
                 </HStack>
               </Td>
               {quantities.map((quantity) => {
-                const leadTime = prices[quantity]?.leadTime ?? 0;
+                const leadTime = editableFields.prices[quantity]?.leadTime ?? 0;
                 return (
                   <Td
                     key={quantity.toString()}
@@ -197,7 +216,8 @@ const SupplierQuoteLinePricing = ({
                 </HStack>
               </Td>
               {quantities.map((quantity) => {
-                const price = prices[quantity]?.supplierUnitPrice ?? 0;
+                const price =
+                  editableFields.prices[quantity]?.supplierUnitPrice ?? 0;
                 return (
                   <Td key={quantity.toString()}>
                     <NumberField
@@ -240,7 +260,7 @@ const SupplierQuoteLinePricing = ({
                 </HStack>
               </Td>
               {quantities.map((quantity, index) => {
-                const price = prices[quantity]?.unitPrice ?? 0;
+                const price = editableFields.prices[quantity]?.unitPrice ?? 0;
                 return (
                   <Td key={index} className="group-hover:bg-muted/50">
                     <VStack spacing={0}>
@@ -261,7 +281,7 @@ const SupplierQuoteLinePricing = ({
               </Td>
               {quantities.map((quantity) => {
                 const shippingCost =
-                  prices[quantity]?.supplierShippingCost ?? 0;
+                  editableFields.prices[quantity]?.supplierShippingCost ?? 0;
                 return (
                   <Td key={quantity.toString()}>
                     <NumberField
@@ -301,7 +321,8 @@ const SupplierQuoteLinePricing = ({
                 </HStack>
               </Td>
               {quantities.map((quantity, index) => {
-                const taxAmount = prices[quantity]?.supplierTaxAmount ?? 0;
+                const taxAmount =
+                  editableFields.prices[quantity]?.supplierTaxAmount ?? 0;
                 return (
                   <Td key={index} className="group-hover:bg-muted/50">
                     <NumberField
@@ -337,9 +358,11 @@ const SupplierQuoteLinePricing = ({
               </Td>
               {quantities.map((quantity, index) => {
                 const subtotal =
-                  (prices[quantity]?.supplierUnitPrice ?? 0) * quantity +
-                  (prices[quantity]?.supplierShippingCost ?? 0);
-                const tax = prices[quantity]?.supplierTaxAmount ?? 0;
+                  (editableFields.prices[quantity]?.supplierUnitPrice ?? 0) *
+                    quantity +
+                  (editableFields.prices[quantity]?.supplierShippingCost ?? 0);
+                const tax =
+                  editableFields.prices[quantity]?.supplierTaxAmount ?? 0;
                 const price = subtotal + tax;
 
                 return (
@@ -361,7 +384,9 @@ const SupplierQuoteLinePricing = ({
                   </Td>
                   {quantities.map((quantity, index) => {
                     const rate =
-                      prices[quantity]?.exchangeRate ?? exchangeRate ?? 1;
+                      editableFields.prices[quantity]?.exchangeRate ??
+                      exchangeRate ??
+                      1;
                     return (
                       <Td key={index} className="group-hover:bg-muted/50">
                         <VStack spacing={0}>
@@ -379,12 +404,16 @@ const SupplierQuoteLinePricing = ({
                   </Td>
                   {quantities.map((quantity, index) => {
                     const subtotal =
-                      ((prices[quantity]?.supplierUnitPrice ?? 0) * quantity +
-                        (prices[quantity]?.supplierShippingCost ?? 0)) /
-                      (prices[quantity]?.exchangeRate ?? 1);
+                      ((editableFields.prices[quantity]?.supplierUnitPrice ??
+                        0) *
+                        quantity +
+                        (editableFields.prices[quantity]
+                          ?.supplierShippingCost ?? 0)) /
+                      (editableFields.prices[quantity]?.exchangeRate ?? 1);
                     const tax =
-                      (prices[quantity]?.supplierTaxAmount ?? 0) /
-                      (prices[quantity]?.exchangeRate ?? 1);
+                      (editableFields.prices[quantity]?.supplierTaxAmount ??
+                        0) /
+                      (editableFields.prices[quantity]?.exchangeRate ?? 1);
                     const price = subtotal + tax;
 
                     return (
