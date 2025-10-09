@@ -2268,6 +2268,7 @@ export async function insertOrderLines(
     return;
   }
 
+  let maxPromisedDate: string | null = null;
   let insertedLinesCount = 0;
   const holidays = await carbon
     .from("holiday")
@@ -2335,7 +2336,7 @@ export async function insertOrderLines(
           defaultTrackingType,
         });
 
-        const leadTime = orderItem.lead_days || 7;
+        const leadTime = orderItem.lead_days ?? 7;
         const updateLeadTime = await carbon
           .from("itemReplenishment")
           .update({
@@ -2351,6 +2352,14 @@ export async function insertOrderLines(
           leadTime,
           holidays.data ?? []
         );
+
+        // Update max promised date if this one is later
+        if (
+          !maxPromisedDate ||
+          (promisedDate && promisedDate > maxPromisedDate)
+        ) {
+          maxPromisedDate = promisedDate;
+        }
 
         const saleQuantity =
           component.deliver_quantity || orderItem.quantity || 1;
@@ -2400,20 +2409,6 @@ export async function insertOrderLines(
             lineResult.error
           );
           continue;
-        }
-
-        if (promisedDate) {
-          const updateShipment = await carbon
-            .from("salesOrderShipment")
-            .update({
-              receiptPromisedDate: promisedDate,
-              receiptRequestedDate: promisedDate,
-            })
-            .eq("id", lineResult.data.id);
-
-          if (updateShipment.error) {
-            console.error("Failed to update shipment:", updateShipment.error);
-          }
         }
 
         const lineId = lineResult.data.id;
@@ -2467,6 +2462,13 @@ export async function insertOrderLines(
         continue;
       }
     }
+  }
+
+  if (maxPromisedDate) {
+    await carbon
+      .from("salesOrderShipment")
+      .update({ receiptPromisedDate: maxPromisedDate })
+      .eq("id", salesOrderId);
   }
 
   if (insertedLinesCount === 0) {
