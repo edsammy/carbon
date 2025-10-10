@@ -235,6 +235,30 @@ export async function getKanban(
   return client.from("kanbans").select("*").eq("id", kanbanId).single();
 }
 
+export async function getPickLists(
+  client: SupabaseClient<Database>,
+  companyId: string,
+  args: GenericQueryFilters & {
+    search: string | null;
+  }
+) {
+  let query = client
+    .from("pickList")
+    .select("*", {
+      count: "exact",
+    })
+    .eq("companyId", companyId);
+
+  if (args.search) {
+    query = query.ilike("pickListId", `%${args.search}%`);
+  }
+
+  query = setGenericQueryFilters(query, args, [
+    { column: "shipmentId", ascending: false },
+  ]);
+  return query;
+}
+
 export async function getReceipts(
   client: SupabaseClient<Database>,
   companyId: string,

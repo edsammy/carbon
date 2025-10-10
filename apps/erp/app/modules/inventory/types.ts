@@ -4,6 +4,7 @@ import type {
   getInventoryItems,
   getItemLedgerPage,
   getKanbans,
+  getPickLists,
   getReceiptLines,
   getReceiptTracking,
   getReceipts,
@@ -20,10 +21,6 @@ export type BatchProperty = NonNullable<
   Awaited<ReturnType<typeof getBatchProperties>>["data"]
 >[number];
 
-export type Kanban = NonNullable<
-  Awaited<ReturnType<typeof getKanbans>>["data"]
->[number];
-
 export type InventoryItem = NonNullable<
   Awaited<ReturnType<typeof getInventoryItems>>["data"]
 >[number];
@@ -38,6 +35,14 @@ export type ItemTracking = NonNullable<
 
 export type Receipt = NonNullable<
   Awaited<ReturnType<typeof getReceipts>>["data"]
+>[number];
+
+export type Kanban = NonNullable<
+  Awaited<ReturnType<typeof getKanbans>>["data"]
+>[number];
+
+export type PickList = NonNullable<
+  Awaited<ReturnType<typeof getPickLists>>["data"]
 >[number];
 
 export type ReceiptLine = NonNullable<

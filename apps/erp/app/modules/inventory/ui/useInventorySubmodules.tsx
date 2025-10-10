@@ -1,6 +1,7 @@
 import {
   LuArrowRightLeft,
   LuHandCoins,
+  LuListChecks,
   LuNetwork,
   LuQrCode,
   LuTally5,
@@ -16,6 +17,12 @@ const inventoryRoutes: AuthenticatedRouteGroup[] = [
   {
     name: "Manage",
     routes: [
+      {
+        name: "Pick Lists",
+        to: path.to.pickLists,
+        icon: <LuListChecks />,
+        table: "pickList",
+      },
       {
         name: "Receipts",
         to: path.to.receipts,

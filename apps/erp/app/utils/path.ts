@@ -582,6 +582,8 @@ export const path = {
       generatePath(`${x}/resources/partners/delete/${id}`),
     deletePaymentTerm: (id: string) =>
       generatePath(`${x}/accounting/payment-terms/delete/${id}`),
+    deletePickList: (id: string) =>
+      generatePath(`${x}/inventory/pick-lists/${id}/delete`),
     deleteProcedure: (id: string) =>
       generatePath(`${x}/procedure/delete/${id}`),
     deleteProcedureStep: (id: string, stepId: string) =>
@@ -932,6 +934,7 @@ export const path = {
     newPart: `${x}/part/new`,
     newPartSupplier: (id: string) =>
       generatePath(`${x}/part/${id}/view/purchasing/new`),
+    newPickList: `${x}/inventory/pick-lists/new`,
     newProcedure: `${x}/production/procedures/new`,
     newProcedureStep: (id: string) =>
       generatePath(`${x}/procedure/${id}/steps/new`),
@@ -1054,6 +1057,12 @@ export const path = {
     person: (id: string) => generatePath(`${x}/person/${id}`),
     personDetails: (id: string) => generatePath(`${x}/person/${id}/details`),
     personJob: (id: string) => generatePath(`${x}/person/${id}/job`),
+    pickLists: `${x}/inventory/pick-lists`,
+    pickList: (id: string) => generatePath(`${x}/inventory/pick-lists/${id}`),
+    pickListDetails: (id: string) =>
+      generatePath(`${x}/inventory/pick-lists/${id}/details`),
+    pickListStatus: (id: string) =>
+      generatePath(`${x}/inventory/pick-lists/${id}/status`),
     procedure: (id: string) => generatePath(`${x}/procedure/${id}`),
     procedureStep: (id: string, attributeId: string) =>
       generatePath(`${x}/procedure/${id}/steps/${attributeId}`),

@@ -8569,6 +8569,9 @@ export default {
             $ref: "#/parameters/rowFilter.jobMaterialWithMakeMethodId.kit",
           },
           {
+            $ref: "#/parameters/rowFilter.jobMaterialWithMakeMethodId.shelfName",
+          },
+          {
             $ref: "#/parameters/rowFilter.jobMaterialWithMakeMethodId.jobMaterialMakeMethodId",
           },
           {
@@ -9638,6 +9641,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.quoteMaterialWithMakeMethodId.kit",
+          },
+          {
+            $ref: "#/parameters/rowFilter.quoteMaterialWithMakeMethodId.shelfId",
           },
           {
             $ref: "#/parameters/rowFilter.quoteMaterialWithMakeMethodId.quoteMaterialMakeMethodId",
@@ -28144,6 +28150,9 @@ export default {
             $ref: "#/parameters/rowFilter.quoteMaterial.kit",
           },
           {
+            $ref: "#/parameters/rowFilter.quoteMaterial.shelfId",
+          },
+          {
             $ref: "#/parameters/select",
           },
           {
@@ -28272,6 +28281,9 @@ export default {
             $ref: "#/parameters/rowFilter.quoteMaterial.kit",
           },
           {
+            $ref: "#/parameters/rowFilter.quoteMaterial.shelfId",
+          },
+          {
             $ref: "#/parameters/preferReturn",
           },
         ],
@@ -28352,6 +28364,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.quoteMaterial.kit",
+          },
+          {
+            $ref: "#/parameters/rowFilter.quoteMaterial.shelfId",
           },
           {
             $ref: "#/parameters/body.quoteMaterial",
@@ -47824,10 +47839,7 @@ export default {
             $ref: "#/parameters/rowFilter.pickList.status",
           },
           {
-            $ref: "#/parameters/rowFilter.pickList.createdDate",
-          },
-          {
-            $ref: "#/parameters/rowFilter.pickList.completedDate",
+            $ref: "#/parameters/rowFilter.pickList.completedAt",
           },
           {
             $ref: "#/parameters/rowFilter.pickList.companyId",
@@ -47843,6 +47855,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.assignee",
           },
           {
             $ref: "#/parameters/rowFilter.pickList.customFields",
@@ -47922,10 +47937,7 @@ export default {
             $ref: "#/parameters/rowFilter.pickList.status",
           },
           {
-            $ref: "#/parameters/rowFilter.pickList.createdDate",
-          },
-          {
-            $ref: "#/parameters/rowFilter.pickList.completedDate",
+            $ref: "#/parameters/rowFilter.pickList.completedAt",
           },
           {
             $ref: "#/parameters/rowFilter.pickList.companyId",
@@ -47941,6 +47953,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.assignee",
           },
           {
             $ref: "#/parameters/rowFilter.pickList.customFields",
@@ -47974,10 +47989,7 @@ export default {
             $ref: "#/parameters/rowFilter.pickList.status",
           },
           {
-            $ref: "#/parameters/rowFilter.pickList.createdDate",
-          },
-          {
-            $ref: "#/parameters/rowFilter.pickList.completedDate",
+            $ref: "#/parameters/rowFilter.pickList.completedAt",
           },
           {
             $ref: "#/parameters/rowFilter.pickList.companyId",
@@ -47993,6 +48005,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.pickList.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.pickList.assignee",
           },
           {
             $ref: "#/parameters/rowFilter.pickList.customFields",
@@ -63156,7 +63171,7 @@ export default {
       properties: {
         id: {
           description:
-            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -63205,7 +63220,7 @@ export default {
         },
         supplierLocationId: {
           description:
-            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -63472,6 +63487,10 @@ export default {
         kit: {
           format: "boolean",
           type: "boolean",
+        },
+        shelfName: {
+          format: "text",
+          type: "string",
         },
         jobMaterialMakeMethodId: {
           description: "Note:\nThis is a Primary Key.<pk/>",
@@ -64002,6 +64021,12 @@ export default {
         kit: {
           format: "boolean",
           type: "boolean",
+        },
+        shelfId: {
+          description:
+            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
+          format: "text",
+          type: "string",
         },
         quoteMaterialMakeMethodId: {
           description: "Note:\nThis is a Primary Key.<pk/>",
@@ -72714,6 +72739,12 @@ export default {
           default: false,
           format: "boolean",
           type: "boolean",
+        },
+        shelfId: {
+          description:
+            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
+          format: "text",
+          type: "string",
         },
       },
       type: "object",
@@ -82151,7 +82182,6 @@ export default {
         "pickListId",
         "locationId",
         "status",
-        "createdDate",
         "companyId",
         "createdAt",
         "createdBy",
@@ -82179,12 +82209,7 @@ export default {
           format: 'public."pickListStatus"',
           type: "string",
         },
-        createdDate: {
-          default: "now()",
-          format: "timestamp with time zone",
-          type: "string",
-        },
-        completedDate: {
+        completedAt: {
           format: "timestamp with time zone",
           type: "string",
         },
@@ -82210,6 +82235,12 @@ export default {
           type: "string",
         },
         updatedBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        assignee: {
           description:
             "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
           format: "text",
@@ -90441,6 +90472,12 @@ export default {
       in: "query",
       type: "string",
     },
+    "rowFilter.jobMaterialWithMakeMethodId.shelfName": {
+      name: "shelfName",
+      required: false,
+      in: "query",
+      type: "string",
+    },
     "rowFilter.jobMaterialWithMakeMethodId.jobMaterialMakeMethodId": {
       name: "jobMaterialMakeMethodId",
       required: false,
@@ -91085,6 +91122,12 @@ export default {
     },
     "rowFilter.quoteMaterialWithMakeMethodId.kit": {
       name: "kit",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.quoteMaterialWithMakeMethodId.shelfId": {
+      name: "shelfId",
       required: false,
       in: "query",
       type: "string",
@@ -100808,6 +100851,12 @@ export default {
     },
     "rowFilter.quoteMaterial.kit": {
       name: "kit",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.quoteMaterial.shelfId": {
+      name: "shelfId",
       required: false,
       in: "query",
       type: "string",
@@ -111606,14 +111655,8 @@ export default {
       in: "query",
       type: "string",
     },
-    "rowFilter.pickList.createdDate": {
-      name: "createdDate",
-      required: false,
-      in: "query",
-      type: "string",
-    },
-    "rowFilter.pickList.completedDate": {
-      name: "completedDate",
+    "rowFilter.pickList.completedAt": {
+      name: "completedAt",
       required: false,
       in: "query",
       type: "string",
@@ -111644,6 +111687,12 @@ export default {
     },
     "rowFilter.pickList.updatedBy": {
       name: "updatedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.pickList.assignee": {
+      name: "assignee",
       required: false,
       in: "query",
       type: "string",
