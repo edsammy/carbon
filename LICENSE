@@ -2,7 +2,7 @@ Copyright © 2025, Carbon Manufacturing Systems Corp.
 
 Portions of this software are licensed as follows:
 
-- All content that resides under https://github.com/crnbos/carbon/tree/main/packages/ee and all files that contains a `.ee` in this repository are licensed under the license defined in "commercial/LICENSE"
+- All content that resides under https://github.com/crnbos/carbon/tree/main/packages/ee and all files that contains a `.ee` in this repository require the purchase of a commercial license
 - All third party components incorporated into the Carbon Software are licensed under the original license provided by the owner of the applicable component.
 - Any use of this software to sell Carbon source code as a hosted service is strictly prohibited without obtaining a commercial license.
 - Because Carbon is cloud-based software, any use of this software for internal production use is strictly prohibited unless the modifications are made open-source in accordance with the "AGPLv3" license or a commercial license is obtained.
