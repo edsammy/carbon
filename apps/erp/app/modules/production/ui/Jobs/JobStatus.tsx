@@ -12,6 +12,7 @@ function JobStatus({ status }: JobStatusProps) {
     case "Planned":
       return <Status color="yellow">{status}</Status>;
     case "Ready":
+      return <Status color="blue">Released</Status>; // TODO: update this properly
     case "In Progress":
       return <Status color="blue">{status}</Status>;
     case "Paused":

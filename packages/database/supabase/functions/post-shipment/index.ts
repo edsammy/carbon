@@ -202,7 +202,10 @@ serve(async (req: Request) => {
                   const newQuantityComplete =
                     currentJob?.status === "Completed"
                       ? currentJob?.quantityComplete
-                      : (currentJob?.quantityComplete ?? 0) + shippedQuantity;
+                      : Math.max(
+                          currentJob?.quantityComplete ?? 0,
+                          shippedQuantity
+                        );
                   const newStatus =
                     currentQuantityShipped + shippedQuantity >=
                     (currentJob?.quantity ?? 0)
@@ -230,7 +233,10 @@ serve(async (req: Request) => {
                   const newQuantityComplete =
                     currentJob?.status === "Completed"
                       ? currentJob?.quantityComplete
-                      : (currentJob?.quantityComplete ?? 0) + shippedQuantity;
+                      : Math.max(
+                          currentJob?.quantityComplete ?? 0,
+                          shippedQuantity
+                        );
                   const newStatus =
                     currentQuantityShipped + shippedQuantity >=
                     (currentJob?.quantity ?? 0)
@@ -1431,8 +1437,8 @@ serve(async (req: Request) => {
                   currentQuantityShipped - shippedQuantity
                 );
                 const newQuantityComplete = Math.max(
-                  0,
-                  (currentJob?.quantityComplete ?? 0) - shippedQuantity
+                  currentJob?.quantityComplete ?? 0,
+                  shippedQuantity
                 );
 
                 // Update status based on new quantities

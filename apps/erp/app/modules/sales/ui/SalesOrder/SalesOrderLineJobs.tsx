@@ -318,7 +318,7 @@ export function SalesOrderJobItem({ job }: { job: SalesOrderJob }) {
           <div>
             <label className="text-xs text-muted-foreground">Shipped</label>
             <p className="text-sm">
-              {job.quantityShipped ?? 0}/{job.quantityComplete ?? 0}
+              {job.quantityShipped ?? 0}/{job.productionQuantity ?? 0}
             </p>
           </div>
         </HStack>

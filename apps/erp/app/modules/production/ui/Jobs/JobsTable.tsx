@@ -9,6 +9,7 @@ import {
   HStack,
   MenuIcon,
   MenuItem,
+  Progress,
   toast,
   useDisclosure,
   VStack,
@@ -233,7 +234,22 @@ const JobsTable = memo(({ data, count, tags }: JobsTableProps) => {
       {
         accessorKey: "quantity",
         header: "Quantity",
-        cell: (item) => item.getValue<number>(),
+        cell: ({ row }) => {
+          if (row.original.status === "Ready") {
+            return (
+              <Progress
+                value={
+                  ((row.original.quantityComplete ?? 0) /
+                    (row.original.quantity ?? 0)) *
+                  100
+                }
+                numerator={(row.original.quantityComplete ?? 0).toString()}
+                denominator={(row.original.quantity ?? 0).toString()}
+              />
+            );
+          }
+          return row.original.quantity;
+        },
         meta: {
           icon: <LuHash />,
         },

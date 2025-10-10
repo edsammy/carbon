@@ -2090,18 +2090,17 @@ serve(async (req: Request) => {
                 []) {
                 if (!salesOrderLine.itemId) return;
 
-                const quantityAvailable = isSerial
-                  ? Math.min(job.quantityComplete - job.quantityShipped, 0)
-                  : job.quantity - job.quantityShipped;
+                const quantityToShip =
+                  (job.quantityComplete ?? 0) - (job.quantityShipped ?? 0);
 
-                if (!isSerial || (isSerial && quantityAvailable > 0)) {
+                if (!isSerial || (isSerial && quantityToShip > 0)) {
                   const fulfillment = await trx
                     .insertInto("fulfillment")
                     .values({
                       salesOrderLineId: salesOrderLine.id,
                       type: "Job",
                       jobId: job.id,
-                      quantity: quantityAvailable,
+                      quantity: quantityToShip,
                       companyId: companyId,
                       createdBy: userId,
                     })
@@ -2111,7 +2110,7 @@ serve(async (req: Request) => {
                   const fulfillmentId = fulfillment?.[0]?.id;
 
                   const shippingAndTaxUnitCost =
-                    (salesOrderLine.shippingCost / quantityAvailable +
+                    (salesOrderLine.shippingCost / quantityToShip +
                       (salesOrderLine.unitPrice ?? 0)) *
                     (1 + salesOrderLine.taxPercent);
 
@@ -2127,7 +2126,7 @@ serve(async (req: Request) => {
                       outstandingQuantity:
                         salesOrderLine.quantityToSend ??
                         salesOrderLine.saleQuantity,
-                      shippedQuantity: quantityAvailable,
+                      shippedQuantity: quantityToShip,
                       requiresSerialTracking: isSerial,
                       requiresBatchTracking: isBatch,
                       unitPrice: shippingAndTaxUnitCost,
@@ -2376,18 +2375,17 @@ serve(async (req: Request) => {
           if (salesOrderLine.data.methodType === "Make") {
             for await (const job of jobs.data ?? []) {
               if (!salesOrderLine.data.itemId) return;
-              const quantityAvailable = isSerial
-                ? Math.min(job.quantityComplete - job.quantityShipped, 0)
-                : job.quantity - job.quantityReceivedToInventory;
+              const quantityToShip =
+                (job.quantityComplete ?? 0) - (job.quantityShipped ?? 0);
 
-              if (!isSerial || (isSerial && quantityAvailable > 0)) {
+              if (!isSerial || (isSerial && quantityToShip > 0)) {
                 const fulfillment = await trx
                   .insertInto("fulfillment")
                   .values({
                     salesOrderLineId: salesOrderLineId,
                     type: "Job",
                     jobId: job.id,
-                    quantity: quantityAvailable,
+                    quantity: quantityToShip,
                     companyId: companyId,
                     createdBy: userId,
                   })
@@ -2397,7 +2395,7 @@ serve(async (req: Request) => {
                 const fulfillmentId = fulfillment?.[0]?.id;
 
                 const shippingAndTaxUnitCost =
-                  (salesOrderLine.data.shippingCost / quantityAvailable +
+                  (salesOrderLine.data.shippingCost / quantityToShip +
                     (salesOrderLine.data.unitPrice ?? 0)) *
                   (1 + salesOrderLine.data.taxPercent);
 
@@ -2409,9 +2407,9 @@ serve(async (req: Request) => {
                     companyId: companyId,
                     fulfillmentId,
                     itemId: salesOrderLine.data.itemId,
-                    orderQuantity: quantityAvailable,
-                    outstandingQuantity: quantityAvailable,
-                    shippedQuantity: quantityAvailable,
+                    orderQuantity: job.productionQuantity ?? 0,
+                    outstandingQuantity: job.productionQuantity ?? 0,
+                    shippedQuantity: quantityToShip,
                     requiresSerialTracking: isSerial,
                     requiresBatchTracking: isBatch,
                     unitPrice: shippingAndTaxUnitCost,
