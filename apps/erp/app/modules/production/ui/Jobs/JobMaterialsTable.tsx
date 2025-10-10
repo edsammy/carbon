@@ -5,6 +5,8 @@ import {
   Count,
   HStack,
   IconButton,
+  MenuIcon,
+  MenuItem,
   ScrollArea,
   useMount,
   VStack,
@@ -40,6 +42,8 @@ import {
 import { usePermissions, useRouteData } from "~/hooks";
 import { useBom, useItems } from "~/stores";
 import {
+  addToPickListSession,
+  removeFromPickListSession,
   useOrderItems,
   usePickListSession,
   usePickListSessionItemsCount,
@@ -67,7 +71,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
   const [items] = useItems();
   const [, setSelectedMaterialId] = useBom();
   const sessionItemsCount = usePickListSessionItemsCount();
-  const [, setPickListSession] = usePickListSession();
+  const [session, setPickListSession] = usePickListSession();
 
   useMount(() => {
     // Prepopulate pick list session with all parts that need transferred or ordered
@@ -337,6 +341,88 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
     sessionItemsCount,
   ]);
 
+  const renderContextMenu = useMemo(() => {
+    // eslint-disable-next-line react/display-name
+    return (row: JobMaterial) => {
+      // Skip non-inventory items and make items
+      if (
+        row.itemTrackingType === "Non-Inventory" ||
+        row.methodType === "Make" ||
+        !row.id
+      ) {
+        return null;
+      }
+
+      const quantityRequiredByShelf = isAllocated
+        ? row.quantityFromProductionOrderInShelf
+        : row.quantityFromProductionOrderInShelf + row.estimatedQuantity;
+
+      const quantityOnHandInShelf = row.quantityOnHandInShelf;
+
+      const quantityOnHand =
+        row.quantityOnHandInShelf + row.quantityOnHandNotInShelf;
+      const incoming =
+        row.quantityOnPurchaseOrder + row.quantityOnProductionOrder;
+      const allocated =
+        row.quantityFromProductionOrderInShelf +
+        row.quantityFromProductionOrderNotInShelf +
+        row.quantityOnSalesOrder;
+
+      // Check if items are already in session
+      const isInSessionForTransfer = session.items.some(
+        (item) => item.id === row.id && item.action === "transfer"
+      );
+      const isInSessionForOrder = session.items.some(
+        (item) => item.id === row.id && item.action === "order"
+      );
+
+      return (
+        <>
+          <MenuItem
+            destructive={isInSessionForTransfer}
+            onClick={() => {
+              if (isInSessionForTransfer) {
+                removeFromPickListSession(row.id!, "transfer");
+              } else {
+                addToPickListSession({
+                  id: row.id!,
+                  itemReadableId: row.itemReadableId,
+                  description: row.description,
+                  action: "transfer",
+                  quantity: quantityRequiredByShelf - quantityOnHandInShelf,
+                });
+              }
+            }}
+          >
+            <MenuIcon icon={<LuTruck />} />
+            {isInSessionForTransfer ? "Remove Transfer" : "Transfer"}
+          </MenuItem>
+          <MenuItem
+            destructive={isInSessionForOrder}
+            onClick={() => {
+              if (isInSessionForOrder) {
+                removeFromPickListSession(row.id!, "order");
+              } else {
+                addToPickListSession({
+                  id: row.id!,
+                  itemReadableId: row.itemReadableId,
+                  description: row.description,
+                  action: "order",
+                  quantity:
+                    (row.estimatedQuantity ?? 0) -
+                    (quantityOnHand + incoming - allocated),
+                });
+              }
+            }}
+          >
+            <MenuIcon icon={<LuShoppingCart />} />
+            {isInSessionForOrder ? "Remove Order" : "Order"}
+          </MenuItem>
+        </>
+      );
+    };
+  }, [isAllocated, session.items]);
+
   const permissions = usePermissions();
 
   return (
@@ -361,6 +447,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
             </fetcher.Form>
           ) : undefined
         }
+        renderContextMenu={renderContextMenu}
         title="Materials"
       />
       <PickListSessionWidget />
@@ -418,7 +505,7 @@ const PickListSessionWidget = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-[9999]">
       <div
         className={`bg-card border-2 border-border rounded-2xl shadow-2xl transition-all duration-300 ease-in-out ${
           isExpanded ? "w-96 h-[32rem]" : "w-80 h-auto"
