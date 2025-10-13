@@ -178,8 +178,8 @@ $ cp ./.env.example ./.env
 
 3. Navigate to the project you created in [https://cloud.trigger.dev/](Trigger.dev) and copy the following from the `Environments & API Keys` section:
 
-- `TRIGGER_SECRET_KEY=[Public 'dev' API Key, starting 'pk_dev*']`
-- `TRIGGER_API_KEY=[Server 'dev' API Key, starting 'tr_dev*']`
+- `TRIGGER_SECRET_KEY=[Private 'dev' API Key, starting 'tr_dev_*']`
+- `TRIGGER_API_URL="https://api.trigger.dev"`
 - `TRIGGER_PROJECT_ID=[Public 'project' key, starting 'proj*]`
 
 4. In Posthog go to [https://[region].posthog.com/project/[project-id]/settings/project-details](https://[region].posthog.com/project/[project-id]/settings/project-details) to find your Project ID and Project API key:
