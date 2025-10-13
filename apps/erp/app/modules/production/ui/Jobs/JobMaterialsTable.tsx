@@ -42,13 +42,13 @@ import {
 import { usePermissions, useRouteData } from "~/hooks";
 import { useBom, useItems } from "~/stores";
 import {
-  addToPickListSession,
-  removeFromPickListSession,
+  addToStockTransferSession,
+  removeFromStockTransferSession,
   useOrderItems,
-  usePickListSession,
-  usePickListSessionItemsCount,
+  useStockTransferSession,
+  useStockTransferSessionItemsCount,
   useTransferItems,
-} from "~/stores/pick-list-session";
+} from "~/stores/stock-transfer";
 import { path } from "~/utils/path";
 import type { Job, JobMaterial } from "../../types";
 
@@ -70,11 +70,11 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
 
   const [items] = useItems();
   const [, setSelectedMaterialId] = useBom();
-  const sessionItemsCount = usePickListSessionItemsCount();
-  const [session, setPickListSession] = usePickListSession();
+  const sessionItemsCount = useStockTransferSessionItemsCount();
+  const [session, setStockTransferSession] = useStockTransferSession();
 
   useMount(() => {
-    // Prepopulate pick list session with all parts that need transferred or ordered
+    // Prepopulate stock transfer session with all parts that need transferred or ordered
     const itemsToAdd: Array<{
       id: string;
       itemReadableId: string;
@@ -142,7 +142,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
     });
 
     if (itemsToAdd.length > 0) {
-      setPickListSession({ items: itemsToAdd });
+      setStockTransferSession({ items: itemsToAdd });
     }
   });
 
@@ -382,9 +382,9 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
             destructive={isInSessionForTransfer}
             onClick={() => {
               if (isInSessionForTransfer) {
-                removeFromPickListSession(row.id!, "transfer");
+                removeFromStockTransferSession(row.id!, "transfer");
               } else {
-                addToPickListSession({
+                addToStockTransferSession({
                   id: row.id!,
                   itemReadableId: row.itemReadableId,
                   description: row.description,
@@ -401,9 +401,9 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
             destructive={isInSessionForOrder}
             onClick={() => {
               if (isInSessionForOrder) {
-                removeFromPickListSession(row.id!, "order");
+                removeFromStockTransferSession(row.id!, "order");
               } else {
-                addToPickListSession({
+                addToStockTransferSession({
                   id: row.id!,
                   itemReadableId: row.itemReadableId,
                   description: row.description,
@@ -450,7 +450,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         renderContextMenu={renderContextMenu}
         title="Materials"
       />
-      <PickListSessionWidget />
+      <StockTransferSessionWidget />
     </>
   );
 });
@@ -459,9 +459,9 @@ JobMaterialsTable.displayName = "JobMaterialsTable";
 
 export default JobMaterialsTable;
 
-const PickListSessionWidget = () => {
-  const [session, setPickListSession] = usePickListSession();
-  const sessionItemsCount = usePickListSessionItemsCount();
+const StockTransferSessionWidget = () => {
+  const [session, setStockTransferSession] = useStockTransferSession();
+  const sessionItemsCount = useStockTransferSessionItemsCount();
   const orderItems = useOrderItems();
   const transferItems = useTransferItems();
 
@@ -475,11 +475,11 @@ const PickListSessionWidget = () => {
       (sessionItem) =>
         !(sessionItem.id === itemId && sessionItem.action === action)
     );
-    setPickListSession({ items: updatedItems });
+    setStockTransferSession({ items: updatedItems });
   };
 
   const onClearAll = () => {
-    setPickListSession({ items: [] });
+    setStockTransferSession({ items: [] });
   };
 
   if (sessionItemsCount === 0) {
@@ -563,7 +563,7 @@ const PickListSessionWidget = () => {
                     No parts added yet
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Start adding parts to your pick list
+                    Start adding parts to your stock transfer
                   </p>
                 </div>
               ) : (

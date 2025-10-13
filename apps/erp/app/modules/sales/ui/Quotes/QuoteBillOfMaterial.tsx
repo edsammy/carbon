@@ -564,7 +564,7 @@ const QuoteBillOfMaterial = ({
             isDisabled={isDisabled || !permissions.can("update", "sales")}
             onClick={onAddItem}
           >
-            Add Material
+            Add Item
           </Button>
         </CardAction>
       </HStack>

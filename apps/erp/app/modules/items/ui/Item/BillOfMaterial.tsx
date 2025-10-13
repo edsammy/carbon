@@ -488,7 +488,7 @@ const BillOfMaterial = ({
               isDisabled={isReadOnly}
               onClick={onAddItem}
             >
-              Add Material
+              Add Item
             </Button>
             {configurable && materials.length > 0 && (
               <IconButton

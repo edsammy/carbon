@@ -268,31 +268,33 @@ export const warehouseTransferLineValidator = z
     path: ["toLocationId"],
   });
 
-export const pickListStatusType = [
+export const stockTransferStatusType = [
   "Draft",
   "Released",
   "In Progress",
   "Completed",
 ] as const;
 
-export const pickListValidator = z.object({
+export const stockTransferValidator = z.object({
   id: zfd.text(z.string().optional()),
   locationId: z.string().min(1, { message: "Location is required" }),
-  status: z.enum(pickListStatusType).optional(),
+  status: z.enum(stockTransferStatusType).optional(),
   createdDate: zfd.text(z.string().optional()),
   completedDate: zfd.text(z.string().optional()),
 });
 
-export const pickListLineValidator = z.object({
+export const stockTransferLineValidator = z.object({
   id: zfd.text(z.string().optional()),
-  pickListId: z.string().min(1, { message: "Pick list is required" }),
+  stockTransferId: z.string().min(1, { message: "Pick list is required" }),
   jobId: zfd.text(z.string().optional()),
   jobMaterialId: zfd.text(z.string().optional()),
   itemId: z.string().min(1, { message: "Item is required" }),
   fromShelfId: zfd.text(z.string().optional()),
   toShelfId: zfd.text(z.string().optional()),
   quantity: zfd.numeric(
-    z.number().min(0, { message: "Quantity must be greater than or equal to 0" })
+    z
+      .number()
+      .min(0, { message: "Quantity must be greater than or equal to 0" })
   ),
   pickedQuantity: zfd.numeric(z.number().min(0).optional()),
 });

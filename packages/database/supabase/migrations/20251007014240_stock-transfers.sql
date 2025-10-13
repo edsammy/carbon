@@ -63,8 +63,8 @@ CREATE OR REPLACE VIEW "quoteMaterialWithMakeMethodId" WITH(SECURITY_INVOKER=tru
   LEFT JOIN "quoteMakeMethod" qmm 
     ON qmm."parentMaterialId" = qm."id";
 
--- Create pick list status enum
-CREATE TYPE "pickListStatus" AS ENUM (
+-- Create stock transfer status enum
+CREATE TYPE "stockTransferStatus" AS ENUM (
   'Draft',
   'Released',
   'In Progress',
@@ -72,11 +72,11 @@ CREATE TYPE "pickListStatus" AS ENUM (
 );
 
 
-CREATE TABLE "pickList" (
+CREATE TABLE "stockTransfer" (
   "id" TEXT NOT NULL DEFAULT xid(),
-  "pickListId" TEXT NOT NULL,
+  "stockTransferId" TEXT NOT NULL,
   "locationId" TEXT NOT NULL,
-  "status" "pickListStatus" NOT NULL DEFAULT 'Draft',
+  "status" "stockTransferStatus" NOT NULL DEFAULT 'Draft',
   "completedAt" TIMESTAMP WITH TIME ZONE,
   "companyId" TEXT NOT NULL,
   "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -87,19 +87,20 @@ CREATE TABLE "pickList" (
   "customFields" JSONB,
   "tags" TEXT[],
 
-  CONSTRAINT "pickList_pkey" PRIMARY KEY ("id", "companyId"),
-  CONSTRAINT "pickList_assignee_fkey" FOREIGN KEY ("assignee") REFERENCES "user" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT "pickList_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "pickList_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "company" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "pickList_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "pickList_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT "stockTransfer_pkey" PRIMARY KEY ("id", "companyId"),
+  CONSTRAINT "stockTransfer_assignee_fkey" FOREIGN KEY ("assignee") REFERENCES "user" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "stockTransfer_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "stockTransfer_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "company" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "stockTransfer_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "stockTransfer_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-CREATE INDEX "pickList_locationId_idx" ON "pickList" ("locationId");
-CREATE INDEX "pickList_status_idx" ON "pickList" ("status");
+CREATE INDEX "stockTransfer_locationId_idx" ON "stockTransfer" ("locationId");
+CREATE INDEX "stockTransfer_status_idx" ON "stockTransfer" ("status");
 
+ALTER TABLE "stockTransfer" ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "SELECT" ON "public"."pickList"
+CREATE POLICY "SELECT" ON "public"."stockTransfer"
 FOR SELECT USING (
   "companyId" = ANY (
     (
@@ -109,7 +110,7 @@ FOR SELECT USING (
   )
 );
 
-CREATE POLICY "INSERT" ON "public"."pickList"
+CREATE POLICY "INSERT" ON "public"."stockTransfer"
 FOR INSERT WITH CHECK (
   "companyId" = ANY (
     (
@@ -119,7 +120,7 @@ FOR INSERT WITH CHECK (
   )
 );
 
-CREATE POLICY "UPDATE" ON "public"."pickList"
+CREATE POLICY "UPDATE" ON "public"."stockTransfer"
 FOR UPDATE USING (
   "companyId" = ANY (
     (
@@ -129,7 +130,7 @@ FOR UPDATE USING (
   )
 );
 
-CREATE POLICY "DELETE" ON "public"."pickList"
+CREATE POLICY "DELETE" ON "public"."stockTransfer"
 FOR DELETE USING (
   "companyId" = ANY (
     (
@@ -140,9 +141,10 @@ FOR DELETE USING (
 );
 
 
-CREATE TABLE "pickListLine" (
+
+CREATE TABLE "stockTransferLine" (
   "id" TEXT NOT NULL DEFAULT xid(),
-  "pickListId" TEXT NOT NULL,
+  "stockTransferId" TEXT NOT NULL,
   "jobId" TEXT,
   "jobMaterialId" TEXT,
   "itemId" TEXT NOT NULL,
@@ -156,26 +158,26 @@ CREATE TABLE "pickListLine" (
   "updatedAt" TIMESTAMP WITH TIME ZONE,
   "updatedBy" TEXT,
 
-  CONSTRAINT "pickListLine_pkey" PRIMARY KEY ("id", "companyId"),
-  CONSTRAINT "pickListLine_pickListId_fkey" FOREIGN KEY ("pickListId", "companyId") REFERENCES "pickList" ("id", "companyId") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "job" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_jobMaterialId_fkey" FOREIGN KEY ("jobMaterialId") REFERENCES "jobMaterial" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "item" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_fromShelfId_fkey" FOREIGN KEY ("fromShelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_toShelfId_fkey" FOREIGN KEY ("toShelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "company" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "pickListLine_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT "stockTransferLine_pkey" PRIMARY KEY ("id", "companyId"),
+  CONSTRAINT "stockTransferLine_stockTransferId_fkey" FOREIGN KEY ("stockTransferId", "companyId") REFERENCES "stockTransfer" ("id", "companyId") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "job" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_jobMaterialId_fkey" FOREIGN KEY ("jobMaterialId") REFERENCES "jobMaterial" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "item" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_fromShelfId_fkey" FOREIGN KEY ("fromShelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_toShelfId_fkey" FOREIGN KEY ("toShelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "company" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-CREATE INDEX "pickListLine_pickListId_idx" ON "pickListLine" ("pickListId");
-CREATE INDEX "pickListLine_jobId_idx" ON "pickListLine" ("jobId");
-CREATE INDEX "pickListLine_itemId_idx" ON "pickListLine" ("itemId");
+CREATE INDEX "stockTransferLine_stockTransferId_idx" ON "stockTransferLine" ("stockTransferId");
+CREATE INDEX "stockTransferLine_jobId_idx" ON "stockTransferLine" ("jobId");
+CREATE INDEX "stockTransferLine_itemId_idx" ON "stockTransferLine" ("itemId");
 
 
+ALTER TABLE "stockTransferLine" ENABLE ROW LEVEL SECURITY;
 
-
-CREATE POLICY "SELECT" ON "public"."pickListLine"
+CREATE POLICY "SELECT" ON "public"."stockTransferLine"
 FOR SELECT USING (
   "companyId" = ANY (
     (
@@ -185,7 +187,7 @@ FOR SELECT USING (
   )
 );
 
-CREATE POLICY "INSERT" ON "public"."pickListLine"
+CREATE POLICY "INSERT" ON "public"."stockTransferLine"
 FOR INSERT WITH CHECK (
   "companyId" = ANY (
     (
@@ -195,7 +197,7 @@ FOR INSERT WITH CHECK (
   )
 );
 
-CREATE POLICY "UPDATE" ON "public"."pickListLine"
+CREATE POLICY "UPDATE" ON "public"."stockTransferLine"
 FOR UPDATE USING (
   "companyId" = ANY (
     (
@@ -205,7 +207,7 @@ FOR UPDATE USING (
   )
 );
 
-CREATE POLICY "DELETE" ON "public"."pickListLine"
+CREATE POLICY "DELETE" ON "public"."stockTransferLine"
 FOR DELETE USING (
   "companyId" = ANY (
     (

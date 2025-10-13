@@ -4,7 +4,6 @@ import type {
   getInventoryItems,
   getItemLedgerPage,
   getKanbans,
-  getPickLists,
   getReceiptLines,
   getReceiptTracking,
   getReceipts,
@@ -12,6 +11,7 @@ import type {
   getShipmentTracking,
   getShipments,
   getShippingMethods,
+  getStockTransfers,
   getTrackedEntities,
   getWarehouseTransferLines,
   getWarehouseTransfers,
@@ -41,8 +41,8 @@ export type Kanban = NonNullable<
   Awaited<ReturnType<typeof getKanbans>>["data"]
 >[number];
 
-export type PickList = NonNullable<
-  Awaited<ReturnType<typeof getPickLists>>["data"]
+export type StockTransfer = NonNullable<
+  Awaited<ReturnType<typeof getStockTransfers>>["data"]
 >[number];
 
 export type ReceiptLine = NonNullable<

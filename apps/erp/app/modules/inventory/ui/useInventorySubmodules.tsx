@@ -18,12 +18,6 @@ const inventoryRoutes: AuthenticatedRouteGroup[] = [
     name: "Manage",
     routes: [
       {
-        name: "Pick Lists",
-        to: path.to.pickLists,
-        icon: <LuListChecks />,
-        table: "pickList",
-      },
-      {
         name: "Receipts",
         to: path.to.receipts,
         icon: <LuHandCoins />,
@@ -34,6 +28,12 @@ const inventoryRoutes: AuthenticatedRouteGroup[] = [
         to: path.to.shipments,
         icon: <LuTruck />,
         table: "shipment",
+      },
+      {
+        name: "Stock Transfers",
+        to: path.to.stockTransfers,
+        icon: <LuListChecks />,
+        table: "stockTransfer",
       },
       {
         name: "Warehouse Transfers",

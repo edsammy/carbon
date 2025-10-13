@@ -233,7 +233,6 @@ async function handleKanban({
       error: null,
     };
   } else if (kanban.data.replenishmentSystem === "Buy") {
-    // Check for existing purchase order
     const existingPurchaseOrder = await client
       .from("purchaseOrder")
       .select("id")
@@ -244,7 +243,6 @@ async function handleKanban({
 
     let purchaseOrderId = existingPurchaseOrder.data?.id;
 
-    // Create purchase order if it doesn't exist
     if (!purchaseOrderId) {
       const nextSequence = await getNextSequence(
         client,

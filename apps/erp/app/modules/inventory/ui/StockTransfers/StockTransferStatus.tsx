@@ -1,13 +1,17 @@
 import { Status } from "@carbon/react";
-import type { pickListStatusType } from "~/modules/inventory";
+import type { stockTransferStatusType } from "~/modules/inventory";
 
-type PickListStatusProps = {
-  status?: (typeof pickListStatusType)[number] | null;
+type StockTransferStatusProps = {
+  status?: (typeof stockTransferStatusType)[number] | null;
   invoiced?: boolean | null;
   voided?: boolean | null;
 };
 
-const PickListStatus = ({ status, invoiced, voided }: PickListStatusProps) => {
+const StockTransferStatus = ({
+  status,
+  invoiced,
+  voided,
+}: StockTransferStatusProps) => {
   switch (status) {
     case "Draft":
       return <Status color="gray">{status}</Status>;
@@ -22,4 +26,4 @@ const PickListStatus = ({ status, invoiced, voided }: PickListStatusProps) => {
   }
 };
 
-export default PickListStatus;
+export default StockTransferStatus;

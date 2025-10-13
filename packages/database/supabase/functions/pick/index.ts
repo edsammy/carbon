@@ -17,7 +17,7 @@ const payloadValidator = z.discriminatedUnion("type", [
     userId: z.string(),
   }),
   z.object({
-    type: z.literal("generatePickList"),
+    type: z.literal("generateStockTransfer"),
     locationId: z.string(),
     jobIds: z.array(z.string()).optional(),
     companyId: z.string(),
@@ -25,14 +25,14 @@ const payloadValidator = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("executePick"),
-    pickListLineId: z.string(),
+    stockTransferLineId: z.string(),
     pickedQuantity: z.number(),
     companyId: z.string(),
     userId: z.string(),
   }),
   z.object({
-    type: z.literal("completePickList"),
-    pickListId: z.string(),
+    type: z.literal("completeStockTransfer"),
+    stockTransferId: z.string(),
     companyId: z.string(),
     userId: z.string(),
   }),
@@ -62,9 +62,9 @@ serve(async (req: Request) => {
 
     switch (type) {
       case "stageJob":
-      case "generatePickList":
+      case "generateStockTransfer":
       case "executePick":
-      case "completePickList":
+      case "completeStockTransfer":
       default:
         return new Response(
           JSON.stringify({ error: "Invalid operation type" }),

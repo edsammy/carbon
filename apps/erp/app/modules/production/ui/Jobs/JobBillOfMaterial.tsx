@@ -570,7 +570,7 @@ const JobBillOfMaterial = ({
             isDisabled={isDisabled || !permissions.can("update", "production")}
             onClick={onAddItem}
           >
-            Add Material
+            Add Item
           </Button>
         </CardAction>
       </HStack>

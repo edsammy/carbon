@@ -5,15 +5,15 @@ import { VStack } from "@carbon/react";
 import { Outlet, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
-import { getPickLists } from "~/modules/inventory";
-import PickListsTable from "~/modules/inventory/ui/PickLists/PickListsTable";
+import { getStockTransfers } from "~/modules/inventory";
+import StockTransfersTable from "~/modules/inventory/ui/StockTransfers/StockTransfersTable";
 import type { Handle } from "~/utils/handle";
 import { path } from "~/utils/path";
 import { getGenericQueryFilters } from "~/utils/query";
 
 export const handle: Handle = {
-  breadcrumb: "Pick Lists",
-  to: path.to.pickLists,
+  breadcrumb: "Stock Transfers",
+  to: path.to.stockTransfers,
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -27,8 +27,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { limit, offset, sorts, filters } =
     getGenericQueryFilters(searchParams);
 
-  const [pickLists] = await Promise.all([
-    getPickLists(client, companyId, {
+  const [stockTransfers] = await Promise.all([
+    getStockTransfers(client, companyId, {
       search,
       limit,
       offset,
@@ -37,25 +37,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }),
   ]);
 
-  if (pickLists.error) {
+  if (stockTransfers.error) {
+    console.error(stockTransfers.error);
     throw redirect(
       path.to.authenticatedRoot,
-      await flash(request, error(null, "Error loading pickLists"))
+      await flash(request, error(null, "Error loading stock transfers"))
     );
   }
 
   return json({
-    pickLists: pickLists.data ?? [],
-    count: pickLists.count ?? 0,
+    stockTransfers: stockTransfers.data ?? [],
+    count: stockTransfers.count ?? 0,
   });
 }
 
-export default function PickListsRoute() {
-  const { pickLists, count } = useLoaderData<typeof loader>();
+export default function StockTransfersRoute() {
+  const { stockTransfers, count } = useLoaderData<typeof loader>();
 
   return (
     <VStack spacing={0} className="h-full">
-      <PickListsTable data={pickLists} count={count ?? 0} />
+      <StockTransfersTable data={stockTransfers} count={count ?? 0} />
       <Outlet />
     </VStack>
   );

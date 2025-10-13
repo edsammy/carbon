@@ -235,7 +235,7 @@ export async function getKanban(
   return client.from("kanbans").select("*").eq("id", kanbanId).single();
 }
 
-export async function getPickLists(
+export async function getStockTransfers(
   client: SupabaseClient<Database>,
   companyId: string,
   args: GenericQueryFilters & {
@@ -243,18 +243,18 @@ export async function getPickLists(
   }
 ) {
   let query = client
-    .from("pickList")
+    .from("stockTransfer")
     .select("*", {
       count: "exact",
     })
     .eq("companyId", companyId);
 
   if (args.search) {
-    query = query.ilike("pickListId", `%${args.search}%`);
+    query = query.ilike("stockTransferId", `%${args.search}%`);
   }
 
   query = setGenericQueryFilters(query, args, [
-    { column: "shipmentId", ascending: false },
+    { column: "stockTransferId", ascending: false },
   ]);
   return query;
 }
