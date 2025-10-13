@@ -178,7 +178,7 @@ $ cp ./.env.example ./.env
 
 3. Navigate to the project you created in [https://cloud.trigger.dev/](Trigger.dev) and copy the following from the `Environments & API Keys` section:
 
-- `TRIGGER_PUBLIC_API_KEY=[Public 'dev' API Key, starting 'pk_dev*']`
+- `TRIGGER_SECRET_KEY=[Public 'dev' API Key, starting 'pk_dev*']`
 - `TRIGGER_API_KEY=[Server 'dev' API Key, starting 'tr_dev*']`
 - `TRIGGER_PROJECT_ID=[Public 'project' key, starting 'proj*]`
 
