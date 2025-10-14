@@ -240,6 +240,7 @@ export async function getStockTransfers(
   companyId: string,
   args: GenericQueryFilters & {
     search: string | null;
+    locationId: string | null;
   }
 ) {
   let query = client
@@ -251,6 +252,10 @@ export async function getStockTransfers(
 
   if (args.search) {
     query = query.ilike("stockTransferId", `%${args.search}%`);
+  }
+
+  if (args.locationId) {
+    query = query.eq("locationId", args.locationId);
   }
 
   query = setGenericQueryFilters(query, args, [

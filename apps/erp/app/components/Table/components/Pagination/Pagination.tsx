@@ -1,6 +1,5 @@
 import {
   Button,
-  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
@@ -47,10 +46,7 @@ const Pagination = (props: PaginationProps) => {
     <>
       <hr className="m-0 h-px w-full border-none bg-gradient-to-r from-zinc-200/0 via-zinc-500/30 to-zinc-200/0" />
       <HStack
-        className={cn(
-          "text-center bg-card justify-between py-4 w-full z-[1]",
-          compact ? "px-4" : "px-4 md:px-0"
-        )}
+        className="text-center bg-card justify-between py-4 w-full z-[1] px-4"
         spacing={6}
       >
         <DropdownMenu>

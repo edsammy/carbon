@@ -278,9 +278,28 @@ export const stockTransferStatusType = [
 export const stockTransferValidator = z.object({
   id: zfd.text(z.string().optional()),
   locationId: z.string().min(1, { message: "Location is required" }),
-  status: z.enum(stockTransferStatusType).optional(),
-  createdDate: zfd.text(z.string().optional()),
-  completedDate: zfd.text(z.string().optional()),
+  lines: z.string().transform((val, ctx) => {
+    try {
+      const parsed = JSON.parse(val);
+      return z
+        .array(
+          z.object({
+            itemId: z.string().min(1, { message: "Item is required" }),
+            fromShelfId: z.string().optional(),
+            toShelfId: z.string().optional(),
+            quantity: z.number().min(0).optional(),
+          })
+        )
+        .min(1, { message: "At least one line is required" })
+        .parse(parsed);
+    } catch (e) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid JSON format for lines",
+      });
+      return z.NEVER;
+    }
+  }),
 });
 
 export const stockTransferLineValidator = z.object({

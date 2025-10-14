@@ -24,3 +24,4 @@ Rules for updating/writing to the FAQ:
 - ALWAYS update the FAQ if you learn something about the codebase that was not in the FAQ and is not from a current change you're making (i.e. is committed).
 - ALWAYS update the FAQ after a commit.
 - NEVER update the FAQ about staged/uncommitted code.
+- NEVER rebuild the database to test changes. Wait for the user to do that.

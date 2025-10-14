@@ -217,3 +217,14 @@ FOR DELETE USING (
   )
 );
 
+INSERT INTO "sequence" ("table", "name", "prefix", "suffix", "next", "size", "step", "companyId")
+SELECT 
+  'stockTransfer',
+  'Stock Transfer',
+  'ST',
+  NULL,
+  0,
+  6,
+  1,
+  "id"
+FROM "company";

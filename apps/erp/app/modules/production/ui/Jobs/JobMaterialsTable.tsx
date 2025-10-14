@@ -61,7 +61,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
   if (!jobId) throw new Error("Job ID is required");
 
   const routeData = useRouteData<{ job: Job }>(path.to.job(jobId));
-  const isAllocated = ["Planned", "Ready", "In Progress", "Paused"].includes(
+  const isRequired = ["Planned", "Ready", "In Progress", "Paused"].includes(
     routeData?.job?.status ?? ""
   );
 
@@ -92,7 +92,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         return;
       }
 
-      const quantityRequiredByShelf = isAllocated
+      const quantityRequiredByShelf = isRequired
         ? material.quantityFromProductionOrderInShelf
         : material.quantityFromProductionOrderInShelf +
           material.estimatedQuantity;
@@ -119,13 +119,13 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
       const incoming =
         material.quantityOnPurchaseOrder + material.quantityOnProductionOrder;
 
-      const allocated =
+      const required =
         material.quantityFromProductionOrderInShelf +
         material.quantityFromProductionOrderNotInShelf +
         material.quantityOnSalesOrder;
 
       const hasTotalQuantityFlag =
-        quantityOnHand + incoming - allocated <
+        quantityOnHand + incoming - required <
         (material.estimatedQuantity ?? 0);
 
       if (hasTotalQuantityFlag) {
@@ -136,7 +136,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
           action: "order",
           quantity:
             (material.estimatedQuantity ?? 0) -
-            (quantityOnHand + incoming - allocated),
+            (quantityOnHand + incoming - required),
         });
       }
     });
@@ -234,7 +234,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
               </Badge>
             );
 
-          const quantityRequiredByShelf = isAllocated
+          const quantityRequiredByShelf = isRequired
             ? row.original.quantityFromProductionOrderInShelf
             : row.original.quantityFromProductionOrderInShelf +
               row.original.estimatedQuantity;
@@ -251,11 +251,13 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
             <HStack>
               {hasShelfQuantityFlag ? (
                 <>
-                  <span className="text-red-500">{quantityOnHandInShelf}</span>
+                  <span className="text-red-500">
+                    {formatter.format(quantityOnHandInShelf)}
+                  </span>
                   <LuFlag className="text-red-500" />
                 </>
               ) : (
-                <span>{quantityOnHandInShelf}</span>
+                <span>{formatter.format(quantityOnHandInShelf)}</span>
               )}
             </HStack>
           );
@@ -282,24 +284,26 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
             row.original.quantityOnPurchaseOrder +
             row.original.quantityOnProductionOrder;
 
-          const allocated =
+          const required =
             row.original.quantityFromProductionOrderInShelf +
             row.original.quantityFromProductionOrderNotInShelf +
             row.original.quantityOnSalesOrder;
 
           const hasTotalQuantityFlag =
-            quantityOnHand + incoming - allocated <
+            quantityOnHand + incoming - required <
             (row.original.estimatedQuantity ?? 0);
 
           return (
             <HStack>
               {hasTotalQuantityFlag ? (
                 <>
-                  <span className="text-red-500">{quantityOnHand}</span>
+                  <span className="text-red-500">
+                    {formatter.format(quantityOnHand)}
+                  </span>
                   <LuFlag className="text-red-500" />
                 </>
               ) : (
-                <span>{quantityOnHand}</span>
+                <span>{formatter.format(quantityOnHand)}</span>
               )}
             </HStack>
           );
@@ -309,13 +313,14 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         },
       },
       {
-        id: "allocated",
-        header: "Allocated",
+        id: "required",
+        header: "Required",
         cell: ({ row }) =>
-          row.original.quantityFromProductionOrderInShelf +
-          row.original.quantityFromProductionOrderNotInShelf +
-          row.original.quantityOnSalesOrder,
-
+          formatter.format(
+            row.original.quantityFromProductionOrderInShelf +
+              row.original.quantityFromProductionOrderNotInShelf +
+              row.original.quantityOnSalesOrder
+          ),
         meta: {
           icon: <LuArrowDown className="text-red-600" />,
         },
@@ -324,8 +329,10 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         id: "incoming",
         header: "Incoming",
         cell: ({ row }) =>
-          row.original.quantityOnPurchaseOrder +
-          row.original.quantityOnProductionOrder,
+          formatter.format(
+            row.original.quantityOnPurchaseOrder +
+              row.original.quantityOnProductionOrder
+          ),
         meta: {
           icon: <LuArrowUp className="text-emerald-600" />,
         },
@@ -336,7 +343,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
     items,
     jobId,
     setSelectedMaterialId,
-    isAllocated,
+    isRequired,
     formatter,
     sessionItemsCount,
   ]);
@@ -353,7 +360,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         return null;
       }
 
-      const quantityRequiredByShelf = isAllocated
+      const quantityRequiredByShelf = isRequired
         ? row.quantityFromProductionOrderInShelf
         : row.quantityFromProductionOrderInShelf + row.estimatedQuantity;
 
@@ -363,7 +370,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         row.quantityOnHandInShelf + row.quantityOnHandNotInShelf;
       const incoming =
         row.quantityOnPurchaseOrder + row.quantityOnProductionOrder;
-      const allocated =
+      const required =
         row.quantityFromProductionOrderInShelf +
         row.quantityFromProductionOrderNotInShelf +
         row.quantityOnSalesOrder;
@@ -410,7 +417,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
                   action: "order",
                   quantity:
                     (row.estimatedQuantity ?? 0) -
-                    (quantityOnHand + incoming - allocated),
+                    (quantityOnHand + incoming - required),
                 });
               }
             }}
@@ -421,7 +428,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         </>
       );
     };
-  }, [isAllocated, session.items]);
+  }, [isRequired, session.items]);
 
   const permissions = usePermissions();
 
@@ -527,26 +534,26 @@ const StockTransferSessionWidget = () => {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button
+            <IconButton
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              aria-label={isExpanded ? "Minimize" : "Expand"}
+              icon={
+                isExpanded ? (
+                  <LuMinus className="size-4" />
+                ) : (
+                  <LuMaximize2 className="size-4" />
+                )
+              }
               onClick={() => setIsExpanded(!isExpanded)}
-            >
-              {isExpanded ? (
-                <LuMinus className="size-4" />
-              ) : (
-                <LuMaximize2 className="size-4" />
-              )}
-            </Button>
-            <Button
+            />
+            <IconButton
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              aria-label="Close"
+              icon={<LuX className="size-4" />}
               onClick={() => setIsMinimized(true)}
-            >
-              <LuX className="size-4" />
-            </Button>
+            />
           </div>
         </div>
 
@@ -656,24 +663,17 @@ const StockTransferSessionWidget = () => {
             {/* Footer */}
             {allItems.length > 0 && (
               <div className="p-4 border-t-2 border-border space-y-2">
-                <Button
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-                  size="lg"
-                >
-                  Submit
+                <Button size="lg" className="w-full">
+                  Create
                 </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full bg-transparent"
-                  onClick={onClearAll}
-                >
+                <Button variant="ghost" className="w-full" onClick={onClearAll}>
                   Clear All
                 </Button>
               </div>
             )}
           </div>
         ) : (
-          <div className="p-4">
+          <div className="p-4 space-y-4">
             {allItems.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-2">
                 No parts added yet
@@ -698,6 +698,7 @@ const StockTransferSessionWidget = () => {
                 )}
               </div>
             )}
+            {allItems.length > 0 && <Button size="lg">Create</Button>}
           </div>
         )}
       </div>

@@ -1889,6 +1889,15 @@ export const sequences = [
     step: 1,
   },
   {
+    table: "stockTransfer",
+    name: "Stock Transfer",
+    prefix: "ST",
+    suffix: null,
+    next: 0,
+    size: 6,
+    step: 1,
+  },
+  {
     table: "quote",
     name: "Quote",
     prefix: "Q",
