@@ -140,6 +140,12 @@ export const path = {
         generatePath(`${api}/people/shifts?location=${id}`),
       shelves: (id: string) =>
         generatePath(`${api}/inventory/shelves?locationId=${id}`),
+      shelvesWithQuantities: (locationId: string, itemId?: string) =>
+        generatePath(
+          `${api}/inventory/shelves-with-quantities?locationId=${locationId}${
+            itemId ? `&itemId=${itemId}` : ""
+          }`
+        ),
       supplierContacts: (id: string) =>
         generatePath(`${api}/purchasing/supplier-contacts/${id}`),
       supplierLocations: (id: string) =>
@@ -289,7 +295,8 @@ export const path = {
 
         return generatePath(url);
       },
-
+      stockTransfer: (id: string) =>
+        generatePath(`${file}/stock-transfer/${id}.pdf`),
       quote: (id: string) => generatePath(`${file}/quote/${id}.pdf`),
     },
     legal: {
@@ -365,6 +372,7 @@ export const path = {
     bulkUpdateSalesOrder: `${x}/sales-order/update`,
     bulkUpdateSalesRfq: `${x}/sales-rfq/update`,
     bulkUpdateShipmentLine: `${x}/shipment/lines/update`,
+    bulkUpdateStockTransferLine: `${x}/stock-transfer/lines/update`,
     bulkUpdateSupplierQuote: `${x}/supplier-quote/update`,
     calibrations: `${x}/quality/calibrations`,
     chartOfAccount: (id: string) =>
@@ -583,7 +591,7 @@ export const path = {
     deletePaymentTerm: (id: string) =>
       generatePath(`${x}/accounting/payment-terms/delete/${id}`),
     deleteStockTransfer: (id: string) =>
-      generatePath(`${x}/stock-transfer/${id}/delete`),
+      generatePath(`${x}/stock-transfer/delete/${id}`),
     deleteProcedure: (id: string) =>
       generatePath(`${x}/procedure/delete/${id}`),
     deleteProcedureStep: (id: string, stepId: string) =>
@@ -935,6 +943,8 @@ export const path = {
     newPartSupplier: (id: string) =>
       generatePath(`${x}/part/${id}/view/purchasing/new`),
     newStockTransfer: `${x}/stock-transfer/new`,
+    newStockTransferLine: (id: string) =>
+      generatePath(`${x}/stock-transfer/${id}/line/new`),
     newProcedure: `${x}/production/procedures/new`,
     newProcedureStep: (id: string) =>
       generatePath(`${x}/procedure/${id}/steps/new`),
@@ -1057,12 +1067,14 @@ export const path = {
     person: (id: string) => generatePath(`${x}/person/${id}`),
     personDetails: (id: string) => generatePath(`${x}/person/${id}/details`),
     personJob: (id: string) => generatePath(`${x}/person/${id}/job`),
-    stockTransfers: `${x}/inventory/stock-transfers`,
     stockTransfer: (id: string) => generatePath(`${x}/stock-transfer/${id}`),
-    stockTransferDetails: (id: string) =>
-      generatePath(`${x}/stock-transfer/${id}/details`),
+    stockTransferComplete: (id: string) =>
+      generatePath(`${x}/stock-transfer/${id}/complete`),
+    stockTransferLine: (id: string, lineId: string) =>
+      generatePath(`${x}/stock-transfer/${id}/line/${lineId}`),
     stockTransferStatus: (id: string) =>
       generatePath(`${x}/stock-transfer/${id}/status`),
+    stockTransfers: `${x}/inventory/stock-transfers`,
     procedure: (id: string) => generatePath(`${x}/procedure/${id}`),
     procedureStep: (id: string, attributeId: string) =>
       generatePath(`${x}/procedure/${id}/steps/${attributeId}`),

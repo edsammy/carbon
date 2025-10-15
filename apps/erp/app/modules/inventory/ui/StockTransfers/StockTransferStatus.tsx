@@ -3,15 +3,9 @@ import type { stockTransferStatusType } from "~/modules/inventory";
 
 type StockTransferStatusProps = {
   status?: (typeof stockTransferStatusType)[number] | null;
-  invoiced?: boolean | null;
-  voided?: boolean | null;
 };
 
-const StockTransferStatus = ({
-  status,
-  invoiced,
-  voided,
-}: StockTransferStatusProps) => {
+const StockTransferStatus = ({ status }: StockTransferStatusProps) => {
   switch (status) {
     case "Draft":
       return <Status color="gray">{status}</Status>;

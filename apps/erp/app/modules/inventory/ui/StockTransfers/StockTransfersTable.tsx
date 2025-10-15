@@ -130,7 +130,7 @@ const StockTransfersTable = memo(
           accessorKey: "stockTransferId",
           header: "Stock Transfer ID",
           cell: ({ row }) => (
-            <Hyperlink to={path.to.stockTransferDetails(row.original.id!)}>
+            <Hyperlink to={path.to.stockTransfer(row.original.id!)}>
               {row.original.stockTransferId}
             </Hyperlink>
           ),
@@ -310,8 +310,6 @@ const StockTransfersTable = memo(
             left: ["shipmentId"],
           }}
           defaultColumnVisibility={{
-            createdAt: false,
-            createdBy: false,
             updatedAt: false,
             updatedBy: false,
           }}
@@ -1066,7 +1064,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
       {
         accessorKey: "quantityRequired",
         cell: ({ row }) => formatter.format(row.original.quantityRequired),
-        header: "Allocated",
+        header: "Required",
       },
     ];
   }, [formatter, allTransferToData, wizard.selectedToShelfIds, wizard.lines]);

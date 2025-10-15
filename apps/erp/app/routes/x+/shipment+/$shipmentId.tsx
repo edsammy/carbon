@@ -24,7 +24,6 @@ export const handle: Handle = {
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const { client, companyId } = await requirePermissions(request, {
     view: "inventory",
-    bypassRls: true,
   });
 
   const { shipmentId } = params;

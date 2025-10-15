@@ -150,8 +150,12 @@ CREATE TABLE "stockTransferLine" (
   "itemId" TEXT NOT NULL,
   "fromShelfId" TEXT,
   "toShelfId" TEXT,
-  "quantity" NUMERIC(10, 4) NOT NULL DEFAULT 0,
-  "pickedQuantity" NUMERIC(10, 4) NOT NULL DEFAULT 0,
+  "quantity" NUMERIC NOT NULL DEFAULT 0,
+  "pickedQuantity" NUMERIC NOT NULL DEFAULT 0,
+  "outstandingQuantity" NUMERIC GENERATED ALWAYS AS (CASE WHEN "quantity" >= "pickedQuantity" THEN "quantity" - "pickedQuantity" ELSE 0 END) STORED,
+  "requiresBatchTracking" BOOLEAN NOT NULL DEFAULT false,
+  "requiresSerialTracking" BOOLEAN NOT NULL DEFAULT false,
+  "notes" JSON DEFAULT '{}'::json,
   "companyId" TEXT NOT NULL,
   "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   "createdBy" TEXT NOT NULL,
@@ -228,3 +232,21 @@ SELECT
   1,
   "id"
 FROM "company";
+
+CREATE VIEW "stockTransferLines" AS
+SELECT 
+  stl.*,
+  CASE
+    WHEN i."thumbnailPath" IS NULL AND mu."thumbnailPath" IS NOT NULL THEN mu."thumbnailPath"
+    ELSE i."thumbnailPath"
+  END AS "thumbnailPath",
+  uom."name" AS "unitOfMeasure",
+  sf."name" AS "fromShelfName",
+  st."name" AS "toShelfName"
+FROM "stockTransferLine" stl
+LEFT JOIN "item" i ON i."id" = stl."itemId"
+LEFT JOIN "modelUpload" mu ON mu."id" = i."modelUploadId"
+LEFT JOIN "unitOfMeasure" uom ON uom."code" = i."unitOfMeasureCode" AND uom."companyId" = i."companyId"
+LEFT JOIN "shelf" sf ON sf."id" = stl."fromShelfId"
+LEFT JOIN "shelf" st ON st."id" = stl."toShelfId";
+

@@ -24,7 +24,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   if (!status || !nonConformanceStatus.includes(status)) {
     throw redirect(
-      path.to.quote(id),
+      requestReferrer(request) ?? path.to.issueDetails(id),
       await flash(request, error(null, "Invalid status"))
     );
   }
@@ -40,7 +40,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   ]);
   if (update.error) {
     throw redirect(
-      requestReferrer(request) ?? path.to.quote(id),
+      requestReferrer(request) ?? path.to.issueDetails(id),
       await flash(request, error(update.error, "Failed to update issue status"))
     );
   }

@@ -52,6 +52,7 @@ import {
 
 import { useCarbon } from "@carbon/auth";
 import { getItemReadableId } from "@carbon/utils";
+import { getDefaultShelfForJob } from "~/modules/inventory/inventory.service";
 import { methodType } from "~/modules/shared";
 import { useItems } from "~/stores";
 import { path } from "~/utils/path";
@@ -133,7 +134,7 @@ const SalesOrderLineForm = ({
   const onChange = async (itemId: string) => {
     if (!itemId) return;
     if (!carbon || !company.id) return;
-    const [item, shelf, price] = await Promise.all([
+    const [item, price] = await Promise.all([
       carbon
         .from("item")
         .select(
@@ -143,13 +144,6 @@ const SalesOrderLineForm = ({
         .eq("companyId", company.id)
         .single(),
       carbon
-        .from("pickMethod")
-        .select("defaultShelfId")
-        .eq("itemId", itemId)
-        .eq("companyId", company.id)
-        .eq("locationId", locationId)
-        .maybeSingle(),
-      carbon
         .from("itemUnitSalePrice")
         .select("unitSalePrice")
         .eq("itemId", itemId)
@@ -157,13 +151,18 @@ const SalesOrderLineForm = ({
         .maybeSingle(),
     ]);
 
+    // Get default shelf or shelf with highest quantity
+    const defaultShelfId = locationId
+      ? await getDefaultShelfForJob(carbon, itemId, locationId, company.id)
+      : null;
+
     setItemData({
       itemId,
       description: item.data?.name ?? "",
       methodType: item.data?.defaultMethodType ?? "",
       unitPrice: price.data?.unitSalePrice ?? 0,
       uom: item.data?.unitOfMeasureCode ?? "EA",
-      shelfId: shelf.data?.defaultShelfId ?? "",
+      shelfId: defaultShelfId ?? "",
       modelUploadId: item.data?.modelUploadId ?? null,
     });
   };
@@ -175,17 +174,18 @@ const SalesOrderLineForm = ({
 
     setLocationId(newLocation.value);
     if (!itemData.itemId) return;
-    const shelf = await carbon
-      .from("pickMethod")
-      .select("defaultShelfId")
-      .eq("itemId", itemData.itemId)
-      .eq("companyId", company.id)
-      .eq("locationId", newLocation.value)
-      .maybeSingle();
+
+    // Get default shelf or shelf with highest quantity for the new location
+    const defaultShelfId = await getDefaultShelfForJob(
+      carbon,
+      itemData.itemId,
+      newLocation.value,
+      company.id
+    );
 
     setItemData((d) => ({
       ...d,
-      shelfId: shelf?.data?.defaultShelfId ?? "",
+      shelfId: defaultShelfId ?? "",
     }));
   };
 
@@ -428,6 +428,7 @@ const SalesOrderLineForm = ({
                             name="shelfId"
                             label="Shelf"
                             locationId={locationId}
+                            itemId={itemData.itemId}
                             value={itemData.shelfId ?? undefined}
                             onChange={(newValue) => {
                               if (newValue) {

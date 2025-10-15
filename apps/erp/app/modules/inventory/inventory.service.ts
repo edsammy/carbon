@@ -17,6 +17,7 @@ import type {
   shelfValidator,
   shipmentValidator,
   shippingMethodValidator,
+  stockTransferValidator,
   warehouseTransferValidator,
 } from "./inventory.models";
 
@@ -25,20 +26,6 @@ export async function deleteBatchProperty(
   id: string
 ) {
   return client.from("batchProperty").delete().eq("id", id);
-}
-
-export async function deleteWarehouseTransfer(
-  client: SupabaseClient<Database>,
-  transferId: string
-) {
-  return client.from("warehouseTransfer").delete().eq("id", transferId);
-}
-
-export async function deleteWarehouseTransferLine(
-  client: SupabaseClient<Database>,
-  transferLineId: string
-) {
-  return client.from("warehouseTransferLine").delete().eq("id", transferLineId);
 }
 
 export async function deleteKanban(
@@ -91,6 +78,37 @@ export async function deleteShippingMethod(
     .from("shippingMethod")
     .update({ active: false })
     .eq("id", shippingMethodId);
+}
+
+export async function deleteStockTransfer(
+  client: SupabaseClient<Database>,
+  stockTransferId: string
+) {
+  return client.from("stockTransfer").delete().eq("id", stockTransferId);
+}
+
+export async function deleteStockTransferLine(
+  client: SupabaseClient<Database>,
+  stockTransferLineId: string
+) {
+  return client
+    .from("stockTransferLine")
+    .delete()
+    .eq("id", stockTransferLineId);
+}
+
+export async function deleteWarehouseTransfer(
+  client: SupabaseClient<Database>,
+  transferId: string
+) {
+  return client.from("warehouseTransfer").delete().eq("id", transferId);
+}
+
+export async function deleteWarehouseTransferLine(
+  client: SupabaseClient<Database>,
+  transferLineId: string
+) {
+  return client.from("warehouseTransferLine").delete().eq("id", transferLineId);
 }
 
 export async function getItemLedgerPage(
@@ -235,6 +253,39 @@ export async function getKanban(
   return client.from("kanbans").select("*").eq("id", kanbanId).single();
 }
 
+export async function getStockTransfer(
+  client: SupabaseClient<Database>,
+  stockTransferId: string
+) {
+  return client
+    .from("stockTransfer")
+    .select("*")
+    .eq("id", stockTransferId)
+    .single();
+}
+
+export async function getStockTransferLines(
+  client: SupabaseClient<Database>,
+  stockTransferId: string
+) {
+  return client
+    .from("stockTransferLines")
+    .select("*")
+    .eq("stockTransferId", stockTransferId);
+}
+
+export async function getStockTransferTracking(
+  client: SupabaseClient<Database>,
+  stockTransferId: string,
+  companyId: string
+) {
+  return client
+    .from("trackedEntity")
+    .select("*")
+    .eq("attributes ->> Stock Transfer", stockTransferId)
+    .eq("companyId", companyId);
+}
+
 export async function getStockTransfers(
   client: SupabaseClient<Database>,
   companyId: string,
@@ -262,6 +313,41 @@ export async function getStockTransfers(
     { column: "stockTransferId", ascending: false },
   ]);
   return query;
+}
+
+export async function getDefaultShelfOrShelfWithHighestQuantity(
+  client: SupabaseClient<Database>,
+  itemId: string,
+  locationId: string,
+  companyId: string
+) {
+  const pickMethod = await client
+    .from("pickMethod")
+    .select("defaultShelfId")
+    .eq("itemId", itemId)
+    .eq("locationId", locationId)
+    .eq("companyId", companyId)
+    .maybeSingle();
+
+  if (pickMethod.data?.defaultShelfId) return pickMethod.data.defaultShelfId;
+
+  const shelves = await getItemShelfQuantities(
+    client,
+    itemId,
+    companyId,
+    locationId
+  );
+
+  const shelfWithHighestQuantity = shelves.data?.reduce(
+    (acc, curr) => {
+      return acc.quantity > curr.quantity
+        ? acc
+        : { ...curr, quantity: acc.quantity, shelfId: acc.shelfId };
+    },
+    { quantity: 0, shelfId: null }
+  );
+
+  return shelfWithHighestQuantity?.shelfId ?? null;
 }
 
 export async function getReceipts(
@@ -913,6 +999,28 @@ export async function updateBatchPropertyOrder(
   return client.from("batchProperty").update(sanitize(data)).eq("id", data.id);
 }
 
+export async function updateStockTransferStatus(
+  client: SupabaseClient<Database>,
+  args: {
+    id: string;
+    status: Database["public"]["Enums"]["stockTransferStatus"];
+    assignee?: string | null;
+    completedAt: string | null;
+    updatedBy: string;
+  }
+) {
+  const { id, status, assignee, completedAt, updatedBy } = args;
+  return client
+    .from("stockTransfer")
+    .update({
+      status,
+      assignee,
+      completedAt,
+      updatedBy,
+    })
+    .eq("id", id);
+}
+
 export async function upsertBatchProperty(
   client: SupabaseClient<Database>,
   batchProperty: z.infer<typeof batchPropertyValidator> & {
@@ -938,6 +1046,40 @@ export async function upsertBatchProperty(
     ...data,
     createdBy: userId,
   });
+}
+
+export async function upsertKanban(
+  client: SupabaseClient<Database>,
+  kanban:
+    | (Omit<z.infer<typeof kanbanValidator>, "id"> & {
+        companyId: string;
+        createdBy: string;
+        customFields?: Json;
+      })
+    | (Omit<z.infer<typeof kanbanValidator>, "id"> & {
+        id: string;
+        updatedBy: string;
+        customFields?: Json;
+      })
+) {
+  if ("createdBy" in kanban) {
+    return client
+      .from("kanban")
+      .insert({
+        ...kanban,
+      })
+      .select("id")
+      .single();
+  }
+  return client
+    .from("kanban")
+    .update({
+      ...sanitize(kanban),
+      updatedAt: today(getLocalTimeZone()).toString(),
+    })
+    .eq("id", kanban.id)
+    .select("id")
+    .single();
 }
 
 export async function upsertReceipt(
@@ -1064,39 +1206,60 @@ export async function upsertShipment(
     .single();
 }
 
-export async function upsertKanban(
+export async function upsertStockTransfer(
   client: SupabaseClient<Database>,
-  kanban:
-    | (Omit<z.infer<typeof kanbanValidator>, "id"> & {
+  stockTransfer:
+    | {
+        locationId: string;
+        stockTransferId: string;
         companyId: string;
         createdBy: string;
         customFields?: Json;
-      })
-    | (Omit<z.infer<typeof kanbanValidator>, "id"> & {
+      }
+    | {
         id: string;
+        locationId: string;
+        stockTransferId: string;
+        companyId: string;
         updatedBy: string;
         customFields?: Json;
-      })
+      }
 ) {
-  if ("createdBy" in kanban) {
+  if ("createdBy" in stockTransfer) {
     return client
-      .from("kanban")
-      .insert({
-        ...kanban,
-      })
+      .from("stockTransfer")
+      .insert(stockTransfer)
       .select("id")
       .single();
   }
   return client
-    .from("kanban")
-    .update({
-      ...sanitize(kanban),
-      updatedAt: today(getLocalTimeZone()).toString(),
-    })
-    .eq("id", kanban.id)
+    .from("stockTransfer")
+    .update(sanitize(stockTransfer))
+    .eq("id", stockTransfer.id)
     .select("id")
     .single();
 }
+
+export async function upsertStockTransferLines(
+  client: SupabaseClient<Database>,
+  args: {
+    lines: z.infer<typeof stockTransferValidator>["lines"];
+    stockTransferId: string;
+    companyId: string;
+    createdBy: string;
+  }
+) {
+  const { lines, stockTransferId, companyId, createdBy } = args;
+  return client.from("stockTransferLine").insert(
+    lines.map((line) => ({
+      ...line,
+      stockTransferId,
+      companyId,
+      createdBy,
+    }))
+  );
+}
+
 export async function upsertWarehouseTransfer(
   client: SupabaseClient<Database>,
   transfer:

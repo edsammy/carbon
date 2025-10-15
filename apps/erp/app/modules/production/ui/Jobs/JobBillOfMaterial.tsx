@@ -878,7 +878,12 @@ function MaterialForm({
             value={itemData.methodType}
             replenishmentSystem="Buy and Make"
           />
-          <Shelf name="shelfId" label="Shelf" locationId={locationId} />
+          <Shelf
+            name="shelfId"
+            label="Shelf"
+            locationId={locationId}
+            itemId={itemData.itemId}
+          />
         </div>
       </div>
 

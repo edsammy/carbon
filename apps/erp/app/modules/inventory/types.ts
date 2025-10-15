@@ -11,6 +11,7 @@ import type {
   getShipmentTracking,
   getShipments,
   getShippingMethods,
+  getStockTransferLines,
   getStockTransfers,
   getTrackedEntities,
   getWarehouseTransferLines,
@@ -33,16 +34,12 @@ export type ItemTracking = NonNullable<
   Awaited<ReturnType<typeof getReceiptTracking>>["data"]
 >[number];
 
-export type Receipt = NonNullable<
-  Awaited<ReturnType<typeof getReceipts>>["data"]
->[number];
-
 export type Kanban = NonNullable<
   Awaited<ReturnType<typeof getKanbans>>["data"]
 >[number];
 
-export type StockTransfer = NonNullable<
-  Awaited<ReturnType<typeof getStockTransfers>>["data"]
+export type Receipt = NonNullable<
+  Awaited<ReturnType<typeof getReceipts>>["data"]
 >[number];
 
 export type ReceiptLine = NonNullable<
@@ -77,6 +74,14 @@ export type ShippingMethod = NonNullable<
 
 export type ShipmentSourceDocument =
   Database["public"]["Enums"]["shipmentSourceDocument"];
+
+export type StockTransfer = NonNullable<
+  Awaited<ReturnType<typeof getStockTransfers>>["data"]
+>[number];
+
+export type StockTransferLine = NonNullable<
+  Awaited<ReturnType<typeof getStockTransferLines>>["data"]
+>[number];
 
 export type TrackedEntity = NonNullable<
   Awaited<ReturnType<typeof getTrackedEntities>>["data"]

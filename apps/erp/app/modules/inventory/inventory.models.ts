@@ -305,8 +305,6 @@ export const stockTransferValidator = z.object({
 export const stockTransferLineValidator = z.object({
   id: zfd.text(z.string().optional()),
   stockTransferId: z.string().min(1, { message: "Pick list is required" }),
-  jobId: zfd.text(z.string().optional()),
-  jobMaterialId: zfd.text(z.string().optional()),
   itemId: z.string().min(1, { message: "Item is required" }),
   fromShelfId: zfd.text(z.string().optional()),
   toShelfId: zfd.text(z.string().optional()),

@@ -70,9 +70,15 @@ export const proceduresQuery = (companyId: string | null) => ({
 
 export const shelvesQuery = (
   companyId: string | null,
-  locationId: string | null
+  locationId: string | null,
+  itemId?: string | null
 ) => ({
-  queryKey: ["shelves", companyId ?? "null", locationId ?? "null"],
+  queryKey: [
+    "shelves",
+    companyId ?? "null",
+    locationId ?? "null",
+    itemId ?? "null",
+  ],
   staleTime: RefreshRate.Low,
 });
 

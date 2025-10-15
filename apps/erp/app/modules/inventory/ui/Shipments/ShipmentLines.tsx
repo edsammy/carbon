@@ -497,6 +497,7 @@ function ShipmentLineItem({
               <Shelf
                 locationId={line.locationId}
                 shelfId={line.shelfId}
+                itemId={line.itemId}
                 isReadOnly={isReadOnly}
                 onChange={(shelf) => {
                   onUpdate({
@@ -1127,34 +1128,38 @@ function SplitShipmentLineModal({
 function Shelf({
   locationId,
   shelfId,
+  itemId,
   isReadOnly,
   onChange,
 }: {
   locationId: string | null;
   shelfId: string | null;
+  itemId: string | null;
   isReadOnly: boolean;
   onChange: (shelf: string) => void;
 }) {
-  const { options } = useShelves(locationId ?? undefined);
+  const { options } = useShelves(locationId ?? undefined, itemId ?? undefined);
 
   if (!locationId) return null;
 
   return (
-    <div className="flex flex-col items-start gap-1 min-w-[140px] text-sm">
+    <VStack spacing={1} className="min-w-[140px] text-sm">
       <label className="text-xs text-muted-foreground">Shelf</label>
-      <Combobox
-        value={shelfId ?? undefined}
-        onChange={(newValue) => {
-          onChange(newValue);
-        }}
-        options={options}
-        isReadOnly={isReadOnly}
-        inline={(value, options) => {
-          const option = options.find((o) => o.value === value);
-          return option?.label ?? "";
-        }}
-      />
-    </div>
+      <div className="py-1">
+        <Combobox
+          value={shelfId ?? undefined}
+          onChange={(newValue) => {
+            onChange(newValue);
+          }}
+          options={options}
+          isReadOnly={isReadOnly}
+          inline={(value, options) => {
+            const option = options.find((o) => o.value === value);
+            return option?.label ?? "";
+          }}
+        />
+      </div>
+    </VStack>
   );
 }
 

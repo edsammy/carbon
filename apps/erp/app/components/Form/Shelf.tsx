@@ -13,6 +13,7 @@ type ShelfSelectProps = Omit<
   "options" | "onChange" | "inline"
 > & {
   locationId?: string;
+  itemId?: string;
   inline?: boolean;
   onChange?: (shelf: ListItem | null) => void;
 };
@@ -31,7 +32,7 @@ const Shelf = (props: ShelfSelectProps) => {
   const [created, setCreated] = useState<string>("");
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const { options, data } = useShelves(props.locationId);
+  const { options, data } = useShelves(props.locationId, props.itemId);
 
   const onChange = (newValue: { label: string; value: string } | null) => {
     const shelf =
@@ -71,22 +72,32 @@ const Shelf = (props: ShelfSelectProps) => {
 
 export default Shelf;
 
-export function useShelves(locationId?: string) {
+export function useShelves(locationId?: string, itemId?: string) {
   const shelvesFetcher =
     useFetcher<Awaited<ReturnType<typeof getShelvesList>>>();
 
   useEffect(() => {
     if (locationId) {
-      shelvesFetcher.load(path.to.api.shelves(locationId));
+      if (itemId) {
+        // Use the new API route for shelves with quantities
+        shelvesFetcher.load(
+          path.to.api.shelvesWithQuantities(locationId, itemId)
+        );
+      } else {
+        // Use the existing API route for all shelves
+        shelvesFetcher.load(path.to.api.shelves(locationId));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationId]);
+  }, [locationId, itemId]);
 
   const options = useMemo(
     () =>
       shelvesFetcher.data?.data?.map((c) => ({
         value: c.id,
         label: c.name,
+        // Add quantity as helper text if available
+        ...(c.quantity !== undefined && { helper: `Qty: ${c.quantity}` }),
       })) ?? [],
     [shelvesFetcher.data]
   );
