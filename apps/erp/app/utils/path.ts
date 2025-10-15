@@ -592,6 +592,8 @@ export const path = {
       generatePath(`${x}/accounting/payment-terms/delete/${id}`),
     deleteStockTransfer: (id: string) =>
       generatePath(`${x}/stock-transfer/delete/${id}`),
+    deleteStockTransferLine: (id: string, lineId: string) =>
+      generatePath(`${x}/stock-transfer/${id}/line/${lineId}/delete`),
     deleteProcedure: (id: string) =>
       generatePath(`${x}/procedure/delete/${id}`),
     deleteProcedureStep: (id: string, stepId: string) =>

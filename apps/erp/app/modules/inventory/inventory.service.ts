@@ -17,6 +17,7 @@ import type {
   shelfValidator,
   shipmentValidator,
   shippingMethodValidator,
+  stockTransferLineValidator,
   stockTransferValidator,
   warehouseTransferValidator,
 } from "./inventory.models";
@@ -261,6 +262,17 @@ export async function getStockTransfer(
     .from("stockTransfer")
     .select("*")
     .eq("id", stockTransferId)
+    .single();
+}
+
+export async function getStockTransferLine(
+  client: SupabaseClient<Database>,
+  stockTransferLineId: string
+) {
+  return client
+    .from("stockTransferLine")
+    .select("*")
+    .eq("id", stockTransferLineId)
     .single();
 }
 
@@ -1236,6 +1248,33 @@ export async function upsertStockTransfer(
     .from("stockTransfer")
     .update(sanitize(stockTransfer))
     .eq("id", stockTransfer.id)
+    .select("id")
+    .single();
+}
+
+export async function upsertStockTransferLine(
+  client: SupabaseClient<Database>,
+  stockTransferLine:
+    | (Omit<z.infer<typeof stockTransferLineValidator>, "id"> & {
+        companyId: string;
+        createdBy: string;
+      })
+    | (Omit<z.infer<typeof stockTransferLineValidator>, "id"> & {
+        id: string;
+        updatedBy: string;
+      })
+) {
+  if ("createdBy" in stockTransferLine) {
+    return client
+      .from("stockTransferLine")
+      .insert(stockTransferLine)
+      .select("id")
+      .single();
+  }
+  return client
+    .from("stockTransferLine")
+    .update(sanitize(stockTransferLine))
+    .eq("id", stockTransferLine.id)
     .select("id")
     .single();
 }

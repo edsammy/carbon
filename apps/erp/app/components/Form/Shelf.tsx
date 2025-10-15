@@ -54,6 +54,7 @@ const Shelf = (props: ShelfSelectProps) => {
           setCreated(option);
         }}
       />
+
       {newShelfModal.isOpen && (
         <ShelfForm
           locationId={props.locationId!}
@@ -75,32 +76,65 @@ export default Shelf;
 export function useShelves(locationId?: string, itemId?: string) {
   const shelvesFetcher =
     useFetcher<Awaited<ReturnType<typeof getShelvesList>>>();
+  const shelvesWithQuantitiesFetcher =
+    useFetcher<Awaited<ReturnType<typeof getShelvesList>>>();
 
   useEffect(() => {
     if (locationId) {
       if (itemId) {
-        // Use the new API route for shelves with quantities
-        shelvesFetcher.load(
+        // Load both shelves with quantities and all shelves
+        shelvesWithQuantitiesFetcher.load(
           path.to.api.shelvesWithQuantities(locationId, itemId)
         );
-      } else {
-        // Use the existing API route for all shelves
-        shelvesFetcher.load(path.to.api.shelves(locationId));
       }
+      shelvesFetcher.load(path.to.api.shelves(locationId));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationId, itemId]);
 
-  const options = useMemo(
-    () =>
+  const options = useMemo(() => {
+    if (itemId && shelvesWithQuantitiesFetcher.data?.data) {
+      // Create a map of shelves with quantities
+      const shelvesWithQuantities = shelvesWithQuantitiesFetcher.data.data;
+      const allShelves = shelvesFetcher.data?.data ?? [];
+
+      // Create a set of shelf IDs that have quantities
+      const shelfIdsWithQuantities = new Set(
+        shelvesWithQuantities.map((s: any) => s.id)
+      );
+
+      // Filter out shelves that already have quantities from the all shelves list
+      const shelvesWithoutQuantities = allShelves.filter(
+        (shelf: any) => !shelfIdsWithQuantities.has(shelf.id)
+      );
+
+      // Combine the lists: shelves with quantities first, then others
+      const combinedShelves = [
+        ...shelvesWithQuantities.map((c: any) => ({
+          value: c.id,
+          label: c.name,
+          helper: `Qty: ${c.quantity}`,
+        })),
+        ...shelvesWithoutQuantities.map((c: any) => ({
+          value: c.id,
+          label: c.name,
+        })),
+      ];
+
+      return combinedShelves;
+    }
+
+    // Fallback to original behavior
+    return (
       shelvesFetcher.data?.data?.map((c) => ({
         value: c.id,
         label: c.name,
         // Add quantity as helper text if available
+        // @ts-ignore
         ...(c.quantity !== undefined && { helper: `Qty: ${c.quantity}` }),
-      })) ?? [],
-    [shelvesFetcher.data]
-  );
+      })) ?? []
+    );
+  }, [shelvesFetcher.data, shelvesWithQuantitiesFetcher.data, itemId]);
 
   return { options, data: shelvesFetcher.data };
 }

@@ -3,7 +3,7 @@ import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import type { JSONContent } from "@carbon/react";
 import { VStack } from "@carbon/react";
-import { useLoaderData, useParams } from "@remix-run/react";
+import { Outlet, useLoaderData, useParams } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
 import { PanelProvider } from "~/components/Layout";
@@ -80,6 +80,7 @@ export default function StockTransferRoute() {
           </VStack>
         </div>
       </div>
+      <Outlet />
     </PanelProvider>
   );
 }
