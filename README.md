@@ -47,7 +47,7 @@ Features:
 
 - [x] ERP
 - [x] MES
-- [ ] QMS
+- [X] QMS
 - [x] Custom Fields
 - [x] Nested BoM
 - [x] Traceability
