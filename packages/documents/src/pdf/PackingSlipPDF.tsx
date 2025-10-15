@@ -125,21 +125,23 @@ const PackingSlipPDF = ({
         >
           <View style={tw("flex flex-col gap-2 w-1/3")}>
             <Text style={tw("text-gray-500 text-xs")}>Ship To</Text>
-            <Text style={tw("text-sm")}>{customer.name}</Text>
-            {shippingAddress && (
-              <>
-                {addressLine1 && (
-                  <Text style={tw("text-sm")}>{addressLine1}</Text>
-                )}
-                {addressLine2 && (
-                  <Text style={tw("text-sm")}>{addressLine2}</Text>
-                )}
-                <Text style={tw("text-sm")}>
-                  {formatCityStatePostalCode(city, stateProvince, postalCode)}
-                </Text>
-                <Text style={tw("text-sm")}>{countryCode}</Text>
-              </>
-            )}
+            <View style={tw("flex flex-col")}>
+              <Text style={tw("text-sm")}>{customer.name}</Text>
+              {shippingAddress && (
+                <>
+                  {addressLine1 && (
+                    <Text style={tw("text-sm")}>{addressLine1}</Text>
+                  )}
+                  {addressLine2 && (
+                    <Text style={tw("text-sm")}>{addressLine2}</Text>
+                  )}
+                  <Text style={tw("text-sm")}>
+                    {formatCityStatePostalCode(city, stateProvince, postalCode)}
+                  </Text>
+                  <Text style={tw("text-sm")}>{countryCode}</Text>
+                </>
+              )}
+            </View>
           </View>
 
           <View style={tw("flex flex-col gap-2 w-1/3")}>

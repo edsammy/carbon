@@ -492,18 +492,41 @@ export function JobStartModal({
       carbon.from("jobOperation").select("*").eq("jobId", job.id!),
     ]);
 
-    const uniqueOutsideProcessIds =
-      operations.data?.reduce<string[]>((acc, op) => {
-        if (op.operationType === "Outside" && op.operationSupplierProcessId) {
-          acc.push(op.operationSupplierProcessId);
-        }
-        return acc;
-      }, []) || [];
+    // Check for existing purchase order lines for outside operations
+    const outsideOperations =
+      operations.data?.filter((op) => op.operationType === "Outside") || [];
+    const existingPurchaseOrderLines =
+      outsideOperations.length > 0
+        ? await carbon
+            .from("purchaseOrderLine")
+            .select("jobOperationId")
+            .in(
+              "jobOperationId",
+              outsideOperations.map((op) => op.id)
+            )
+        : { data: [] };
 
-    const supplierProcesses = await carbon
-      .from("supplierProcess")
-      .select("supplierId")
-      .in("id", uniqueOutsideProcessIds);
+    const existingJobOperationIds = new Set(
+      existingPurchaseOrderLines.data?.map((pol) => pol.jobOperationId) ?? []
+    );
+
+    // Filter out operations that already have purchase order lines
+    const operationsNeedingPurchaseOrders = outsideOperations.filter(
+      (op) =>
+        !existingJobOperationIds.has(op.id) && op.operationSupplierProcessId
+    );
+
+    const uniqueOutsideProcessIds = operationsNeedingPurchaseOrders.map(
+      (op) => op.operationSupplierProcessId!
+    );
+
+    const supplierProcesses =
+      uniqueOutsideProcessIds.length > 0
+        ? await carbon
+            .from("supplierProcess")
+            .select("supplierId")
+            .in("id", uniqueOutsideProcessIds)
+        : { data: [] };
 
     const uniqueSupplierIds = new Set(
       supplierProcesses.data?.map((sp) => sp.supplierId) ?? []
@@ -571,18 +594,15 @@ export function JobStartModal({
         )
       );
 
-      setHasOutsideOperations(
-        Array.isArray(operations?.data) &&
-          operations.data.length > 0 &&
-          operations.data.some((op) => op.operationType === "Outside")
-      );
+      // Only show purchase order UI if there are outside operations that need purchase orders
+      setHasOutsideOperations(operationsNeedingPurchaseOrders.length > 0);
 
+      // Check if all outside operations that need purchase orders have suppliers
       setEachOutsideOperationHasASupplier(
-        operations.data?.every(
-          (op) =>
-            op.operationType === "Inside" ||
-            op.operationSupplierProcessId !== null
-        ) ?? false
+        operationsNeedingPurchaseOrders.length === 0 ||
+          operationsNeedingPurchaseOrders.every(
+            (op) => op.operationSupplierProcessId !== null
+          )
       );
     });
 
@@ -696,7 +716,7 @@ export function JobStartModal({
                     </AlertDescription>
                   </Alert>
                 )}
-                {!eachOutsideOperationHasASupplier && (
+                {!eachOutsideOperationHasASupplier && hasOutsideOperations && (
                   <Alert variant="warning">
                     <LuTriangleAlert />
                     <AlertTitle>Missing Suppliers</AlertTitle>

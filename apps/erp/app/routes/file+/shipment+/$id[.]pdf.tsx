@@ -89,7 +89,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           .select("*")
           .eq("id", salesOrder.data?.customerId ?? "")
           .single(),
-        getCustomerLocation(client, salesOrder.data?.locationId ?? ""),
+        getCustomerLocation(client, salesOrder.data?.customerLocationId ?? ""),
         getPaymentTerm(client, salesOrder.data?.paymentTermId ?? ""),
         getShippingMethod(
           client,
@@ -153,7 +153,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           shipment={shipment.data}
           shipmentLines={shipmentLines.data ?? []}
           // @ts-ignore
-          shippingAddress={customerLocation.data?.address}
+          shippingAddress={customerLocation.data?.address ?? null}
           terms={(terms?.data?.salesTerms ?? {}) as JSONContent}
           paymentTerm={paymentTerm.data ?? { id: "", name: "" }}
           shippingMethod={shippingMethod.data ?? { id: "", name: "" }}
@@ -265,7 +265,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           shipment={shipment.data}
           shipmentLines={shipmentLines.data ?? []}
           // @ts-ignore
-          shippingAddress={customerLocation.data?.address}
+          shippingAddress={customerLocation.data?.address ?? null}
           terms={(terms?.data?.salesTerms ?? {}) as JSONContent}
           paymentTerm={paymentTerm.data ?? { id: "", name: "" }}
           shippingMethod={shippingMethod.data ?? { id: "", name: "" }}
@@ -307,7 +307,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           .select("*")
           .eq("id", purchaseOrder.data?.supplierId ?? "")
           .single(),
-        getSupplierLocation(client, purchaseOrder.data?.locationId ?? ""),
+        getSupplierLocation(
+          client,
+          purchaseOrder.data?.supplierLocationId ?? ""
+        ),
         getPaymentTerm(client, purchaseOrder.data?.paymentTermId ?? ""),
         getShippingMethod(
           client,
@@ -369,7 +372,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           shipment={shipment.data}
           shipmentLines={shipmentLines.data ?? []}
           // @ts-ignore
-          shippingAddress={supplierLocation.data?.address}
+          shippingAddress={supplierLocation.data?.address ?? null}
           terms={(terms?.data?.salesTerms ?? {}) as JSONContent}
           paymentTerm={poPaymentTerm.data ?? { id: "", name: "" }}
           shippingMethod={poShippingMethod.data ?? { id: "", name: "" }}
