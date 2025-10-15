@@ -166,6 +166,10 @@ export default function CustomerPortal() {
     jobOperationAttachments,
   } = useLoaderData<typeof loader>();
 
+  console.log({
+    salesOrderLines,
+  });
+
   const formatter = useNumberFormatter({
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
@@ -301,7 +305,7 @@ export default function CustomerPortal() {
         id: "shipped",
         header: "Shipped",
         cell: ({ row }) =>
-          row.original?.jobQuantityShipped
+          row.original?.jobProductionQuantity
             ? `${formatter.format(
                 row.original.jobQuantityShipped
               )}/${formatter.format(row.original.jobProductionQuantity)}`
@@ -321,9 +325,13 @@ export default function CustomerPortal() {
             return null;
           }
 
+          if (!row.original.jobProductionQuantity) {
+            return null;
+          }
+
           return (
             <JobOperationProgress
-              quantityShipped={row.original.quantitySent ?? 0}
+              quantityShipped={row.original.jobQuantityShipped ?? 0}
               quantityComplete={row.original.jobQuantityComplete ?? 0}
               jobOperations={jobOperations.data}
               jobOperationAttachments={jobOperationAttachments}
@@ -425,6 +433,7 @@ function JobOperationProgress({
   }
 
   const isComplete = quantityShipped > 0 || quantityComplete > 0;
+
   return (
     <div className="flex items-center gap-0">
       {jobOperations
