@@ -1,4 +1,4 @@
-import { LuCircleMinus, LuCirclePlus } from "react-icons/lu";
+import { LuArrowRightLeft, LuCircleMinus, LuCirclePlus } from "react-icons/lu";
 import { Hyperlink } from "~/components";
 import Activity from "~/components/Activity";
 import { path } from "~/utils/path";
@@ -43,8 +43,12 @@ const getActivityText = (ledgerRecord: ItemLedger) => {
         ledgerRecord.shelf?.name ? ` to ${ledgerRecord.shelf.name}` : ""
       } from transfer`;
     case "Direct Transfer":
-      return `directly transferred ${ledgerRecord.quantity} units${
-        ledgerRecord.shelf?.name ? ` to ${ledgerRecord.shelf.name}` : ""
+      return `transferred ${Math.abs(ledgerRecord.quantity)} units${
+        ledgerRecord.shelf?.name
+          ? ` ${ledgerRecord.quantity > 0 ? "to" : "from"} ${
+              ledgerRecord.shelf.name
+            }`
+          : ""
       }`;
     case "Inventory Receipt":
       return `received ${ledgerRecord.quantity} units into inventory${
@@ -127,7 +131,9 @@ const getActivityText = (ledgerRecord: ItemLedger) => {
         <>
           <span>
             received {ledgerRecord.quantity} units
-            {ledgerRecord.shelf?.name ? ` to ${ledgerRecord.shelf.name}` : ""}{" "}
+            {ledgerRecord.shelf?.name
+              ? ` to ${ledgerRecord.shelf.name}`
+              : ""}{" "}
             from a
           </span>{" "}
           <Hyperlink
@@ -170,6 +176,8 @@ const getActivityText = (ledgerRecord: ItemLedger) => {
 
 const getActivityIcon = (ledgerRecord: ItemLedger) => {
   switch (ledgerRecord.entryType) {
+    case "Transfer":
+      return <LuArrowRightLeft className="text-blue-500 w-5 h-5" />;
     case "Positive Adjmt.":
       return <LuCirclePlus className="text-emerald-500 w-5 h-5" />;
     case "Negative Adjmt.":

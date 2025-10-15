@@ -57,7 +57,8 @@ const StockTransferHeader = () => {
     routeData.stockTransferLines.length > 0 &&
     routeData.stockTransferLines.some(
       (line) => (line.pickedQuantity ?? 0) !== 0
-    );
+    ) &&
+    ["Released", "In Progress"].includes(status);
 
   const isCompleted = status === "Completed";
 

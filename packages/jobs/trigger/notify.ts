@@ -67,6 +67,7 @@ export const notifyTask = task({
         case NotificationEvent.SalesOrderAssignment:
         case NotificationEvent.SalesRfqAssignment:
         case NotificationEvent.SalesRfqReady:
+        case NotificationEvent.StockTransferAssignment:
         case NotificationEvent.SupplierQuoteAssignment:
           return NotificationWorkflow.Assignment;
         case NotificationEvent.JobCompleted:
@@ -221,6 +222,21 @@ export const notifyTask = task({
           }
 
           return `Digital Quote ${digitalQuote?.data?.quoteId} was accepted`;
+
+        case NotificationEvent.StockTransferAssignment:
+          const stockTransfer = await client
+            .from("stockTransfer")
+            .select("*")
+            .eq("id", documentId)
+            .single();
+
+          if (stockTransfer.error) {
+            console.error("Failed to get stockTransfer", stockTransfer.error);
+            throw stockTransfer.error;
+          }
+
+          return `Stock Transfer ${stockTransfer?.data?.stockTransferId} assigned to you`;
+
         default:
           return null;
       }

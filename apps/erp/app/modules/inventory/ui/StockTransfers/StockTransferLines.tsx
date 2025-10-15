@@ -17,15 +17,15 @@ import {
   cn,
   useDisclosure,
 } from "@carbon/react";
-import { getItemReadableId } from "@carbon/utils";
-import { Link, useParams } from "@remix-run/react";
-import { useMemo, useState } from "react";
+import { Link, useFetchers, useParams, useSubmit } from "@remix-run/react";
+import { useState } from "react";
 import {
   LuCircleCheck,
   LuCirclePlus,
   LuEllipsisVertical,
   LuPencilLine,
   LuTrash,
+  LuUndo2,
 } from "react-icons/lu";
 import { Empty, ItemThumbnail } from "~/components";
 import { Enumerable } from "~/components/Enumerable";
@@ -65,15 +65,67 @@ export default function StockTransferLines() {
   );
   const deleteDisclosure = useDisclosure();
 
-  const lines = useMemo(() => {
-    const list = routeData?.stockTransferLines ?? [];
-    return list
-      .map((line) => ({
-        ...line,
-        itemReadableId: getItemReadableId(items, line.itemId) ?? "",
-      }))
-      .sort((a, b) => a.itemReadableId.localeCompare(b.itemReadableId));
-  }, [routeData?.stockTransferLines, items]);
+  const lines = (routeData?.stockTransferLines ?? []).sort((a, b) => {
+    // First sort by itemReadableId
+    const itemComparison = (a.itemReadableId ?? "").localeCompare(
+      b.itemReadableId ?? ""
+    );
+    if (itemComparison !== 0) return itemComparison;
+
+    // Then sort by toShelfName
+    const toShelfComparison = (a.toShelfName ?? "").localeCompare(
+      b.toShelfName ?? ""
+    );
+    if (toShelfComparison !== 0) return toShelfComparison;
+
+    // Finally sort by fromShelfName
+    return (a.fromShelfName ?? "").localeCompare(b.fromShelfName ?? "");
+  });
+
+  const pickedQuantitiesById = new Map<string, number>();
+
+  lines.forEach((line) => {
+    if (!line.id) return;
+    pickedQuantitiesById.set(line.id, line.pickedQuantity ?? 0);
+  });
+
+  const pendingQuantities = usePendingItems({ id });
+
+  pendingQuantities.forEach((pendingQuantity) => {
+    if (pendingQuantity.id) {
+      pickedQuantitiesById.set(pendingQuantity.id, pendingQuantity.quantity);
+    }
+  });
+
+  const submit = useSubmit();
+
+  const onPick = (line: StockTransferLine) => {
+    const formData = new FormData();
+    formData.append("id", line.id!);
+    formData.append("quantity", line.quantity!.toString());
+    formData.append("locationId", routeData?.stockTransfer?.locationId ?? "");
+
+    submit(formData, {
+      method: "post",
+      action: path.to.stockTransferLineQuantity(id),
+      navigate: false,
+      fetcherKey: `stockTransferLine:${line.id}`,
+    });
+  };
+
+  const onUnpick = (line: StockTransferLine) => {
+    const formData = new FormData();
+    formData.append("id", line.id!);
+    formData.append("quantity", "0");
+    formData.append("locationId", routeData?.stockTransfer?.locationId ?? "");
+
+    submit(formData, {
+      method: "post",
+      action: path.to.stockTransferLineQuantity(id),
+      navigate: false,
+      fetcherKey: `stockTransferLine:${line.id}`,
+    });
+  };
 
   return (
     <>
@@ -156,6 +208,7 @@ export default function StockTransferLines() {
                             Quantity
                           </label>
                           <span className="text-sm py-1.5">
+                            {pickedQuantitiesById.get(line.id ?? "") ?? 0}/
                             {line.quantity ?? 0}
                           </span>
                         </VStack>
@@ -193,12 +246,41 @@ export default function StockTransferLines() {
                           )}
                         </HStack>
                         <HStack spacing={1}>
-                          <Button
-                            isDisabled={!isPickable}
-                            leftIcon={<LuCircleCheck />}
-                          >
-                            Pick
-                          </Button>
+                          {pickedQuantitiesById.get(line.id ?? "") ===
+                          line.quantity ? (
+                            <Button
+                              variant="secondary"
+                              isDisabled={
+                                !isPickable ||
+                                pendingQuantities?.some((q) => q.id === line.id)
+                              }
+                              isLoading={pendingQuantities?.some(
+                                (q) => q.id === line.id
+                              )}
+                              leftIcon={<LuUndo2 />}
+                              onClick={() => {
+                                onUnpick(line);
+                              }}
+                            >
+                              Unpick
+                            </Button>
+                          ) : (
+                            <Button
+                              isDisabled={
+                                !isPickable ||
+                                pendingQuantities?.some((q) => q.id === line.id)
+                              }
+                              isLoading={pendingQuantities?.some(
+                                (q) => q.id === line.id
+                              )}
+                              leftIcon={<LuCircleCheck />}
+                              onClick={() => {
+                                onPick(line);
+                              }}
+                            >
+                              Pick
+                            </Button>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <IconButton
@@ -261,3 +343,24 @@ export default function StockTransferLines() {
     </>
   );
 }
+
+const usePendingItems = ({ id }: { id: string }) => {
+  type PendingItem = ReturnType<typeof useFetchers>[number] & {
+    formData: FormData;
+  };
+
+  return useFetchers()
+    .filter((fetcher): fetcher is PendingItem => {
+      return fetcher.formAction === path.to.stockTransferLineQuantity(id);
+    })
+    .reduce<{ id: string; quantity: number }[]>((acc, fetcher) => {
+      const formData = fetcher.formData;
+      const quantity = parseInt(formData.get("quantity") as string, 10);
+      const lineId = fetcher.formData.get("id") as string;
+
+      if (lineId && Number.isFinite(quantity)) {
+        return [...acc, { id: lineId, quantity }];
+      }
+      return acc;
+    }, []);
+};

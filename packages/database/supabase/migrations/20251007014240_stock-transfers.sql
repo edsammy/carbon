@@ -83,6 +83,7 @@ CREATE TABLE "stockTransfer" (
   "createdBy" TEXT NOT NULL,
   "updatedAt" TIMESTAMP WITH TIME ZONE,
   "updatedBy" TEXT,
+  "notes" JSON DEFAULT '{}'::json,
   "assignee" TEXT,
   "customFields" JSONB,
   "tags" TEXT[],
@@ -140,8 +141,6 @@ FOR DELETE USING (
   )
 );
 
-
-
 CREATE TABLE "stockTransferLine" (
   "id" TEXT NOT NULL DEFAULT xid(),
   "stockTransferId" TEXT NOT NULL,
@@ -155,7 +154,6 @@ CREATE TABLE "stockTransferLine" (
   "outstandingQuantity" NUMERIC GENERATED ALWAYS AS (CASE WHEN "quantity" >= "pickedQuantity" THEN "quantity" - "pickedQuantity" ELSE 0 END) STORED,
   "requiresBatchTracking" BOOLEAN NOT NULL DEFAULT false,
   "requiresSerialTracking" BOOLEAN NOT NULL DEFAULT false,
-  "notes" JSON DEFAULT '{}'::json,
   "companyId" TEXT NOT NULL,
   "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   "createdBy" TEXT NOT NULL,
@@ -233,6 +231,7 @@ SELECT
   "id"
 FROM "company";
 
+DROP VIEW IF EXISTS "stockTransferLines";
 CREATE VIEW "stockTransferLines" AS
 SELECT 
   stl.*,
@@ -240,6 +239,7 @@ SELECT
     WHEN i."thumbnailPath" IS NULL AND mu."thumbnailPath" IS NOT NULL THEN mu."thumbnailPath"
     ELSE i."thumbnailPath"
   END AS "thumbnailPath",
+  i."readableIdWithRevision" as "itemReadableId",
   uom."name" AS "unitOfMeasure",
   sf."name" AS "fromShelfName",
   st."name" AS "toShelfName"
@@ -248,5 +248,40 @@ LEFT JOIN "item" i ON i."id" = stl."itemId"
 LEFT JOIN "modelUpload" mu ON mu."id" = i."modelUploadId"
 LEFT JOIN "unitOfMeasure" uom ON uom."code" = i."unitOfMeasureCode" AND uom."companyId" = i."companyId"
 LEFT JOIN "shelf" sf ON sf."id" = stl."fromShelfId"
-LEFT JOIN "shelf" st ON st."id" = stl."toShelfId";
+LEFT JOIN "shelf" st ON st."id" = stl."toShelfId"
+ORDER BY "itemReadableId" ASC, "toShelfName" ASC;
 
+-- Trigger function to update stock transfer status based on picked quantities
+CREATE OR REPLACE FUNCTION update_stock_transfer_status()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only proceed if pickedQuantity has changed and is not 0
+  IF OLD."pickedQuantity" IS DISTINCT FROM NEW."pickedQuantity" AND NEW."pickedQuantity" != 0 THEN
+    -- Check if all lines for this stock transfer have pickedQuantity = quantity
+    IF EXISTS (
+      SELECT 1 
+      FROM "stockTransferLine" 
+      WHERE "stockTransferId" = NEW."stockTransferId" 
+        AND ("pickedQuantity" IS NULL OR "pickedQuantity" != "quantity")
+    ) THEN
+      -- Not all lines are fully picked, set status to In Progress
+      UPDATE "stockTransfer" 
+      SET "status" = 'In Progress' 
+      WHERE "id" = NEW."stockTransferId";
+    ELSE
+      -- All lines are fully picked, set status to Completed
+      UPDATE "stockTransfer" 
+      SET "status" = 'Completed' 
+      WHERE "id" = NEW."stockTransferId";
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger on stockTransferLine UPDATE
+CREATE TRIGGER update_stock_transfer_status_trigger
+  AFTER UPDATE ON "stockTransferLine"
+  FOR EACH ROW
+  EXECUTE FUNCTION update_stock_transfer_status();

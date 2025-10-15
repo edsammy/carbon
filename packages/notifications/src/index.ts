@@ -25,6 +25,7 @@ export enum NotificationEvent {
   SalesOrderAssignment = "sales-order-assignment",
   SalesRfqAssignment = "sales-rfq-assignment",
   SalesRfqReady = "sales-rfq-ready",
+  StockTransferAssignment = "stock-transfer-assignment",
   SupplierQuoteAssignment = "supplier-quote-assignment",
 }
 

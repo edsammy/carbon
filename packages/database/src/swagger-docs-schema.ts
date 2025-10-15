@@ -23334,6 +23334,114 @@ export default {
         tags: ["purchaseOrderLine"],
       },
     },
+    "/stockTransferLines": {
+      get: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.id",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.stockTransferId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.jobId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.jobMaterialId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.itemId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.fromShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.toShelfId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.quantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.pickedQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.outstandingQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.requiresBatchTracking",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.requiresSerialTracking",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.thumbnailPath",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.itemReadableId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.unitOfMeasure",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.fromShelfName",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLines.toShelfName",
+          },
+          {
+            $ref: "#/parameters/select",
+          },
+          {
+            $ref: "#/parameters/order",
+          },
+          {
+            $ref: "#/parameters/range",
+          },
+          {
+            $ref: "#/parameters/rangeUnit",
+          },
+          {
+            $ref: "#/parameters/offset",
+          },
+          {
+            $ref: "#/parameters/limit",
+          },
+          {
+            $ref: "#/parameters/preferCount",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            schema: {
+              items: {
+                $ref: "#/definitions/stockTransferLines",
+              },
+              type: "array",
+            },
+          },
+          "206": {
+            description: "Partial Content",
+          },
+        },
+        tags: ["stockTransferLines"],
+      },
+    },
     "/accountDefault": {
       get: {
         parameters: [
@@ -50188,6 +50296,9 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransfer.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransfer.notes",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransfer.assignee",
           },
           {
@@ -50286,6 +50397,9 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransfer.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransfer.notes",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransfer.assignee",
           },
           {
@@ -50336,6 +50450,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.stockTransfer.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransfer.notes",
           },
           {
             $ref: "#/parameters/rowFilter.stockTransfer.assignee",
@@ -52168,6 +52285,15 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransferLine.pickedQuantity",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransferLine.outstandingQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.requiresBatchTracking",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.requiresSerialTracking",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransferLine.companyId",
           },
           {
@@ -52269,6 +52395,15 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransferLine.pickedQuantity",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransferLine.outstandingQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.requiresBatchTracking",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.requiresSerialTracking",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransferLine.companyId",
           },
           {
@@ -52322,6 +52457,15 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.stockTransferLine.pickedQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.outstandingQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.requiresBatchTracking",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.requiresSerialTracking",
           },
           {
             $ref: "#/parameters/rowFilter.stockTransferLine.companyId",
@@ -56269,6 +56413,85 @@ export default {
           },
         },
         tags: ["salesOrderTransaction"],
+      },
+    },
+    "/rpc/get_item_shelf_requirements_by_location_and_item": {
+      get: {
+        parameters: [
+          {
+            format: "text",
+            in: "query",
+            name: "company_id",
+            required: true,
+            type: "string",
+          },
+          {
+            format: "text",
+            in: "query",
+            name: "location_id",
+            required: true,
+            type: "string",
+          },
+          {
+            format: "text",
+            in: "query",
+            name: "item_id",
+            required: false,
+            type: "string",
+          },
+        ],
+        produces: [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json",
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+          },
+        },
+        tags: ["(rpc) get_item_shelf_requirements_by_location_and_item"],
+      },
+      post: {
+        parameters: [
+          {
+            in: "body",
+            name: "args",
+            required: true,
+            schema: {
+              properties: {
+                company_id: {
+                  format: "text",
+                  type: "string",
+                },
+                item_id: {
+                  format: "text",
+                  type: "string",
+                },
+                location_id: {
+                  format: "text",
+                  type: "string",
+                },
+              },
+              required: ["company_id", "location_id"],
+              type: "object",
+            },
+          },
+          {
+            $ref: "#/parameters/preferParams",
+          },
+        ],
+        produces: [
+          "application/json",
+          "application/vnd.pgrst.object+json;nulls=stripped",
+          "application/vnd.pgrst.object+json",
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+          },
+        },
+        tags: ["(rpc) get_item_shelf_requirements_by_location_and_item"],
       },
     },
     "/rpc/has_company_permission": {
@@ -65098,7 +65321,7 @@ export default {
       properties: {
         id: {
           description:
-            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -65147,7 +65370,7 @@ export default {
         },
         supplierLocationId: {
           description:
-            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -72329,6 +72552,116 @@ export default {
         taxAmount: {
           format: "numeric",
           type: "number",
+        },
+      },
+      type: "object",
+    },
+    stockTransferLines: {
+      properties: {
+        id: {
+          description: "Note:\nThis is a Primary Key.<pk/>",
+          format: "text",
+          type: "string",
+        },
+        stockTransferId: {
+          format: "text",
+          type: "string",
+        },
+        jobId: {
+          description:
+            "Note:\nThis is a Foreign Key to `job.id`.<fk table='job' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        jobMaterialId: {
+          description:
+            "Note:\nThis is a Foreign Key to `jobMaterial.id`.<fk table='jobMaterial' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        itemId: {
+          description:
+            "Note:\nThis is a Foreign Key to `item.id`.<fk table='item' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        fromShelfId: {
+          description:
+            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        toShelfId: {
+          description:
+            "Note:\nThis is a Foreign Key to `shelf.id`.<fk table='shelf' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        quantity: {
+          format: "numeric",
+          type: "number",
+        },
+        pickedQuantity: {
+          format: "numeric",
+          type: "number",
+        },
+        outstandingQuantity: {
+          format: "numeric",
+          type: "number",
+        },
+        requiresBatchTracking: {
+          format: "boolean",
+          type: "boolean",
+        },
+        requiresSerialTracking: {
+          format: "boolean",
+          type: "boolean",
+        },
+        companyId: {
+          description:
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `company.id`.<fk table='company' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        createdAt: {
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        createdBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        updatedAt: {
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        updatedBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        thumbnailPath: {
+          format: "text",
+          type: "string",
+        },
+        itemReadableId: {
+          format: "text",
+          type: "string",
+        },
+        unitOfMeasure: {
+          format: "text",
+          type: "string",
+        },
+        fromShelfName: {
+          format: "text",
+          type: "string",
+        },
+        toShelfName: {
+          format: "text",
+          type: "string",
         },
       },
       type: "object",
@@ -85186,6 +85519,9 @@ export default {
           format: "text",
           type: "string",
         },
+        notes: {
+          format: "json",
+        },
         assignee: {
           description:
             "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
@@ -86293,6 +86629,8 @@ export default {
         "itemId",
         "quantity",
         "pickedQuantity",
+        "requiresBatchTracking",
+        "requiresSerialTracking",
         "companyId",
         "createdAt",
         "createdBy",
@@ -86347,6 +86685,20 @@ export default {
           default: 0,
           format: "numeric",
           type: "number",
+        },
+        outstandingQuantity: {
+          format: "numeric",
+          type: "number",
+        },
+        requiresBatchTracking: {
+          default: false,
+          format: "boolean",
+          type: "boolean",
+        },
+        requiresSerialTracking: {
+          default: false,
+          format: "boolean",
+          type: "boolean",
         },
         companyId: {
           description:
@@ -100238,6 +100590,147 @@ export default {
     },
     "rowFilter.purchaseOrderLine.taxAmount": {
       name: "taxAmount",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "body.stockTransferLines": {
+      name: "stockTransferLines",
+      description: "stockTransferLines",
+      required: false,
+      in: "body",
+      schema: {
+        $ref: "#/definitions/stockTransferLines",
+      },
+    },
+    "rowFilter.stockTransferLines.id": {
+      name: "id",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.stockTransferId": {
+      name: "stockTransferId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.jobId": {
+      name: "jobId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.jobMaterialId": {
+      name: "jobMaterialId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.itemId": {
+      name: "itemId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.fromShelfId": {
+      name: "fromShelfId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.toShelfId": {
+      name: "toShelfId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.quantity": {
+      name: "quantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.pickedQuantity": {
+      name: "pickedQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.outstandingQuantity": {
+      name: "outstandingQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.requiresBatchTracking": {
+      name: "requiresBatchTracking",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.requiresSerialTracking": {
+      name: "requiresSerialTracking",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.companyId": {
+      name: "companyId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.createdAt": {
+      name: "createdAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.createdBy": {
+      name: "createdBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.updatedAt": {
+      name: "updatedAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.updatedBy": {
+      name: "updatedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.thumbnailPath": {
+      name: "thumbnailPath",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.itemReadableId": {
+      name: "itemReadableId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.unitOfMeasure": {
+      name: "unitOfMeasure",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.fromShelfName": {
+      name: "fromShelfName",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.toShelfName": {
+      name: "toShelfName",
       required: false,
       in: "query",
       type: "string",
@@ -114786,6 +115279,12 @@ export default {
       in: "query",
       type: "string",
     },
+    "rowFilter.stockTransfer.notes": {
+      name: "notes",
+      required: false,
+      in: "query",
+      type: "string",
+    },
     "rowFilter.stockTransfer.assignee": {
       name: "assignee",
       required: false,
@@ -116093,6 +116592,24 @@ export default {
     },
     "rowFilter.stockTransferLine.pickedQuantity": {
       name: "pickedQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLine.outstandingQuantity": {
+      name: "outstandingQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLine.requiresBatchTracking": {
+      name: "requiresBatchTracking",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLine.requiresSerialTracking": {
+      name: "requiresSerialTracking",
       required: false,
       in: "query",
       type: "string",

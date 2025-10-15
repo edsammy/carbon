@@ -224,6 +224,14 @@ function GenericNotification({
           {...props}
         />
       );
+    case NotificationEvent.StockTransferAssignment:
+      return (
+        <Notification
+          icon={<LuListChecks />}
+          to={path.to.salesOrderDetails(id)}
+          {...props}
+        />
+      );
     case NotificationEvent.SupplierQuoteAssignment:
       return (
         <Notification

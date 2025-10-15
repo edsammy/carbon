@@ -283,7 +283,9 @@ export async function getStockTransferLines(
   return client
     .from("stockTransferLines")
     .select("*")
-    .eq("stockTransferId", stockTransferId);
+    .eq("stockTransferId", stockTransferId)
+    .order("itemReadableId", { ascending: true })
+    .order("createdAt", { ascending: true });
 }
 
 export async function getStockTransferTracking(

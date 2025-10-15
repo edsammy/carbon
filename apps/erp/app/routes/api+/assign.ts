@@ -115,6 +115,8 @@ function getNotificationEvent(table: string): NotificationEvent | null {
       return NotificationEvent.PurchaseInvoiceAssignment;
     case "supplierQuote":
       return NotificationEvent.SupplierQuoteAssignment;
+    case "stockTransfer":
+      return NotificationEvent.StockTransferAssignment;
     default:
       return null;
   }
