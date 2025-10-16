@@ -240,6 +240,7 @@ SELECT
     ELSE i."thumbnailPath"
   END AS "thumbnailPath",
   i."readableIdWithRevision" as "itemReadableId",
+  i."name" as "itemDescription",
   uom."name" AS "unitOfMeasure",
   sf."name" AS "fromShelfName",
   st."name" AS "toShelfName"
@@ -271,7 +272,7 @@ BEGIN
     ELSE
       -- All lines are fully picked, set status to Completed
       UPDATE "stockTransfer" 
-      SET "status" = 'Completed' 
+      SET "status" = 'Completed', "completedAt" = NOW()
       WHERE "id" = NEW."stockTransferId";
     END IF;
   END IF;

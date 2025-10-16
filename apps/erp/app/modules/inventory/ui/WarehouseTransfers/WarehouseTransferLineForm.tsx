@@ -150,11 +150,13 @@ const WarehouseTransferLineForm = ({
               <Shelf
                 name="fromShelfId"
                 label="From Shelf"
+                itemId={itemId ?? undefined}
                 locationId={warehouseTransfer.fromLocationId}
               />
               <Shelf
                 name="toShelfId"
                 label="To Shelf"
+                itemId={itemId ?? undefined}
                 locationId={warehouseTransfer.toLocationId}
               />
               <TextArea name="notes" label="Notes" rows={3} />

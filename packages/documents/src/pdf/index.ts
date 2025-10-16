@@ -7,6 +7,7 @@ import PurchaseOrderPDF from "./PurchaseOrderPDF";
 import QuotePDF from "./QuotePDF";
 import SalesInvoicePDF from "./SalesInvoicePDF";
 import SalesOrderPDF from "./SalesOrderPDF";
+import StockTransferPDF from "./StockTransferPDF";
 export {
   IssuePDF,
   JobTravelerPDF,
@@ -17,4 +18,5 @@ export {
   QuotePDF,
   SalesInvoicePDF,
   SalesOrderPDF,
+  StockTransferPDF,
 };

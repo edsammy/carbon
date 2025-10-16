@@ -47050,6 +47050,7 @@ export type Database = {
           fromShelfId: string | null
           fromShelfName: string | null
           id: string | null
+          itemDescription: string | null
           itemId: string | null
           itemReadableId: string | null
           jobId: string | null
