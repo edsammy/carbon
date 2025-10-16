@@ -2090,8 +2090,10 @@ serve(async (req: Request) => {
                 []) {
                 if (!salesOrderLine.itemId) return;
 
-                const quantityToShip =
-                  (job.quantityComplete ?? 0) - (job.quantityShipped ?? 0);
+                const quantityToShip = Math.max(
+                  0,
+                  (job.quantityComplete ?? 0) - (job.quantityShipped ?? 0)
+                );
 
                 if (!isSerial || (isSerial && quantityToShip > 0)) {
                   const fulfillment = await trx
@@ -2375,8 +2377,10 @@ serve(async (req: Request) => {
           if (salesOrderLine.data.methodType === "Make") {
             for await (const job of jobs.data ?? []) {
               if (!salesOrderLine.data.itemId) return;
-              const quantityToShip =
-                (job.quantityComplete ?? 0) - (job.quantityShipped ?? 0);
+              const quantityToShip = Math.max(
+                0,
+                (job.quantityComplete ?? 0) - (job.quantityShipped ?? 0)
+              );
 
               if (!isSerial || (isSerial && quantityToShip > 0)) {
                 const fulfillment = await trx
@@ -2408,7 +2412,10 @@ serve(async (req: Request) => {
                     fulfillmentId,
                     itemId: salesOrderLine.data.itemId,
                     orderQuantity: job.productionQuantity ?? 0,
-                    outstandingQuantity: job.productionQuantity ?? 0,
+                    outstandingQuantity: Math.max(
+                      0,
+                      job.productionQuantity ?? 0
+                    ),
                     shippedQuantity: quantityToShip,
                     requiresSerialTracking: isSerial,
                     requiresBatchTracking: isBatch,
@@ -2464,9 +2471,11 @@ serve(async (req: Request) => {
               }
             }
           } else {
-            const outstandingQuantity =
+            const outstandingQuantity = Math.max(
+              0,
               (salesOrderLine.data.saleQuantity ?? 0) -
-              previouslyShippedQuantity;
+                previouslyShippedQuantity
+            );
 
             const shippingAndTaxUnitCost =
               (salesOrderLine.data.shippingCost /
@@ -2482,8 +2491,8 @@ serve(async (req: Request) => {
                 companyId: companyId,
                 itemId: salesOrderLine.data.itemId!,
                 orderQuantity: salesOrderLine.data.saleQuantity ?? 0,
-                outstandingQuantity: outstandingQuantity!,
-                shippedQuantity: outstandingQuantity!,
+                outstandingQuantity: outstandingQuantity,
+                shippedQuantity: outstandingQuantity,
                 requiresSerialTracking: isSerial,
                 requiresBatchTracking: isBatch,
                 unitPrice: shippingAndTaxUnitCost,

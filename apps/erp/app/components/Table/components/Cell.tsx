@@ -57,7 +57,7 @@ const Cell = <T extends object>({
   return (
     <Td
       className={cn(
-        "relative px-4 py-2 whitespace-nowrap text-sm outline-none",
+        "relative px-4 py-2 whitespace-nowrap text-sm outline-none max-w-[30dvw] truncate",
         wasEdited && "bg-yellow-100 dark:bg-yellow-900",
         isEditMode && !hasEditableTableCellComponent && "bg-muted/50",
         isEditMode && "border-border border-r",
