@@ -87,13 +87,13 @@ import { usePermissions, useUrlParams, useUser } from "~/hooks";
 import { useCustomColumns } from "~/hooks/useCustomColumns";
 import {
   addTransferLine,
-  clearSelectedToShelves,
+  clearSelectedToItemShelves,
   clearStockTransferWizard,
   hasTransferLine,
-  hasTransferLinesToShelf,
-  isToShelfSelected,
+  hasTransferLinesToItemShelf,
+  isToItemShelfSelected,
   removeTransferLine,
-  toggleToShelfSelection,
+  toggleToItemShelfSelection,
   updateTransferLineQuantity,
   usePeople,
   useStockTransferWizard,
@@ -474,7 +474,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
   }, [carbon, companyId, locationId]);
 
   const transferFromQuery = useCallback(async () => {
-    if (!carbon || wizard.selectedToShelfIds.size === 0) {
+    if (!carbon || wizard.selectedToItemShelfIds.size === 0) {
       setAllTransferFromData([]);
       return;
     }
@@ -483,7 +483,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
 
     // Get the selected "to" items to extract their itemIds
     const selectedToItems = allTransferToData.filter((item) =>
-      wizard.selectedToShelfIds.has(item.shelfId!)
+      wizard.selectedToItemShelfIds.has(`${item.itemId}:${item.shelfId}`)
     );
 
     // Fetch data for each selected item
@@ -530,7 +530,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
     carbon,
     companyId,
     locationId,
-    wizard.selectedToShelfIds,
+    wizard.selectedToItemShelfIds,
     allTransferToData,
   ]);
 
@@ -551,7 +551,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
 
   // Deselect active item/shelf when "to" table page changes
   useEffect(() => {
-    clearSelectedToShelves();
+    clearSelectedToItemShelves();
   }, [transferToOffset]);
 
   // Client-side filtering and pagination for "to" table
@@ -756,8 +756,14 @@ function TransferGrid({ locationId }: { locationId: string }) {
       {
         id: "actions",
         cell: ({ row }) => {
-          const isSelected = isToShelfSelected(row.original.shelfId!);
-          const hasTransfers = hasTransferLinesToShelf(row.original.shelfId!);
+          const isSelected = isToItemShelfSelected(
+            row.original.itemId,
+            row.original.shelfId!
+          );
+          const hasTransfers = hasTransferLinesToItemShelf(
+            row.original.itemId,
+            row.original.shelfId!
+          );
           return (
             <div className="flex justify-end">
               <Button
@@ -765,11 +771,17 @@ function TransferGrid({ locationId }: { locationId: string }) {
                 onClick={() => {
                   if (isSelected) {
                     // If already selected, deselect it
-                    toggleToShelfSelection(row.original.shelfId!);
+                    toggleToItemShelfSelection(
+                      row.original.itemId,
+                      row.original.shelfId!
+                    );
                   } else {
                     // If not selected, clear selection and select only this one
-                    clearSelectedToShelves();
-                    toggleToShelfSelection(row.original.shelfId!);
+                    clearSelectedToItemShelves();
+                    toggleToItemShelfSelection(
+                      row.original.itemId,
+                      row.original.shelfId!
+                    );
                   }
                 }}
               >
@@ -799,7 +811,9 @@ function TransferGrid({ locationId }: { locationId: string }) {
           const toItem = allTransferToData.find(
             (item) =>
               item.itemId === row.original.itemId &&
-              wizard.selectedToShelfIds.has(item.shelfId!)
+              wizard.selectedToItemShelfIds.has(
+                `${item.itemId}:${item.shelfId}`
+              )
           );
 
           if (!toItem) return null;
@@ -864,7 +878,9 @@ function TransferGrid({ locationId }: { locationId: string }) {
           const toItem = allTransferToData.find(
             (item) =>
               item.itemId === row.original.itemId &&
-              wizard.selectedToShelfIds.has(item.shelfId!)
+              wizard.selectedToItemShelfIds.has(
+                `${item.itemId}:${item.shelfId}`
+              )
           );
 
           if (!toItem) return null;
@@ -945,7 +961,9 @@ function TransferGrid({ locationId }: { locationId: string }) {
           const toItem = allTransferToData.find(
             (item) =>
               item.itemId === row.original.itemId &&
-              wizard.selectedToShelfIds.has(item.shelfId!)
+              wizard.selectedToItemShelfIds.has(
+                `${item.itemId}:${item.shelfId}`
+              )
           );
 
           if (!toItem) return formatter.format(row.original.quantityOnHand);
@@ -990,7 +1008,9 @@ function TransferGrid({ locationId }: { locationId: string }) {
           const toItem = allTransferToData.find(
             (item) =>
               item.itemId === row.original.itemId &&
-              wizard.selectedToShelfIds.has(item.shelfId!)
+              wizard.selectedToItemShelfIds.has(
+                `${item.itemId}:${item.shelfId}`
+              )
           );
 
           if (!toItem) {
@@ -1067,7 +1087,12 @@ function TransferGrid({ locationId }: { locationId: string }) {
         header: "Required",
       },
     ];
-  }, [formatter, allTransferToData, wizard.selectedToShelfIds, wizard.lines]);
+  }, [
+    formatter,
+    allTransferToData,
+    wizard.selectedToItemShelfIds,
+    wizard.lines,
+  ]);
 
   return (
     <>
@@ -1089,7 +1114,9 @@ function TransferGrid({ locationId }: { locationId: string }) {
               setPageSize={setPageSize}
               search={transferToSearch}
               onSearchChange={setTransferToSearch}
-              isRowSelected={(row) => isToShelfSelected(row.shelfId!)}
+              isRowSelected={(row) =>
+                isToItemShelfSelected(row.itemId, row.shelfId!)
+              }
             />
           </div>
         </div>
@@ -1114,7 +1141,9 @@ function TransferGrid({ locationId }: { locationId: string }) {
                 const toItem = allTransferToData.find(
                   (item) =>
                     item.itemId === row.itemId &&
-                    wizard.selectedToShelfIds.has(item.shelfId!)
+                    wizard.selectedToItemShelfIds.has(
+                      `${item.itemId}:${item.shelfId}`
+                    )
                 );
                 return toItem
                   ? hasTransferLine(row.itemId, row.shelfId!, toItem.shelfId!)

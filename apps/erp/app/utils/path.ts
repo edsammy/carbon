@@ -19,6 +19,14 @@ export const path = {
       assign: `${api}/assign`,
       batchNumbers: (itemId: string) =>
         generatePath(`${api}/inventory/batch-numbers?itemId=${itemId}`),
+      trackedEntitiesByShelf: (
+        itemId: string,
+        shelfId: string,
+        locationId: string
+      ) =>
+        generatePath(
+          `${api}/inventory/tracked-entities-by-shelf?itemId=${itemId}&shelfId=${shelfId}&locationId=${locationId}`
+        ),
       billOfMaterials: (methodId: string, withOperations: boolean = false) =>
         generatePath(
           `${api}/items/methods/${methodId}/bom?withOperations=${withOperations}`

@@ -102,12 +102,12 @@ export type StockTransferWizardLine = {
 };
 
 export type StockTransferWizardState = {
-  selectedToShelfIds: Set<string>; // Set of shelfIds selected in the "to" table
+  selectedToItemShelfIds: Set<string>; // Set of "itemId:shelfId" composite keys selected in the "to" table
   lines: StockTransferWizardLine[];
 };
 
 const $wizardStore = atom<StockTransferWizardState>({
-  selectedToShelfIds: new Set(),
+  selectedToItemShelfIds: new Set(),
   lines: [],
 });
 
@@ -122,32 +122,36 @@ export const useStockTransferWizardLinesCount = () =>
   useValue($wizardLinesCount);
 
 // Stock Transfer Wizard actions
-export const toggleToShelfSelection = (shelfId: string) => {
+export const toggleToItemShelfSelection = (itemId: string, shelfId: string) => {
   const currentWizard = $wizardStore.get();
-  const newSelectedToShelfIds = new Set(currentWizard.selectedToShelfIds);
+  const compositeKey = `${itemId}:${shelfId}`;
+  const newSelectedToItemShelfIds = new Set(
+    currentWizard.selectedToItemShelfIds
+  );
 
-  if (newSelectedToShelfIds.has(shelfId)) {
-    newSelectedToShelfIds.delete(shelfId);
-    // Remove all lines that have this toShelfId
+  if (newSelectedToItemShelfIds.has(compositeKey)) {
+    newSelectedToItemShelfIds.delete(compositeKey);
+    // Remove all lines that have this itemId and toShelfId
     const updatedLines = currentWizard.lines.filter(
-      (line) => line.toShelfId !== shelfId
+      (line) => !(line.itemId === itemId && line.toShelfId === shelfId)
     );
     $wizardStore.set({
-      selectedToShelfIds: newSelectedToShelfIds,
+      selectedToItemShelfIds: newSelectedToItemShelfIds,
       lines: updatedLines,
     });
   } else {
-    newSelectedToShelfIds.add(shelfId);
+    newSelectedToItemShelfIds.add(compositeKey);
     $wizardStore.set({
       ...currentWizard,
-      selectedToShelfIds: newSelectedToShelfIds,
+      selectedToItemShelfIds: newSelectedToItemShelfIds,
     });
   }
 };
 
-export const isToShelfSelected = (shelfId: string) => {
+export const isToItemShelfSelected = (itemId: string, shelfId: string) => {
   const currentWizard = $wizardStore.get();
-  return currentWizard.selectedToShelfIds.has(shelfId);
+  const compositeKey = `${itemId}:${shelfId}`;
+  return currentWizard.selectedToItemShelfIds.has(compositeKey);
 };
 
 export const addTransferLine = (line: StockTransferWizardLine) => {
@@ -209,10 +213,16 @@ export const hasTransferLine = (
   );
 };
 
-export const hasTransferLinesToShelf = (shelfId: string) => {
+export const hasTransferLinesToItemShelf = (
+  itemId: string,
+  shelfId: string
+) => {
   const currentWizard = $wizardStore.get();
   return currentWizard.lines.some(
-    (line) => line.toShelfId === shelfId && (line.quantity ?? 0) > 0
+    (line) =>
+      line.itemId === itemId &&
+      line.toShelfId === shelfId &&
+      (line.quantity ?? 0) > 0
   );
 };
 
@@ -242,15 +252,15 @@ export const updateTransferLineQuantity = (
 
 export const clearStockTransferWizard = () => {
   $wizardStore.set({
-    selectedToShelfIds: new Set(),
+    selectedToItemShelfIds: new Set(),
     lines: [],
   });
 };
 
-export const clearSelectedToShelves = () => {
+export const clearSelectedToItemShelves = () => {
   const currentWizard = $wizardStore.get();
   $wizardStore.set({
     ...currentWizard,
-    selectedToShelfIds: new Set(),
+    selectedToItemShelfIds: new Set(),
   });
 };

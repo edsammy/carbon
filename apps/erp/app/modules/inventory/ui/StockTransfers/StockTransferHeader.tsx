@@ -188,8 +188,8 @@ const StockTransferHeader = () => {
         <ConfirmDelete
           action={path.to.deleteStockTransfer(id)}
           isOpen={deleteModal.isOpen}
-          name={routeData?.stockTransfer?.id ?? "stockTransfer"}
-          text={`Are you sure you want to delete ${routeData?.stockTransfer?.id}? This cannot be undone.`}
+          name={routeData?.stockTransfer?.stockTransferId ?? "stockTransfer"}
+          text={`Are you sure you want to delete ${routeData?.stockTransfer?.stockTransferId}? This cannot be undone.`}
           onCancel={() => {
             deleteModal.onClose();
           }}
