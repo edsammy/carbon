@@ -288,6 +288,8 @@ export const stockTransferValidator = z.object({
             fromShelfId: z.string().optional(),
             toShelfId: z.string().optional(),
             quantity: z.number().min(0).optional(),
+            requiresSerialTracking: z.boolean().optional(),
+            requiresBatchTracking: z.boolean().optional(),
           })
         )
         .min(1, { message: "At least one line is required" })
@@ -314,4 +316,20 @@ export const stockTransferLineValidator = z.object({
       .min(0, { message: "Quantity must be greater than or equal to 0" })
   ),
   pickedQuantity: zfd.numeric(z.number().min(0).optional()),
+  requiresBatchTracking: zfd.text(
+    z.string().transform((val) => val === "true")
+  ),
+  requiresSerialTracking: zfd.text(
+    z.string().transform((val) => val === "true")
+  ),
+});
+
+export const stockTransferLineScanValidator = z.object({
+  id: zfd.text(z.string().optional()),
+  itemId: z.string().min(1, { message: "Item is required" }),
+  locationId: z.string().min(1, { message: "Location is required" }),
+  stockTransferId: z.string().min(1, { message: "Stock transfer is required" }),
+  trackedEntityId: z
+    .string()
+    .min(1, { message: "Tracked entity ID is required" }),
 });

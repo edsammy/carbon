@@ -71,6 +71,10 @@ const StockTransferHeader = () => {
       ? optimisticAssignment
       : routeData?.stockTransfer?.assignee;
 
+  const hasPickedItems = routeData?.stockTransferLines.some(
+    (line) => line.pickedQuantity && line.pickedQuantity > 0
+  );
+
   return (
     <>
       <div className="flex flex-shrink-0 items-center justify-between px-4 py-2 bg-card border-b border-border h-[50px] overflow-x-auto scrollbar-hide dark:border-none dark:shadow-[inset_0_0_1px_rgb(255_255_255_/_0.24),_0_0_0_0.5px_rgb(0,0,0,1)]">
@@ -94,7 +98,9 @@ const StockTransferHeader = () => {
                 <DropdownMenuItem
                   disabled={
                     !permissions.can("delete", "inventory") ||
-                    !permissions.is("employee")
+                    !permissions.is("employee") ||
+                    !["Released", "Draft"].includes(status) ||
+                    hasPickedItems
                   }
                   destructive
                   onClick={deleteModal.onOpen}

@@ -1,13 +1,6 @@
-import {
-  assertIsPost,
-  error,
-  getCarbonServiceRole,
-  notFound,
-  success,
-} from "@carbon/auth";
+import { assertIsPost, error, notFound, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
-import type { Database } from "@carbon/database";
 import type { ActionFunctionArgs } from "@vercel/remix";
 import { json } from "@vercel/remix";
 
@@ -25,6 +18,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const lineId = formData.get("id") as string;
   const pickedQuantity = parseInt(formData.get("quantity") as string, 10);
   const locationId = formData.get("locationId") as string;
+  const trackedEntityId = formData.get("trackedEntityId") as string | undefined;
 
   if (!lineId || !Number.isFinite(pickedQuantity)) {
     return json(
@@ -53,81 +47,62 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
-  const itemLedgerInserts: Database["public"]["Tables"]["itemLedger"]["Insert"][] =
-    [];
+  let type = "inventory";
+  if (pickedQuantity === 0) {
+    if (stockTransferLine.data.requiresSerialTracking) {
+      type = "unpickSerial";
+    } else if (stockTransferLine.data.requiresBatchTracking) {
+      type = "unpickBatch";
+    } else {
+      type = "unpickInventory";
+    }
+  }
 
-  const today = new Date().toISOString().split("T")[0];
-  const transactionQuantity =
-    pickedQuantity === 0
-      ? -stockTransferLine.data.pickedQuantity
-      : pickedQuantity;
-
-  itemLedgerInserts.push({
-    postingDate: today,
-    itemId: stockTransferLine.data.itemId,
-    quantity: transactionQuantity,
-    locationId: locationId,
-    shelfId: stockTransferLine.data.toShelfId,
-    entryType: "Transfer",
-    documentType: "Direct Transfer",
-    documentId: stockTransferLine.data.stockTransferId ?? undefined,
-    createdBy: userId,
-    companyId,
-  });
-
-  itemLedgerInserts.push({
-    postingDate: today,
-    itemId: stockTransferLine.data.itemId,
-    quantity: -transactionQuantity,
-    locationId: locationId,
-    shelfId: stockTransferLine.data.fromShelfId,
-    entryType: "Transfer",
-    documentType: "Direct Transfer",
-    documentId: stockTransferLine.data.stockTransferId ?? undefined,
-    createdBy: userId,
-    companyId,
-  });
-
-  const serviceRole = getCarbonServiceRole();
-
-  const insertItemTransactions = await serviceRole
-    .from("itemLedger")
-    .insert(itemLedgerInserts)
-    .select("id");
-
-  if (insertItemTransactions.error) {
+  if (
+    !trackedEntityId &&
+    (stockTransferLine.data.requiresSerialTracking ||
+      stockTransferLine.data.requiresBatchTracking)
+  ) {
     return json(
       {
         success: false,
       },
       await flash(
         request,
-        error(insertItemTransactions.error, "Failed to insert item ledger")
+        error("Tracked entity not found", "Tracked entity not found")
       )
     );
   }
 
-  const quantityUpdate = await client
-    .from("stockTransferLine")
-    .update({
-      pickedQuantity,
-      updatedBy: userId,
-      updatedAt: new Date().toISOString(),
-    })
-    .eq("id", lineId)
-    .eq("companyId", companyId);
+  // Call the post-stock-transfer function for inventory items
+  const { error: functionError } = await client.functions.invoke(
+    "post-stock-transfer",
+    {
+      body: JSON.stringify({
+        type: type,
+        stockTransferId: stockTransferLine.data.stockTransferId,
+        stockTransferLineId: lineId,
+        quantity: pickedQuantity,
+        locationId: locationId,
+        trackedEntityId: trackedEntityId,
+        userId,
+        companyId,
+      }),
+    }
+  );
 
-  if (quantityUpdate.error) {
-    await serviceRole
-      .from("itemLedger")
-      .delete()
-      .in("id", insertItemTransactions.data?.map((item) => item.id) ?? []);
-
+  if (functionError) {
     return json(
       {
         success: false,
       },
-      await flash(request, error(quantityUpdate.error, "Failed to update line"))
+      await flash(
+        request,
+        error(
+          functionError.message || "Failed to pick line",
+          "Failed to pick line"
+        )
+      )
     );
   }
 

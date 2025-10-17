@@ -19,14 +19,7 @@ export const path = {
       assign: `${api}/assign`,
       batchNumbers: (itemId: string) =>
         generatePath(`${api}/inventory/batch-numbers?itemId=${itemId}`),
-      trackedEntitiesByShelf: (
-        itemId: string,
-        shelfId: string,
-        locationId: string
-      ) =>
-        generatePath(
-          `${api}/inventory/tracked-entities-by-shelf?itemId=${itemId}&shelfId=${shelfId}&locationId=${locationId}`
-        ),
+
       billOfMaterials: (methodId: string, withOperations: boolean = false) =>
         generatePath(
           `${api}/items/methods/${methodId}/bom?withOperations=${withOperations}`
@@ -1084,6 +1077,8 @@ export const path = {
       generatePath(`${x}/stock-transfer/${id}/line/${lineId}`),
     stockTransferLineQuantity: (id: string) =>
       generatePath(`${x}/stock-transfer/${id}/line/quantity`),
+    stockTransferScan: (id: string, lineId: string) =>
+      generatePath(`${x}/stock-transfer/${id}/scan/${lineId}`),
     stockTransferStatus: (id: string) =>
       generatePath(`${x}/stock-transfer/${id}/status`),
     stockTransfers: `${x}/inventory/stock-transfers`,

@@ -57,6 +57,18 @@ const StockTransferLineForm = ({
     return "Item";
   });
 
+  const [itemTrackingType, setItemTrackingType] = useState<string | null>(
+    () => {
+      if (initialValues.itemId) {
+        return (
+          items.find((item) => item.id === initialValues.itemId)
+            ?.itemTrackingType ?? null
+        );
+      }
+      return null;
+    }
+  );
+
   const onTypeChange = (t: MethodItemType | "Item") => {
     setItemType(t);
     setItemId(null);
@@ -64,10 +76,11 @@ const StockTransferLineForm = ({
 
   const onItemChange = (itemId: string) => {
     setItemId(itemId);
-    const itemType =
-      (items.find((item) => item.id === itemId)?.type as MethodItemType) ??
-      "Item";
+    const item = items.find((item) => item.id === itemId);
+    const itemType = (item?.type as MethodItemType) ?? "Item";
+    const trackingType = item?.itemTrackingType ?? null;
     setItemType(itemType);
+    setItemTrackingType(trackingType);
   };
 
   useEffect(() => {
@@ -117,6 +130,14 @@ const StockTransferLineForm = ({
             <ModalDrawerBody>
               <Hidden name="id" />
               <Hidden name="stockTransferId" />
+              <Hidden
+                name="requiresSerialTracking"
+                value={itemTrackingType === "Serial" ? "true" : "false"}
+              />
+              <Hidden
+                name="requiresBatchTracking"
+                value={itemTrackingType === "Batch" ? "true" : "false"}
+              />
               <VStack spacing={4}>
                 <Item
                   name="itemId"
@@ -129,7 +150,13 @@ const StockTransferLineForm = ({
                   onTypeChange={onTypeChange}
                   value={itemId ?? undefined}
                 />
-                <Number name="quantity" label="Quantity" />
+                <Number
+                  name="quantity"
+                  label="Quantity"
+                  minValue={itemTrackingType === "Serial" ? 1 : 0}
+                  maxValue={itemTrackingType === "Serial" ? 1 : undefined}
+                  defaultValue={itemTrackingType === "Serial" ? 1 : undefined}
+                />
                 <Shelf
                   name="fromShelfId"
                   label="From Shelf"

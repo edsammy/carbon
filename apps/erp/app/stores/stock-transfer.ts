@@ -8,6 +8,8 @@ export type StockTransferSessionItem = {
   description: string;
   action: "order" | "transfer";
   quantity?: number;
+  requiresSerialTracking: boolean;
+  requiresBatchTracking: boolean;
 };
 
 export type StockTransferSessionState = {
@@ -99,6 +101,8 @@ export type StockTransferWizardLine = {
   toShelfName: string;
   quantityAvailable: number;
   quantity?: number;
+  requiresSerialTracking: boolean;
+  requiresBatchTracking: boolean;
 };
 
 export type StockTransferWizardState = {

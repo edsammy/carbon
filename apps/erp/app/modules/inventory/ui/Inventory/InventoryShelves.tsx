@@ -228,7 +228,7 @@ const InventoryShelves = ({
                     name="quantity"
                     label="Quantity"
                     minValue={0}
-                    value={quantity}
+                    value={isSerial ? 1 : quantity}
                     onChange={setQuantity}
                     isReadOnly={isSerial}
                   />

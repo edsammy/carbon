@@ -95,6 +95,7 @@ import {
   removeTransferLine,
   toggleToItemShelfSelection,
   updateTransferLineQuantity,
+  useItems,
   usePeople,
   useStockTransferWizard,
   useStockTransferWizardLinesCount,
@@ -283,7 +284,7 @@ const StockTransfersTable = memo(
               disabled={
                 !permissions.can("delete", "inventory") ||
                 !!row.completedAt ||
-                row.status === "Completed"
+                ["Completed", "In Progress"].includes(row.status)
               }
               destructive
               onClick={() => {
@@ -327,7 +328,10 @@ const StockTransfersTable = memo(
               />
               {permissions.can("create", "inventory") && (
                 <Button
-                  onClick={wizardDisclosure.onOpen}
+                  onClick={() => {
+                    clearStockTransferWizard();
+                    wizardDisclosure.onOpen();
+                  }}
                   leftIcon={<LuCirclePlus />}
                 >
                   Add Stock Transfer
@@ -656,11 +660,13 @@ function TransferGrid({ locationId }: { locationId: string }) {
       {
         accessorKey: "quantityOnHand",
         cell: ({ row }) => {
-          // Calculate total quantity being transferred to this shelf
-          const transferLinesToThisShelf = wizard.lines.filter(
-            (line) => line.toShelfId === row.original.shelfId
+          // Calculate total quantity being transferred to this specific item/shelf combination
+          const transferLinesToThisItemShelf = wizard.lines.filter(
+            (line) =>
+              line.itemId === row.original.itemId &&
+              line.toShelfId === row.original.shelfId
           );
-          const totalTransferQuantity = transferLinesToThisShelf.reduce(
+          const totalTransferQuantity = transferLinesToThisItemShelf.reduce(
             (sum, line) => sum + (line.quantity ?? 0),
             0
           );
@@ -697,11 +703,13 @@ function TransferGrid({ locationId }: { locationId: string }) {
       {
         accessorKey: "quantityAvailable",
         cell: ({ row }) => {
-          // Calculate total quantity being transferred to this shelf
-          const transferLinesToThisShelf = wizard.lines.filter(
-            (line) => line.toShelfId === row.original.shelfId
+          // Calculate total quantity being transferred to this specific item/shelf combination
+          const transferLinesToThisItemShelf = wizard.lines.filter(
+            (line) =>
+              line.itemId === row.original.itemId &&
+              line.toShelfId === row.original.shelfId
           );
-          const totalTransferQuantity = transferLinesToThisShelf.reduce(
+          const totalTransferQuantity = transferLinesToThisItemShelf.reduce(
             (sum, line) => sum + (line.quantity ?? 0),
             0
           );
@@ -802,6 +810,8 @@ function TransferGrid({ locationId }: { locationId: string }) {
     ];
   }, [formatter, wizard.lines]);
 
+  const [items] = useItems();
+
   const columnsFrom = useMemo<ColumnDef<TransferTableRow>[]>(() => {
     return [
       {
@@ -849,6 +859,12 @@ function TransferGrid({ locationId }: { locationId: string }) {
                       row.original.quantityAvailable
                     );
 
+                    const item = items.find(
+                      (item) => item.id === row.original.itemId
+                    );
+
+                    const trackingType = item?.itemTrackingType ?? "Inventory";
+
                     addTransferLine({
                       itemId: row.original.itemId,
                       itemReadableId: row.original.itemReadableId,
@@ -860,6 +876,8 @@ function TransferGrid({ locationId }: { locationId: string }) {
                       toShelfName: toItem.shelfName!,
                       quantityAvailable: row.original.quantityAvailable,
                       quantity: defaultQuantity,
+                      requiresSerialTracking: trackingType === "Serial",
+                      requiresBatchTracking: trackingType === "Batch",
                     });
                   }
                 }}
@@ -911,6 +929,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
                     Math.max(0, value),
                     row.original.quantityAvailable
                   );
+
                   updateTransferLineQuantity(
                     row.original.itemId,
                     row.original.shelfId!,
@@ -1088,10 +1107,11 @@ function TransferGrid({ locationId }: { locationId: string }) {
       },
     ];
   }, [
-    formatter,
     allTransferToData,
     wizard.selectedToItemShelfIds,
     wizard.lines,
+    items,
+    formatter,
   ]);
 
   return (
@@ -1449,10 +1469,6 @@ const StockTransferWizardWidget = ({ locationId }: { locationId: string }) => {
     removeTransferLine(itemId, fromShelfId, toShelfId);
   };
 
-  const onClearAll = () => {
-    clearStockTransferWizard();
-  };
-
   if (linesCount === 0) {
     return null;
   }
@@ -1613,7 +1629,11 @@ const StockTransferWizardWidget = ({ locationId }: { locationId: string }) => {
                     Create Transfer
                   </Button>
                 </fetcher.Form>
-                <Button variant="ghost" className="w-full" onClick={onClearAll}>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={clearStockTransferWizard}
+                >
                   Clear All
                 </Button>
               </div>

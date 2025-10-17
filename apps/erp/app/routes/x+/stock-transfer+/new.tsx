@@ -49,6 +49,30 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const { locationId, lines } = validation.data;
 
+  const linesWithExpandedSerialTracking = lines.reduce<typeof lines>(
+    (acc, line) => {
+      // If quantity contains a decimal, ignore the line (as per requirements)
+      if (line.quantity && !Number.isInteger(line.quantity)) {
+        return acc;
+      }
+
+      // If item requires serial tracking and quantity is a whole number > 1
+      if (line.requiresSerialTracking && line.quantity && line.quantity > 1) {
+        // Break out into multiple lines with quantity 1
+        acc.push(
+          ...Array.from({ length: line.quantity }, () => ({
+            ...line,
+            quantity: 1,
+          }))
+        );
+      } else {
+        acc.push(line);
+      }
+      return acc;
+    },
+    []
+  );
+
   const createStockTransfer = await upsertStockTransfer(client, {
     stockTransferId: nextSequence.data,
     locationId,
@@ -68,7 +92,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const createStockTransferLines = await upsertStockTransferLines(client, {
-    lines,
+    lines: linesWithExpandedSerialTracking,
     stockTransferId: createStockTransfer.data.id,
     companyId,
     createdBy: userId,

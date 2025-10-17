@@ -375,7 +375,6 @@ export async function insertCompany(
   company: z.infer<typeof companyValidator>,
   ownerId?: string
 ) {
-  console.log("inserting company", company);
   return client
     .from("company")
     .insert({ ...company, ownerId })

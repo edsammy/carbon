@@ -23395,6 +23395,9 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransferLines.itemReadableId",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransferLines.itemDescription",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransferLines.unitOfMeasure",
           },
           {
@@ -72651,6 +72654,10 @@ export default {
           format: "text",
           type: "string",
         },
+        itemDescription: {
+          format: "text",
+          type: "string",
+        },
         unitOfMeasure: {
           format: "text",
           type: "string",
@@ -100713,6 +100720,12 @@ export default {
     },
     "rowFilter.stockTransferLines.itemReadableId": {
       name: "itemReadableId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.itemDescription": {
+      name: "itemDescription",
       required: false,
       in: "query",
       type: "string",

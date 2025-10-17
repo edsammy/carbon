@@ -270,7 +270,7 @@ export async function getStockTransferLine(
   stockTransferLineId: string
 ) {
   return client
-    .from("stockTransferLine")
+    .from("stockTransferLines")
     .select("*")
     .eq("id", stockTransferLineId)
     .single();
@@ -294,9 +294,10 @@ export async function getStockTransferTracking(
   companyId: string
 ) {
   return client
-    .from("trackedEntity")
-    .select("*")
-    .eq("attributes ->> Stock Transfer", stockTransferId)
+    .from("trackedActivity")
+    .select("attributes, trackedActivityInput(trackedEntityId)")
+    .eq("sourceDocument", "Stock Transfer")
+    .eq("sourceDocumentId", stockTransferId)
     .eq("companyId", companyId);
 }
 
@@ -1242,7 +1243,10 @@ export async function upsertStockTransfer(
   if ("createdBy" in stockTransfer) {
     return client
       .from("stockTransfer")
-      .insert(stockTransfer)
+      .insert({
+        ...stockTransfer,
+        status: "Released",
+      })
       .select("id")
       .single();
   }

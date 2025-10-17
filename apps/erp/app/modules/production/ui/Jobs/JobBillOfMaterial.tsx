@@ -677,7 +677,7 @@ function MaterialForm({
       kit: false,
       requiresBatchTracking: false,
       requiresSerialTracking: false,
-      shelfId: undefined,
+      shelfId: "",
     });
   };
 
@@ -721,7 +721,7 @@ function MaterialForm({
       methodType: item.data?.defaultMethodType ?? "Buy",
       requiresBatchTracking: item.data?.itemTrackingType === "Batch",
       requiresSerialTracking: item.data?.itemTrackingType === "Serial",
-      shelfId: pickMethod.data?.defaultShelfId ?? undefined,
+      shelfId: pickMethod.data?.defaultShelfId ?? "",
     }));
 
     if (item.data?.type) {
@@ -881,6 +881,13 @@ function MaterialForm({
           <Shelf
             name="shelfId"
             label="Shelf"
+            value={itemData.shelfId}
+            onChange={(value) => {
+              setItemData((d) => ({
+                ...d,
+                shelfId: value?.id ?? "",
+              }));
+            }}
             locationId={locationId}
             itemId={itemData.itemId}
           />
