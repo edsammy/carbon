@@ -964,47 +964,47 @@ export const modules: Config = [
               {
                 id: "mes-overview",
                 loomUrl:
-                  "https://www.loom.com/share/51e0c6dd053b4a3e904fc795d4fc298f?sid=0bb2081d-6bc4-4efb-8361-d2717dda9781",
+                  "https://www.loom.com/share/76a3ef6d812f497e966f5e53110cb742?sid=87adfc27-22c5-450e-811d-b30427c0a540",
                 name: "MES Overview",
                 description:
                   "Learn about Manufacturing Execution Systems and how Carbon implements MES functionality.",
-                duration: 0,
+                duration: 166,
               },
               {
                 id: "tracking-time-quantities",
                 loomUrl:
-                  "https://www.loom.com/share/51e0c6dd053b4a3e904fc795d4fc298f?sid=0bb2081d-6bc4-4efb-8361-d2717dda9781",
+                  "https://www.loom.com/share/e520ed437cf34df3bffc469424b1d2ef?sid=e05cc9a4-467d-4c2b-823f-29ff543c9958",
                 name: "Tracking Time and Quantities",
                 description:
                   "Learn how to track production time and quantities for accurate job costing and efficiency analysis.",
-                duration: 0,
+                duration: 296,
               },
               {
                 id: "tracking-batch-serial",
                 loomUrl:
-                  "https://www.loom.com/share/51e0c6dd053b4a3e904fc795d4fc298f?sid=0bb2081d-6bc4-4efb-8361-d2717dda9781",
+                  "https://www.loom.com/share/398eb590a1854d69b3f45936b6864a67?sid=b39c2bb1-e7fb-4053-87db-8c9322dac63b",
                 name: "Tracking Batch and Serial Parts",
                 description:
                   "Learn how to track batch and serial numbered parts for traceability and quality control.",
-                duration: 0,
+                duration: 202,
               },
               {
                 id: "issuing-parts",
                 loomUrl:
-                  "https://www.loom.com/share/51e0c6dd053b4a3e904fc795d4fc298f?sid=0bb2081d-6bc4-4efb-8361-d2717dda9781",
+                  "https://www.loom.com/share/5ba042e93b11440f863d1fd48735d25e?sid=e5f89cfa-a6fe-4a1e-8a53-2e4040d7880b",
                 name: "Issuing Parts",
                 description:
                   "Learn how to issue parts to jobs and track material consumption accurately.",
-                duration: 0,
+                duration: 88,
               },
               {
                 id: "job-traveler",
                 loomUrl:
-                  "https://www.loom.com/share/51e0c6dd053b4a3e904fc795d4fc298f?sid=0bb2081d-6bc4-4efb-8361-d2717dda9781",
+                  "https://www.loom.com/share/65fd359c6bb04ddb8129e551d15b4475?sid=be96b066-e0d6-4a65-9e3f-175d3dd92548",
                 name: "Job Traveler",
                 description:
                   "Learn how to use job travelers to guide production processes and provide instructions.",
-                duration: 0,
+                duration: 222,
               },
             ],
           },
