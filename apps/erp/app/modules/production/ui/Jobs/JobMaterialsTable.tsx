@@ -18,6 +18,7 @@ import { memo, useMemo, useState } from "react";
 import {
   LuArrowDown,
   LuArrowLeft,
+  LuArrowLeftRight,
   LuArrowUp,
   LuBookMarked,
   LuCheckCheck,
@@ -81,6 +82,8 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
       description: string;
       action: "transfer" | "order";
       quantity: number;
+      requiresSerialTracking: boolean;
+      requiresBatchTracking: boolean;
     }> = [];
 
     data.forEach((material) => {
@@ -99,8 +102,10 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
 
       // Check if transfer is needed
       const quantityOnHandInShelf = material.quantityOnHandInShelf;
+      const quantityInTransitToShelf = material.quantityInTransitToShelf;
       const hasShelfQuantityFlag =
-        quantityOnHandInShelf < quantityRequiredByShelf;
+        quantityOnHandInShelf + quantityInTransitToShelf <
+        quantityRequiredByShelf;
 
       if (hasShelfQuantityFlag) {
         itemsToAdd.push({
@@ -109,6 +114,8 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
           description: material.description,
           action: "transfer",
           quantity: quantityRequiredByShelf - quantityOnHandInShelf,
+          requiresSerialTracking: material.itemTrackingType === "Serial",
+          requiresBatchTracking: material.itemTrackingType === "Batch",
         });
       }
 
@@ -137,6 +144,8 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
           quantity:
             (material.estimatedQuantity ?? 0) -
             (quantityOnHand + incoming - required),
+          requiresSerialTracking: material.itemTrackingType === "Serial",
+          requiresBatchTracking: material.itemTrackingType === "Batch",
         });
       }
     });
@@ -244,8 +253,11 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
           }
 
           const quantityOnHandInShelf = row.original.quantityOnHandInShelf;
+          const quantityInTransitToShelf =
+            row.original.quantityInTransitToShelf;
           const hasShelfQuantityFlag =
-            quantityOnHandInShelf < quantityRequiredByShelf;
+            quantityOnHandInShelf + quantityInTransitToShelf <
+            quantityRequiredByShelf;
 
           return (
             <HStack>
@@ -337,6 +349,15 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
           icon: <LuArrowUp className="text-emerald-600" />,
         },
       },
+      {
+        id: "transfer",
+        header: "Transfer",
+        cell: ({ row }) =>
+          formatter.format(row.original.quantityInTransitToShelf),
+        meta: {
+          icon: <LuArrowLeftRight className="text-blue-600" />,
+        },
+      },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -397,6 +418,8 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
                   description: row.description,
                   action: "transfer",
                   quantity: quantityRequiredByShelf - quantityOnHandInShelf,
+                  requiresSerialTracking: row.itemTrackingType === "Serial",
+                  requiresBatchTracking: row.itemTrackingType === "Batch",
                 });
               }
             }}
@@ -418,6 +441,8 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
                   quantity:
                     (row.estimatedQuantity ?? 0) -
                     (quantityOnHand + incoming - required),
+                  requiresSerialTracking: row.itemTrackingType === "Serial",
+                  requiresBatchTracking: row.itemTrackingType === "Batch",
                 });
               }
             }}
@@ -662,7 +687,7 @@ const StockTransferSessionWidget = () => {
 
             {/* Footer */}
             {allItems.length > 0 && (
-              <div className="p-4 border-t-2 border-border space-y-2">
+              <div className="p-4 border-t-2 border-border space-y-2 w-full">
                 <Button size="lg" className="w-full">
                   Create
                 </Button>
@@ -698,7 +723,11 @@ const StockTransferSessionWidget = () => {
                 )}
               </div>
             )}
-            {allItems.length > 0 && <Button size="lg">Create</Button>}
+            {allItems.length > 0 && (
+              <Button size="lg" className="w-full">
+                Create
+              </Button>
+            )}
           </div>
         )}
       </div>

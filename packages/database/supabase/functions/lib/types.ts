@@ -48859,7 +48859,6 @@ export type Database = {
           unitOfMeasureCode: string
           quantityOnHandInShelf: number
           quantityRequiredByShelf: number
-          quantityInTransit: number
           shelfId: string
           shelfName: string
           isDefaultShelf: boolean
@@ -48882,7 +48881,6 @@ export type Database = {
           unitOfMeasureCode: string
           quantityOnHandInShelf: number
           quantityRequiredByShelf: number
-          quantityInTransit: number
           shelfId: string
           shelfName: string
           isDefaultShelf: boolean
@@ -49036,6 +49034,7 @@ export type Database = {
           quantityOnProductionOrder: number
           quantityFromProductionOrderInShelf: number
           quantityFromProductionOrderNotInShelf: number
+          quantityInTransitToShelf: number
           shelfName: string
         }[]
       }
