@@ -22,11 +22,7 @@ import {
 } from "react-icons/lu";
 import ConfirmDelete from "~/components/Modals/ConfirmDelete";
 import { usePermissions, useRouteData } from "~/hooks";
-import type {
-  ItemTracking,
-  StockTransfer,
-  StockTransferLine,
-} from "~/modules/inventory";
+import type { StockTransfer, StockTransferLine } from "~/modules/inventory";
 
 import type { Result } from "@carbon/auth";
 import Assignee, { useOptimisticAssignment } from "~/components/Assignee";
@@ -41,7 +37,6 @@ const StockTransferHeader = () => {
   const routeData = useRouteData<{
     stockTransfer: StockTransfer;
     stockTransferLines: StockTransferLine[];
-    stockTransferLineTracking: ItemTracking[];
   }>(path.to.stockTransfer(id));
 
   if (!routeData?.stockTransfer)

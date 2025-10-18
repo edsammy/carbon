@@ -99,9 +99,12 @@ const StockTransferPDF = ({
             })
             .map((line) => {
               const barcodeDataUrl = generateBarcode(line.itemReadableId);
-              const pickUrl = `${getAppUrl()}/api/stock-transfer/${
-                line.id
-              }/pick`;
+              let pickUrl = `${getAppUrl()}/api/stock-transfer/${line.id}/pick`;
+              if (line.requiresSerialTracking) {
+                pickUrl += "?type=serial";
+              } else if (line.requiresBatchTracking) {
+                pickUrl += "?type=batch";
+              }
               const pickQRCode = generateQRCode(pickUrl, 4);
 
               return (

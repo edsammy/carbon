@@ -17,7 +17,6 @@ import {
   useMount,
 } from "@carbon/react";
 import { useRouteData } from "@carbon/remix";
-import type { TrackedEntityAttributes } from "@carbon/utils";
 import { getItemReadableId } from "@carbon/utils";
 import { useFetcher, useNavigation, useParams } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
@@ -25,7 +24,6 @@ import { LuTriangleAlert } from "react-icons/lu";
 import { useUser } from "~/hooks";
 import { useItems } from "~/stores";
 import { path } from "~/utils/path";
-import { getStockTransferTracking } from "../../inventory.service";
 import type { StockTransferLine } from "../../types";
 
 const StockTransferPostModal = ({ onClose }: { onClose: () => void }) => {
@@ -65,12 +63,6 @@ const StockTransferPostModal = ({ onClose }: { onClose: () => void }) => {
       return;
     }
 
-    const stockTransferLineTracking = await getStockTransferTracking(
-      carbon,
-      id,
-      companyId
-    );
-
     if (
       routeData?.stockTransferLines.length === 0 ||
       routeData?.stockTransferLines.every((line) => line.pickedQuantity === 0)
@@ -84,44 +76,21 @@ const StockTransferPostModal = ({ onClose }: { onClose: () => void }) => {
       ]);
     }
 
-    routeData?.stockTransferLines.forEach((line: StockTransferLine) => {
-      if (line.requiresBatchTracking) {
-        const trackedEntity = stockTransferLineTracking.data?.find(
-          (tracking) => {
-            const attributes = tracking.attributes as TrackedEntityAttributes;
-            return attributes["Stock Transfer Line"] === line.id;
+    routeData?.stockTransferLines.forEach(async (line: StockTransferLine) => {
+      if (line.requiresBatchTracking || line.requiresSerialTracking) {
+        if (line.trackedEntityId) {
+          const trackedEntity = await carbon
+            .from("trackedEntity")
+            .select("*")
+            .eq("id", line.trackedEntityId)
+            .single();
+          if (trackedEntity.data?.status !== "Available") {
+            errors.push({
+              itemReadableId: getItemReadableId(items, line.itemId) ?? null,
+              pickedQuantity: line.pickedQuantity ?? 0,
+              pickedQuantityError: "Tracked entity is not available",
+            });
           }
-        );
-
-        if (trackedEntity?.status !== "Available") {
-          errors.push({
-            itemReadableId: getItemReadableId(items, line.itemId) ?? null,
-            pickedQuantity: line.pickedQuantity ?? 0,
-            pickedQuantityError: "Tracked entity is not available",
-          });
-        }
-      }
-
-      if (line.requiresSerialTracking) {
-        const trackedEntities = stockTransferLineTracking.data?.filter(
-          (tracking) => {
-            const attributes = tracking.attributes as TrackedEntityAttributes;
-            return attributes["Stock Transfer Line"] === line.id;
-          }
-        );
-
-        const quantityAvailable = trackedEntities?.reduce((acc, tracking) => {
-          const trackingQuantity = Number(tracking.quantity);
-
-          return acc + (tracking.status === "Available" ? trackingQuantity : 0);
-        }, 0);
-
-        if (quantityAvailable !== line.pickedQuantity) {
-          errors.push({
-            itemReadableId: getItemReadableId(items, line.itemId) ?? null,
-            pickedQuantity: line.pickedQuantity ?? 0,
-            pickedQuantityError: "Serial numbers are missing or unavailable",
-          });
         }
       }
     });

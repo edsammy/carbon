@@ -31022,6 +31022,7 @@ export type Database = {
           requiresSerialTracking: boolean
           stockTransferId: string
           toShelfId: string | null
+          trackedEntityId: string | null
           updatedAt: string | null
           updatedBy: string | null
         }
@@ -31041,6 +31042,7 @@ export type Database = {
           requiresSerialTracking?: boolean
           stockTransferId: string
           toShelfId?: string | null
+          trackedEntityId?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -31060,6 +31062,7 @@ export type Database = {
           requiresSerialTracking?: boolean
           stockTransferId?: string
           toShelfId?: string | null
+          trackedEntityId?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -31223,6 +31226,13 @@ export type Database = {
             columns: ["toShelfId"]
             isOneToOne: false
             referencedRelation: "shelf"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockTransferLine_trackedEntityId_fkey"
+            columns: ["trackedEntityId"]
+            isOneToOne: false
+            referencedRelation: "trackedEntity"
             referencedColumns: ["id"]
           },
           {
@@ -45968,14 +45978,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["paymentCountryCode"]
+            columns: ["customerCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["customerCountryCode"]
+            columns: ["paymentCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -47064,6 +47074,7 @@ export type Database = {
           thumbnailPath: string | null
           toShelfId: string | null
           toShelfName: string | null
+          trackedEntityId: string | null
           unitOfMeasure: string | null
           updatedAt: string | null
           updatedBy: string | null
@@ -47228,6 +47239,13 @@ export type Database = {
             columns: ["toShelfId"]
             isOneToOne: false
             referencedRelation: "shelf"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockTransferLine_trackedEntityId_fkey"
+            columns: ["trackedEntityId"]
+            isOneToOne: false
+            referencedRelation: "trackedEntity"
             referencedColumns: ["id"]
           },
           {

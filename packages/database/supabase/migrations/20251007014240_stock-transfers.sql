@@ -152,6 +152,7 @@ CREATE TABLE "stockTransferLine" (
   "quantity" NUMERIC NOT NULL DEFAULT 0,
   "pickedQuantity" NUMERIC NOT NULL DEFAULT 0,
   "outstandingQuantity" NUMERIC GENERATED ALWAYS AS (CASE WHEN "quantity" >= "pickedQuantity" THEN "quantity" - "pickedQuantity" ELSE 0 END) STORED,
+  "trackedEntityId" TEXT,
   "requiresBatchTracking" BOOLEAN NOT NULL DEFAULT false,
   "requiresSerialTracking" BOOLEAN NOT NULL DEFAULT false,
   "companyId" TEXT NOT NULL,
@@ -167,10 +168,13 @@ CREATE TABLE "stockTransferLine" (
   CONSTRAINT "stockTransferLine_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "item" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "stockTransferLine_fromShelfId_fkey" FOREIGN KEY ("fromShelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT "stockTransferLine_toShelfId_fkey" FOREIGN KEY ("toShelfId") REFERENCES "shelf" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "stockTransferLine_trackedEntityId_fkey" FOREIGN KEY ("trackedEntityId") REFERENCES "trackedEntity" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT "stockTransferLine_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "company" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "stockTransferLine_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "stockTransferLine_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
+
+
 
 CREATE INDEX "stockTransferLine_stockTransferId_idx" ON "stockTransferLine" ("stockTransferId");
 CREATE INDEX "stockTransferLine_jobId_idx" ON "stockTransferLine" ("jobId");

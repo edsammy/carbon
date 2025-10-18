@@ -42,7 +42,6 @@ import { usePermissions, useRouteData } from "~/hooks";
 import type { StockTransfer, StockTransferLine } from "~/modules/inventory";
 import { useItems } from "~/stores";
 import { path } from "~/utils/path";
-import type { TrackedEntityAttributes } from "../../../../../../../packages/utils/src/types";
 
 interface StockTransferLineProps {
   line: StockTransferLine;
@@ -104,6 +103,11 @@ function StockTransferLineComponent({
                 <span className="text-xs text-muted-foreground truncate block w-full">
                   {item?.readableIdWithRevision}
                 </span>
+                {line.trackedEntityId && (
+                  <span className="flex gap-1 text-xs text-muted-foreground truncate items-center w-full">
+                    <LuQrCode /> {line.trackedEntityId}
+                  </span>
+                )}
               </div>
               <div className="mt-2">
                 <Enumerable
@@ -224,23 +228,7 @@ export default function StockTransferLines() {
   const routeData = useRouteData<{
     stockTransfer: StockTransfer;
     stockTransferLines: StockTransferLine[];
-    stockTransferLineTracking: {
-      attributes: TrackedEntityAttributes;
-      trackedActivityInput: { trackedEntityId: string }[];
-    }[];
   }>(path.to.stockTransfer(id));
-
-  const trackedEntitiesByLineId = new Map<string, string>();
-  routeData?.stockTransferLineTracking.forEach((trackedEntity) => {
-    const attributes = trackedEntity.attributes as TrackedEntityAttributes;
-    const stockTransferLineId = attributes["Stock Transfer Line"];
-    if (stockTransferLineId) {
-      trackedEntitiesByLineId.set(
-        stockTransferLineId,
-        trackedEntity.trackedActivityInput.at(0)?.trackedEntityId ?? ""
-      );
-    }
-  });
 
   const isPickable = ["Released", "In Progress"].includes(
     routeData?.stockTransfer?.status ?? ""
@@ -295,9 +283,8 @@ export default function StockTransferLines() {
     formData.append("quantity", line.quantity!.toString());
     formData.append("locationId", routeData?.stockTransfer?.locationId ?? "");
 
-    const trackedEntityId = trackedEntitiesByLineId.get(line.id ?? "");
-    if (trackedEntityId) {
-      formData.append("trackedEntityId", trackedEntityId);
+    if (line.trackedEntityId) {
+      formData.append("trackedEntityId", line.trackedEntityId);
     }
 
     submit(formData, {
@@ -313,9 +300,8 @@ export default function StockTransferLines() {
     formData.append("id", line.id!);
     formData.append("quantity", "0");
     formData.append("locationId", routeData?.stockTransfer?.locationId ?? "");
-    const trackedEntityId = trackedEntitiesByLineId.get(line.id ?? "");
-    if (trackedEntityId) {
-      formData.append("trackedEntityId", trackedEntityId);
+    if (line.trackedEntityId) {
+      formData.append("trackedEntityId", line.trackedEntityId);
     }
 
     submit(formData, {

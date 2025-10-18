@@ -7,11 +7,7 @@ import { Outlet, useLoaderData, useParams } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
 import { PanelProvider } from "~/components/Layout";
-import {
-  getStockTransfer,
-  getStockTransferLines,
-  getStockTransferTracking,
-} from "~/modules/inventory";
+import { getStockTransfer, getStockTransferLines } from "~/modules/inventory";
 import StockTransferHeader from "~/modules/inventory/ui/StockTransfers/StockTransferHeader";
 import StockTransferLines from "~/modules/inventory/ui/StockTransfers/StockTransferLines";
 import StockTransferNotes from "~/modules/inventory/ui/StockTransfers/StockTransferNotes";
@@ -31,12 +27,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const { id } = params;
   if (!id) throw new Error("Could not find id");
 
-  const [stockTransfer, stockTransferLines, stockTransferLineTracking] =
-    await Promise.all([
-      getStockTransfer(client, id),
-      getStockTransferLines(client, id),
-      getStockTransferTracking(client, id, companyId),
-    ]);
+  const [stockTransfer, stockTransferLines] = await Promise.all([
+    getStockTransfer(client, id),
+    getStockTransferLines(client, id),
+  ]);
 
   if (stockTransfer.error) {
     throw redirect(
@@ -55,7 +49,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   return json({
     stockTransfer: stockTransfer.data,
     stockTransferLines: stockTransferLines.data ?? [],
-    stockTransferLineTracking: stockTransferLineTracking.data ?? [],
   });
 }
 

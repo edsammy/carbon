@@ -20,8 +20,8 @@ import {
   ModalTitle,
   toast,
 } from "@carbon/react";
-import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@vercel/remix";
+import { useFetcher, useNavigate, useParams } from "@remix-run/react";
+import type { ActionFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
 import { useEffect, useState } from "react";
 import {
@@ -32,35 +32,10 @@ import {
   LuX,
 } from "react-icons/lu";
 import { useRouteData } from "~/hooks";
-import type { StockTransfer } from "~/modules/inventory";
-import {
-  getStockTransferLine,
-  stockTransferLineScanValidator,
-} from "~/modules/inventory";
+import type { StockTransfer, StockTransferLine } from "~/modules/inventory";
+import { stockTransferLineScanValidator } from "~/modules/inventory";
 import { getItemShelfQuantities } from "~/modules/items";
 import { path } from "~/utils/path";
-
-export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { client } = await requirePermissions(request, {
-    view: "inventory",
-  });
-  const { id, lineId } = params;
-  if (!id) throw new Error("id not found");
-  if (!lineId) throw new Error("lineId not found");
-
-  const stockTransferLine = await getStockTransferLine(client, lineId);
-  if (stockTransferLine.error) {
-    throw redirect(
-      path.to.stockTransfer(id),
-      await flash(
-        request,
-        error(stockTransferLine.error, "Failed to load stock transfer line")
-      )
-    );
-  }
-
-  return json({ stockTransferLine: stockTransferLine.data });
-}
 
 export async function action({ request }: ActionFunctionArgs) {
   const { client, companyId, userId } = await requirePermissions(request, {
@@ -151,7 +126,20 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function StockTransferScan() {
-  const { stockTransferLine } = useLoaderData<typeof loader>();
+  const { id, lineId } = useParams();
+  if (!id) throw new Error("id not found");
+  if (!lineId) throw new Error("lineId not found");
+  const routeData = useRouteData<{
+    stockTransfer: StockTransfer;
+    stockTransferLines: StockTransferLine[];
+  }>(path.to.stockTransfer(id));
+
+  const stockTransferLine = routeData?.stockTransferLines.find(
+    (line) => line.id === lineId
+  );
+
+  if (!stockTransferLine) throw new Error("stock transfer line not found");
+
   const navigate = useNavigate();
   const onClose = () =>
     navigate(path.to.stockTransfer(stockTransferLine.stockTransferId!));
@@ -196,6 +184,16 @@ export default function StockTransferScan() {
     if (!trackedEntityId.trim()) {
       setValidationError(null);
       setIsValid(null);
+      return;
+    }
+
+    if (
+      routeData?.stockTransferLines.some(
+        (line) => line.trackedEntityId === trackedEntityId
+      )
+    ) {
+      setValidationError("Tracked entity already picked");
+      setIsValid(false);
       return;
     }
 

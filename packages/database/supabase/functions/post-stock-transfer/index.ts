@@ -223,6 +223,7 @@ serve(async (req: Request) => {
           await trx
             .updateTable("stockTransferLine")
             .set({
+              trackedEntityId: null,
               pickedQuantity: 0,
               updatedBy: userId,
               updatedAt: new Date().toISOString(),
@@ -333,6 +334,7 @@ serve(async (req: Request) => {
           await trx
             .updateTable("stockTransferLine")
             .set({
+              trackedEntityId,
               fromShelfId: fromShelfId,
               pickedQuantity: (stockTransferLine.pickedQuantity ?? 0) + 1,
               updatedBy: userId,
@@ -598,6 +600,7 @@ serve(async (req: Request) => {
           await trx
             .updateTable("stockTransferLine")
             .set({
+              trackedEntityId,
               fromShelfId: fromShelfId,
               pickedQuantity: transferQuantity,
               updatedBy: userId,
@@ -724,6 +727,7 @@ serve(async (req: Request) => {
           await trx
             .updateTable("stockTransferLine")
             .set({
+              trackedEntityId: null,
               pickedQuantity: Math.max(
                 0,
                 (stockTransferLine.pickedQuantity ?? 0) - 1
@@ -968,6 +972,7 @@ serve(async (req: Request) => {
           await trx
             .updateTable("stockTransferLine")
             .set({
+              trackedEntityId: null,
               pickedQuantity: Math.max(
                 0,
                 (stockTransferLine.pickedQuantity ?? 0) - transferQuantity
