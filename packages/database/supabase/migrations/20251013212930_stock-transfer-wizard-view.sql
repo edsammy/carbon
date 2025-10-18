@@ -45,6 +45,32 @@ WITH
     AND j."locationId" = location_id
     GROUP BY jm."itemId", jm."shelfId"
   ),
+  active_stock_transfers_from_shelf AS (
+    SELECT 
+      stl."itemId",
+      stl."fromShelfId" AS "shelfId",
+      SUM(stl."outstandingQuantity") AS "quantityOnActiveStockTransferFromShelf"
+    FROM "stockTransferLine" stl
+    INNER JOIN "stockTransfer" st ON stl."stockTransferId" = st."id"
+    WHERE st."status" IN ('Released', 'In Progress')
+    AND st."companyId" = company_id
+    AND st."locationId" = location_id
+    AND stl."fromShelfId" IS NOT NULL
+    GROUP BY stl."itemId", stl."fromShelfId"
+  ),
+  active_stock_transfers_to_shelf AS (
+    SELECT 
+      stl."itemId",
+      stl."toShelfId" AS "shelfId",
+      SUM(stl."outstandingQuantity") AS "quantityOnActiveStockTransferToShelf"
+    FROM "stockTransferLine" stl
+    INNER JOIN "stockTransfer" st ON stl."stockTransferId" = st."id"
+    WHERE st."status" IN ('Released', 'In Progress')
+    AND st."companyId" = company_id
+    AND st."locationId" = location_id
+    AND stl."toShelfId" IS NOT NULL
+    GROUP BY stl."itemId", stl."toShelfId"
+  ),
   item_ledgers_in_shelf AS (
     SELECT 
       il."itemId" AS "ledgerItemId",
@@ -67,6 +93,18 @@ WITH
       SELECT ojis."itemId", ojis."shelfId"
       FROM open_job_requirements_in_shelf ojis
       WHERE ojis."quantityOnProductionDemandInShelf" > 0
+
+      UNION
+
+      SELECT astfs."itemId", astfs."shelfId"
+      FROM active_stock_transfers_from_shelf astfs
+      WHERE astfs."quantityOnActiveStockTransferFromShelf" > 0
+
+      UNION
+
+      SELECT astts."itemId", astts."shelfId"
+      FROM active_stock_transfers_to_shelf astts
+      WHERE astts."quantityOnActiveStockTransferToShelf" > 0
     ) active_items
   )
   
@@ -82,8 +120,8 @@ SELECT
     ELSE i."thumbnailPath"
   END AS "thumbnailPath",
   i."unitOfMeasureCode",
-  COALESCE(ils."quantityOnHandInShelf", 0) AS "quantityOnHandInShelf",
-  COALESCE(ojis."quantityOnProductionDemandInShelf", 0) AS "quantityRequiredByShelf",
+  COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) AS "quantityOnHandInShelf",
+  COALESCE(ojis."quantityOnProductionDemandInShelf", 0) + COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0) AS "quantityRequiredByShelf",
   ish."shelfId",
   s."name" AS "shelfName",
   COALESCE(pm."defaultShelfId" = ish."shelfId", false) AS "isDefaultShelf"
@@ -93,9 +131,11 @@ FROM
   LEFT JOIN "shelf" s ON s."id" = ish."shelfId"
   LEFT JOIN item_ledgers_in_shelf ils ON i."id" = ils."ledgerItemId" AND ish."shelfId" IS NOT DISTINCT FROM ils."shelfId"
   LEFT JOIN open_job_requirements_in_shelf ojis ON i."id" = ojis."itemId" AND ish."shelfId" IS NOT DISTINCT FROM ojis."shelfId"
+  LEFT JOIN active_stock_transfers_from_shelf astfs ON i."id" = astfs."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astfs."shelfId"
+  LEFT JOIN active_stock_transfers_to_shelf astts ON i."id" = astts."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astts."shelfId"
   LEFT JOIN "modelUpload" mu ON mu.id = i."modelUploadId"
   LEFT JOIN "pickMethod" pm ON pm."itemId" = i."id" AND pm."locationId" = location_id
-ORDER BY (COALESCE(ils."quantityOnHandInShelf", 0) - COALESCE(ojis."quantityOnProductionDemandInShelf", 0)) ASC;
+ORDER BY (COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) - COALESCE(ojis."quantityOnProductionDemandInShelf", 0) - COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0)) ASC;
   END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -149,6 +189,34 @@ WITH
     AND (item_id IS NULL OR jm."itemId" = item_id)
     GROUP BY jm."itemId", jm."shelfId"
   ),
+  active_stock_transfers_from_shelf AS (
+    SELECT 
+      stl."itemId",
+      stl."fromShelfId" AS "shelfId",
+      SUM(stl."outstandingQuantity") AS "quantityOnActiveStockTransferFromShelf"
+    FROM "stockTransferLine" stl
+    INNER JOIN "stockTransfer" st ON stl."stockTransferId" = st."id"
+    WHERE st."status" IN ('Released', 'In Progress')
+    AND st."companyId" = company_id
+    AND st."locationId" = location_id
+    AND stl."fromShelfId" IS NOT NULL
+    AND (item_id IS NULL OR stl."itemId" = item_id)
+    GROUP BY stl."itemId", stl."fromShelfId"
+  ),
+  active_stock_transfers_to_shelf AS (
+    SELECT 
+      stl."itemId",
+      stl."toShelfId" AS "shelfId",
+      SUM(stl."outstandingQuantity") AS "quantityOnActiveStockTransferToShelf"
+    FROM "stockTransferLine" stl
+    INNER JOIN "stockTransfer" st ON stl."stockTransferId" = st."id"
+    WHERE st."status" IN ('Released', 'In Progress')
+    AND st."companyId" = company_id
+    AND st."locationId" = location_id
+    AND stl."toShelfId" IS NOT NULL
+    AND (item_id IS NULL OR stl."itemId" = item_id)
+    GROUP BY stl."itemId", stl."toShelfId"
+  ),
   item_ledgers_in_shelf AS (
     SELECT 
       il."itemId" AS "ledgerItemId",
@@ -172,6 +240,18 @@ WITH
       SELECT ojis."itemId", ojis."shelfId"
       FROM open_job_requirements_in_shelf ojis
       WHERE ojis."quantityOnProductionDemandInShelf" > 0
+
+      UNION
+
+      SELECT astfs."itemId", astfs."shelfId"
+      FROM active_stock_transfers_from_shelf astfs
+      WHERE astfs."quantityOnActiveStockTransferFromShelf" > 0
+
+      UNION
+
+      SELECT astts."itemId", astts."shelfId"
+      FROM active_stock_transfers_to_shelf astts
+      WHERE astts."quantityOnActiveStockTransferToShelf" > 0
     ) active_items
   )
   
@@ -187,8 +267,8 @@ SELECT
     ELSE i."thumbnailPath"
   END AS "thumbnailPath",
   i."unitOfMeasureCode",
-  COALESCE(ils."quantityOnHandInShelf", 0) AS "quantityOnHandInShelf",
-  COALESCE(ojis."quantityOnProductionDemandInShelf", 0) AS "quantityRequiredByShelf",
+  COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) AS "quantityOnHandInShelf",
+  COALESCE(ojis."quantityOnProductionDemandInShelf", 0) + COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0) AS "quantityRequiredByShelf",
   ish."shelfId",
   s."name" AS "shelfName",
   COALESCE(pm."defaultShelfId" = ish."shelfId", false) AS "isDefaultShelf"
@@ -198,8 +278,10 @@ FROM
   LEFT JOIN "shelf" s ON s."id" = ish."shelfId"
   LEFT JOIN item_ledgers_in_shelf ils ON i."id" = ils."ledgerItemId" AND ish."shelfId" IS NOT DISTINCT FROM ils."shelfId"
   LEFT JOIN open_job_requirements_in_shelf ojis ON i."id" = ojis."itemId" AND ish."shelfId" IS NOT DISTINCT FROM ojis."shelfId"
+  LEFT JOIN active_stock_transfers_from_shelf astfs ON i."id" = astfs."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astfs."shelfId"
+  LEFT JOIN active_stock_transfers_to_shelf astts ON i."id" = astts."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astts."shelfId"
   LEFT JOIN "modelUpload" mu ON mu.id = i."modelUploadId"
   LEFT JOIN "pickMethod" pm ON pm."itemId" = i."id" AND pm."locationId" = location_id
-ORDER BY (COALESCE(ils."quantityOnHandInShelf", 0) - COALESCE(ojis."quantityOnProductionDemandInShelf", 0)) DESC;
+ORDER BY (COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) - COALESCE(ojis."quantityOnProductionDemandInShelf", 0) - COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0)) DESC;
   END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
