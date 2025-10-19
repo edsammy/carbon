@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION get_item_shelf_requirements_by_location(company_id TE
     "unitOfMeasureCode" TEXT,
     "quantityOnHandInShelf" NUMERIC,
     "quantityRequiredByShelf" NUMERIC,
+    "quantityIncoming" NUMERIC,
     "shelfId" TEXT,
     "shelfName" TEXT,
     "isDefaultShelf" BOOLEAN
@@ -71,6 +72,40 @@ WITH
     AND stl."toShelfId" IS NOT NULL
     GROUP BY stl."itemId", stl."toShelfId"
   ),
+  open_jobs AS (
+    SELECT 
+      j."itemId" AS "jobItemId",
+      j."shelfId",
+      SUM(j."productionQuantity" - j."quantityReceivedToInventory") AS "quantityFromProduction"
+    FROM job j
+    WHERE j."status" IN (
+      'Ready',
+      'In Progress',
+      'Paused',
+      'Planned'
+    ) AND "salesOrderId" IS NULL
+    AND j."companyId" = company_id
+    AND j."locationId" = location_id
+    GROUP BY j."itemId", j."shelfId"
+  ),
+  open_purchase_orders AS (
+    SELECT
+      pol."itemId" AS "purchaseOrderItemId",
+      pol."shelfId",
+      SUM(pol."quantityToReceive" * pol."conversionFactor") AS "quantityFromPurchaseOrder" 
+    FROM
+      "purchaseOrder" po
+      INNER JOIN "purchaseOrderLine" pol
+        ON pol."purchaseOrderId" = po."id"
+    WHERE
+      po."status" IN (
+        'To Receive',
+        'To Receive and Invoice'
+      )
+      AND po."companyId" = company_id
+      AND pol."locationId" = location_id
+    GROUP BY pol."itemId", pol."shelfId"
+  ),
   item_ledgers_in_shelf AS (
     SELECT 
       il."itemId" AS "ledgerItemId",
@@ -105,6 +140,18 @@ WITH
       SELECT astts."itemId", astts."shelfId"
       FROM active_stock_transfers_to_shelf astts
       WHERE astts."quantityOnActiveStockTransferToShelf" > 0
+
+      UNION
+
+      SELECT oj."jobItemId" AS "itemId", oj."shelfId"
+      FROM open_jobs oj
+      WHERE oj."quantityFromProduction" > 0
+
+      UNION
+
+      SELECT opo."purchaseOrderItemId" AS "itemId", opo."shelfId"
+      FROM open_purchase_orders opo
+      WHERE opo."quantityFromPurchaseOrder" > 0
     ) active_items
   )
   
@@ -122,6 +169,7 @@ SELECT
   i."unitOfMeasureCode",
   COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) AS "quantityOnHandInShelf",
   COALESCE(ojis."quantityOnProductionDemandInShelf", 0) + COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0) AS "quantityRequiredByShelf",
+  COALESCE(oj."quantityFromProduction", 0) + COALESCE(opo."quantityFromPurchaseOrder", 0) AS "quantityIncoming",
   ish."shelfId",
   s."name" AS "shelfName",
   COALESCE(pm."defaultShelfId" = ish."shelfId", false) AS "isDefaultShelf"
@@ -133,6 +181,8 @@ FROM
   LEFT JOIN open_job_requirements_in_shelf ojis ON i."id" = ojis."itemId" AND ish."shelfId" IS NOT DISTINCT FROM ojis."shelfId"
   LEFT JOIN active_stock_transfers_from_shelf astfs ON i."id" = astfs."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astfs."shelfId"
   LEFT JOIN active_stock_transfers_to_shelf astts ON i."id" = astts."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astts."shelfId"
+  LEFT JOIN open_jobs oj ON i."id" = oj."jobItemId" AND ish."shelfId" IS NOT DISTINCT FROM oj."shelfId"
+  LEFT JOIN open_purchase_orders opo ON i."id" = opo."purchaseOrderItemId" AND ish."shelfId" IS NOT DISTINCT FROM opo."shelfId"
   LEFT JOIN "modelUpload" mu ON mu.id = i."modelUploadId"
   LEFT JOIN "pickMethod" pm ON pm."itemId" = i."id" AND pm."locationId" = location_id
 ORDER BY (COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) - COALESCE(ojis."quantityOnProductionDemandInShelf", 0) - COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0)) ASC;
@@ -153,6 +203,7 @@ CREATE OR REPLACE FUNCTION get_item_shelf_requirements_by_location_and_item(comp
     "unitOfMeasureCode" TEXT,
     "quantityOnHandInShelf" NUMERIC,
     "quantityRequiredByShelf" NUMERIC,
+    "quantityIncoming" NUMERIC,
     "shelfId" TEXT,
     "shelfName" TEXT,
     "isDefaultShelf" BOOLEAN
@@ -217,6 +268,42 @@ WITH
     AND (item_id IS NULL OR stl."itemId" = item_id)
     GROUP BY stl."itemId", stl."toShelfId"
   ),
+  open_jobs AS (
+    SELECT 
+      j."itemId" AS "jobItemId",
+      j."shelfId",
+      SUM(j."productionQuantity" - j."quantityReceivedToInventory") AS "quantityFromProduction"
+    FROM job j
+    WHERE j."status" IN (
+      'Ready',
+      'In Progress',
+      'Paused',
+      'Planned'
+    ) AND "salesOrderId" IS NULL
+    AND j."companyId" = company_id
+    AND j."locationId" = location_id
+    AND (item_id IS NULL OR j."itemId" = item_id)
+    GROUP BY j."itemId", j."shelfId"
+  ),
+  open_purchase_orders AS (
+    SELECT
+      pol."itemId" AS "purchaseOrderItemId",
+      pol."shelfId",
+      SUM(pol."quantityToReceive" * pol."conversionFactor") AS "quantityFromPurchaseOrder" 
+    FROM
+      "purchaseOrder" po
+      INNER JOIN "purchaseOrderLine" pol
+        ON pol."purchaseOrderId" = po."id"
+    WHERE
+      po."status" IN (
+        'To Receive',
+        'To Receive and Invoice'
+      )
+      AND po."companyId" = company_id
+      AND pol."locationId" = location_id
+      AND (item_id IS NULL OR pol."itemId" = item_id)
+    GROUP BY pol."itemId", pol."shelfId"
+  ),
   item_ledgers_in_shelf AS (
     SELECT 
       il."itemId" AS "ledgerItemId",
@@ -252,6 +339,18 @@ WITH
       SELECT astts."itemId", astts."shelfId"
       FROM active_stock_transfers_to_shelf astts
       WHERE astts."quantityOnActiveStockTransferToShelf" > 0
+
+      UNION
+
+      SELECT oj."jobItemId" AS "itemId", oj."shelfId"
+      FROM open_jobs oj
+      WHERE oj."quantityFromProduction" > 0
+
+      UNION
+
+      SELECT opo."purchaseOrderItemId" AS "itemId", opo."shelfId"
+      FROM open_purchase_orders opo
+      WHERE opo."quantityFromPurchaseOrder" > 0
     ) active_items
   )
   
@@ -269,6 +368,7 @@ SELECT
   i."unitOfMeasureCode",
   COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) AS "quantityOnHandInShelf",
   COALESCE(ojis."quantityOnProductionDemandInShelf", 0) + COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0) AS "quantityRequiredByShelf",
+  COALESCE(oj."quantityFromProduction", 0) + COALESCE(opo."quantityFromPurchaseOrder", 0) AS "quantityIncoming",
   ish."shelfId",
   s."name" AS "shelfName",
   COALESCE(pm."defaultShelfId" = ish."shelfId", false) AS "isDefaultShelf"
@@ -280,6 +380,8 @@ FROM
   LEFT JOIN open_job_requirements_in_shelf ojis ON i."id" = ojis."itemId" AND ish."shelfId" IS NOT DISTINCT FROM ojis."shelfId"
   LEFT JOIN active_stock_transfers_from_shelf astfs ON i."id" = astfs."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astfs."shelfId"
   LEFT JOIN active_stock_transfers_to_shelf astts ON i."id" = astts."itemId" AND ish."shelfId" IS NOT DISTINCT FROM astts."shelfId"
+  LEFT JOIN open_jobs oj ON i."id" = oj."jobItemId" AND ish."shelfId" IS NOT DISTINCT FROM oj."shelfId"
+  LEFT JOIN open_purchase_orders opo ON i."id" = opo."purchaseOrderItemId" AND ish."shelfId" IS NOT DISTINCT FROM opo."shelfId"
   LEFT JOIN "modelUpload" mu ON mu.id = i."modelUploadId"
   LEFT JOIN "pickMethod" pm ON pm."itemId" = i."id" AND pm."locationId" = location_id
 ORDER BY (COALESCE(ils."quantityOnHandInShelf", 0) + COALESCE(astts."quantityOnActiveStockTransferToShelf", 0) - COALESCE(ojis."quantityOnProductionDemandInShelf", 0) - COALESCE(astfs."quantityOnActiveStockTransferFromShelf", 0)) DESC;
@@ -311,6 +413,7 @@ CREATE OR REPLACE FUNCTION get_job_quantity_on_hand(job_id TEXT, company_id TEXT
     "quantityFromProductionOrderInShelf" NUMERIC,
     "quantityFromProductionOrderNotInShelf" NUMERIC,
     "quantityInTransitToShelf" NUMERIC,
+    "shelfId" TEXT,
     "shelfName" TEXT
   ) AS $$
   BEGIN
@@ -411,13 +514,14 @@ WITH
   open_jobs AS (
     SELECT 
       j."itemId" AS "jobItemId",
-      SUM(j."productionQuantity" + j."scrapQuantity" - j."quantityReceivedToInventory" - j."quantityShipped") AS "quantityOnProductionOrder"
+      SUM(j."productionQuantity" - j."quantityReceivedToInventory") AS "quantityOnProductionOrder"
     FROM job j
     WHERE j."status" IN (
       'Ready',
       'In Progress',
-      'Paused'
-    )
+      'Paused',
+      'Planned'
+    ) AND "salesOrderId" IS NULL
     GROUP BY j."itemId"
   ),
   open_job_requirements AS (
@@ -515,6 +619,7 @@ SELECT
   COALESCE(ojis."quantityOnProductionDemandInShelf", 0) AS "quantityFromProductionOrderInShelf",
   COALESCE(ojns."quantityOnProductionDemandNotInShelf", 0) AS "quantityFromProductionOrderNotInShelf",
   COALESCE(stit."quantityInTransit", 0) AS "quantityInTransitToShelf",
+  jm."shelfId",
   s."name" AS "shelfName"
 FROM
   job_materials jm

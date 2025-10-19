@@ -3,13 +3,15 @@ import { atom, computed } from "nanostores";
 import { useNanoStore } from "~/hooks";
 
 export type StockTransferSessionItem = {
-  id: string;
+  id: string; // Job material ID
+  itemId: string; // Actual item ID
   itemReadableId: string;
   description: string;
   action: "order" | "transfer";
   quantity?: number;
   requiresSerialTracking: boolean;
   requiresBatchTracking: boolean;
+  shelfId?: string;
 };
 
 export type StockTransferSessionState = {

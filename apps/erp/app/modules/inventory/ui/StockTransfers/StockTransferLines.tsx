@@ -6,6 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Count,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuIcon,
@@ -26,6 +27,7 @@ import {
 } from "@remix-run/react";
 import { useState } from "react";
 import {
+  LuArrowRight,
   LuCirclePlus,
   LuEllipsisVertical,
   LuPencilLine,
@@ -79,12 +81,14 @@ function StockTransferLineComponent({
 
   const item = items.find((p) => p.id === line.itemId);
   const isTracked = line.requiresSerialTracking || line.requiresBatchTracking;
+  const isPicked = pickedQuantity > 0;
 
   return (
     <div
       className={cn(
         "flex flex-col border-b p-6 gap-6",
-        index === totalLines - 1 && "border-none"
+        index === totalLines - 1 && "border-none",
+        isPicked && "opacity-50 hover:opacity-100"
       )}
     >
       <div className="flex justify-between items-center w-full">
@@ -119,32 +123,26 @@ function StockTransferLineComponent({
               </div>
             </VStack>
           </HStack>
-          <VStack spacing={1} className="text-end items-end">
-            <label className="text-xs text-muted-foreground text-right">
-              Quantity
-            </label>
-            <span className="text-sm py-1.5 text-right">
-              {pickedQuantity}/{line.quantity ?? 0}
-            </span>
-          </VStack>
+          <Count
+            count={line.quantity ?? 0}
+            className={cn(
+              "text-right text-white text-base",
+              isPicked ? "bg-emerald-600" : "bg-red-600"
+            )}
+          />
         </HStack>
         <div className="flex flex-grow items-center justify-between gap-4 pl-4 w-1/2">
           <HStack spacing={4} className="text-left items-center">
             {"fromShelfId" in line && (
-              <VStack spacing={1} className="text-left items-start">
-                <label className="text-xs text-muted-foreground">From</label>
-                <span className="text-sm py-1.5 whitespace-nowrap">
-                  {line.fromShelfName ?? ""}
-                </span>
-              </VStack>
+              <span className="text-base font-medium  whitespace-nowrap">
+                {line.fromShelfName ?? ""}
+              </span>
             )}
+            <LuArrowRight className="size-4" />
             {"toShelfId" in line && (
-              <VStack spacing={1} className="text-center items-center">
-                <label className="text-xs text-muted-foreground">To</label>
-                <span className="text-sm py-1.5 whitespace-nowrap">
-                  {line.toShelfName ?? ""}
-                </span>
-              </VStack>
+              <span className="text-base font-medium  whitespace-nowrap">
+                {line.toShelfName ?? ""}
+              </span>
             )}
           </HStack>
           <HStack spacing={1}>

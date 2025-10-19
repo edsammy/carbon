@@ -106,7 +106,7 @@ const InventoryDetails = ({
         <Card>
           <CardHeader className="pb-8 ">
             <CardDescription>
-              <VStack>Quantity on Production Order</VStack>
+              <VStack>Quantity on Jobs</VStack>
             </CardDescription>
             <CardTitle className="text-4xl flex items-start justify-start gap-2">
               <div className="flex justify-start items-center gap-1">

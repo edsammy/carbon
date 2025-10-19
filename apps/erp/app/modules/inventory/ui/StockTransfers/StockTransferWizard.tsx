@@ -119,6 +119,7 @@ type TransferTableRow = {
   quantityOnHand: number;
   quantityRequired: number;
   quantityAvailable: number;
+  quantityIncoming: number;
   shelfId: string | null;
   shelfName: string | null;
 };
@@ -175,6 +176,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
           quantityRequired: item.quantityRequiredByShelf,
           quantityAvailable:
             item.quantityOnHandInShelf - item.quantityRequiredByShelf,
+          quantityIncoming: item.quantityIncoming,
           shelfId: item.shelfId,
           shelfName: item.shelfName,
         })) ?? [];
@@ -226,6 +228,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
             quantityRequired: item.quantityRequiredByShelf,
             quantityAvailable:
               item.quantityOnHandInShelf - item.quantityRequiredByShelf,
+            quantityIncoming: item.quantityIncoming,
             shelfId: item.shelfId,
             shelfName: item.shelfName,
           })) ?? []
@@ -400,13 +403,14 @@ function TransferGrid({ locationId }: { locationId: string }) {
             </div>
           );
         },
-        header: "On Hand",
+        header: "On Shelf",
       },
       {
         accessorKey: "quantityRequired",
         cell: ({ row }) => formatter.format(row.original.quantityRequired),
         header: "Required",
       },
+
       {
         accessorKey: "quantityAvailable",
         cell: ({ row }) => {
@@ -421,8 +425,16 @@ function TransferGrid({ locationId }: { locationId: string }) {
             0
           );
 
+          // Calculate total available including incoming quantities
+          const totalAvailableWithIncoming =
+            row.original.quantityAvailable + row.original.quantityIncoming;
+
           const adjustedAvailable =
-            row.original.quantityAvailable + totalTransferQuantity;
+            totalAvailableWithIncoming + totalTransferQuantity;
+
+          // Check if we have enough to cover requirements (including incoming)
+          const hasEnoughWithIncoming =
+            totalAvailableWithIncoming >= row.original.quantityRequired;
 
           return (
             <div className="flex flex-col">
@@ -433,7 +445,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
                     : ""
                 }
               >
-                {row.original.quantityAvailable < 0 ? (
+                {!hasEnoughWithIncoming ? (
                   <HStack>
                     <span className="text-red-500">
                       {formatter.format(row.original.quantityAvailable)}
@@ -467,7 +479,11 @@ function TransferGrid({ locationId }: { locationId: string }) {
         },
         header: "Available",
       },
-
+      {
+        accessorKey: "quantityIncoming",
+        cell: ({ row }) => formatter.format(row.original.quantityIncoming),
+        header: "Incoming",
+      },
       {
         id: "actions",
         cell: ({ row }) => {
@@ -634,7 +650,8 @@ function TransferGrid({ locationId }: { locationId: string }) {
                 if (value !== null && !isNaN(value)) {
                   const clampedValue = Math.min(
                     Math.max(0, value),
-                    row.original.quantityAvailable
+                    row.original.quantityAvailable +
+                      row.original.quantityIncoming
                   );
 
                   updateTransferLineQuantity(
@@ -725,7 +742,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
             </div>
           );
         },
-        header: "On Hand",
+        header: "On Shelf",
       },
       {
         accessorKey: "quantityAvailable",
@@ -739,8 +756,16 @@ function TransferGrid({ locationId }: { locationId: string }) {
               )
           );
 
+          // Calculate total available including incoming quantities
+          const totalAvailableWithIncoming =
+            row.original.quantityAvailable + row.original.quantityIncoming;
+
           if (!toItem) {
-            return row.original.quantityAvailable < 0 ? (
+            // Check if we have enough to cover requirements (including incoming)
+            const hasEnoughWithIncoming =
+              totalAvailableWithIncoming >= row.original.quantityRequired;
+
+            return !hasEnoughWithIncoming ? (
               <HStack>
                 <span className="text-red-500">
                   {formatter.format(row.original.quantityAvailable)}
@@ -762,7 +787,11 @@ function TransferGrid({ locationId }: { locationId: string }) {
 
           const transferQuantity = transferLine?.quantity ?? 0;
           const adjustedAvailable =
-            row.original.quantityAvailable - transferQuantity;
+            totalAvailableWithIncoming - transferQuantity;
+
+          // Check if we have enough to cover requirements (including incoming)
+          const hasEnoughWithIncoming =
+            totalAvailableWithIncoming >= row.original.quantityRequired;
 
           return (
             <div className="flex flex-col">
@@ -773,7 +802,7 @@ function TransferGrid({ locationId }: { locationId: string }) {
                     : ""
                 }
               >
-                {row.original.quantityAvailable < 0 ? (
+                {!hasEnoughWithIncoming ? (
                   <HStack>
                     <span className="text-red-500">
                       {formatter.format(row.original.quantityAvailable)}
@@ -811,6 +840,11 @@ function TransferGrid({ locationId }: { locationId: string }) {
         accessorKey: "quantityRequired",
         cell: ({ row }) => formatter.format(row.original.quantityRequired),
         header: "Required",
+      },
+      {
+        accessorKey: "quantityIncoming",
+        cell: ({ row }) => formatter.format(row.original.quantityIncoming),
+        header: "Incoming",
       },
     ];
   }, [
@@ -1159,6 +1193,13 @@ function PaginationButtons({
 
 const StockTransferWizardWidget = ({ locationId }: { locationId: string }) => {
   const fetcher = useFetcher<Result>();
+
+  useEffect(() => {
+    if (fetcher.data?.success) {
+      clearStockTransferWizard();
+    }
+  }, [fetcher.data]);
+
   const [wizard] = useStockTransferWizard();
   const linesCount = useStockTransferWizardLinesCount();
 

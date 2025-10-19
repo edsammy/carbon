@@ -925,6 +925,8 @@ export const path = {
     newJobOperationStep: `${x}/job/methods/operation/step/new`,
     newJobOperationParameter: `${x}/job/methods/operation/parameter/new`,
     newJobOperationTool: `${x}/job/methods/operation/tool/new`,
+    newJobMaterialsSession: (jobId: string) =>
+      generatePath(`${x}/job/${jobId}/materials/session/new`),
     newKanban: `${x}/inventory/kanbans/new`,
     newLocation: `${x}/resources/locations/new`,
     newMakeMethodVersion: `${x}/items/methods/version/new`,

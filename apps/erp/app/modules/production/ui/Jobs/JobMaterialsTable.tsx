@@ -1,3 +1,4 @@
+import type { Result } from "@carbon/auth";
 import {
   Badge,
   Button,
@@ -14,7 +15,7 @@ import {
 import { useNumberFormatter } from "@react-aria/i18n";
 import { useFetcher, useParams } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   LuArrowDown,
   LuArrowLeft,
@@ -77,16 +78,19 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
   useMount(() => {
     // Prepopulate stock transfer session with all parts that need transferred or ordered
     const itemsToAdd: Array<{
-      id: string;
+      id: string; // Job material ID
+      itemId: string; // Actual item ID
       itemReadableId: string;
       description: string;
       action: "transfer" | "order";
       quantity: number;
       requiresSerialTracking: boolean;
       requiresBatchTracking: boolean;
+      shelfId?: string;
     }> = [];
 
     data.forEach((material) => {
+      console.log({ material });
       if (
         material.itemTrackingType === "Non-Inventory" ||
         material.methodType === "Make" ||
@@ -109,13 +113,15 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
 
       if (hasShelfQuantityFlag) {
         itemsToAdd.push({
-          id: material.id,
+          id: material.id, // Job material ID
+          itemId: material.jobMaterialItemId, // Actual item ID
           itemReadableId: material.itemReadableId,
           description: material.description,
           action: "transfer",
           quantity: quantityRequiredByShelf - quantityOnHandInShelf,
           requiresSerialTracking: material.itemTrackingType === "Serial",
           requiresBatchTracking: material.itemTrackingType === "Batch",
+          shelfId: material.shelfId,
         });
       }
 
@@ -131,13 +137,12 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         material.quantityFromProductionOrderNotInShelf +
         material.quantityOnSalesOrder;
 
-      const hasTotalQuantityFlag =
-        quantityOnHand + incoming - required <
-        (material.estimatedQuantity ?? 0);
+      const hasTotalQuantityFlag = quantityOnHand + incoming - required < 0;
 
       if (hasTotalQuantityFlag) {
         itemsToAdd.push({
-          id: material.id,
+          id: material.id, // Job material ID
+          itemId: material.jobMaterialItemId, // Actual item ID
           itemReadableId: material.itemReadableId,
           description: material.description,
           action: "order",
@@ -146,6 +151,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
             (quantityOnHand + incoming - required),
           requiresSerialTracking: material.itemTrackingType === "Serial",
           requiresBatchTracking: material.itemTrackingType === "Batch",
+          shelfId: material.shelfId,
         });
       }
     });
@@ -231,7 +237,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
 
       {
         id: "quantityOnHandInShelf",
-        header: "On Hand (Shelf)",
+        header: "On Shelf",
         cell: ({ row }) => {
           const isInventoried =
             row.original.itemTrackingType !== "Non-Inventory";
@@ -280,7 +286,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
       },
       {
         id: "quantityOnHand",
-        header: "On Hand (Total)",
+        header: "On Hand",
         cell: ({ row }) => {
           if (
             row.original.itemTrackingType === "Non-Inventory" ||
@@ -301,9 +307,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
             row.original.quantityFromProductionOrderNotInShelf +
             row.original.quantityOnSalesOrder;
 
-          const hasTotalQuantityFlag =
-            quantityOnHand + incoming - required <
-            (row.original.estimatedQuantity ?? 0);
+          const hasTotalQuantityFlag = quantityOnHand + incoming - required < 0;
 
           return (
             <HStack>
@@ -413,13 +417,15 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
                 removeFromStockTransferSession(row.id!, "transfer");
               } else {
                 addToStockTransferSession({
-                  id: row.id!,
+                  id: row.id!, // Job material ID
+                  itemId: row.jobMaterialItemId, // Actual item ID
                   itemReadableId: row.itemReadableId,
                   description: row.description,
                   action: "transfer",
                   quantity: quantityRequiredByShelf - quantityOnHandInShelf,
                   requiresSerialTracking: row.itemTrackingType === "Serial",
                   requiresBatchTracking: row.itemTrackingType === "Batch",
+                  shelfId: row.shelfId,
                 });
               }
             }}
@@ -434,7 +440,8 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
                 removeFromStockTransferSession(row.id!, "order");
               } else {
                 addToStockTransferSession({
-                  id: row.id!,
+                  id: row.id!, // Job material ID
+                  itemId: row.jobMaterialItemId, // Actual item ID
                   itemReadableId: row.itemReadableId,
                   description: row.description,
                   action: "order",
@@ -443,6 +450,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
                     (quantityOnHand + incoming - required),
                   requiresSerialTracking: row.itemTrackingType === "Serial",
                   requiresBatchTracking: row.itemTrackingType === "Batch",
+                  shelfId: row.shelfId,
                 });
               }
             }}
@@ -482,7 +490,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
         renderContextMenu={renderContextMenu}
         title="Materials"
       />
-      <StockTransferSessionWidget />
+      <StockTransferSessionWidget jobId={jobId} />
     </>
   );
 });
@@ -491,7 +499,9 @@ JobMaterialsTable.displayName = "JobMaterialsTable";
 
 export default JobMaterialsTable;
 
-const StockTransferSessionWidget = () => {
+const StockTransferSessionWidget = ({ jobId }: { jobId: string }) => {
+  const fetcher = useFetcher<Result>();
+
   const [session, setStockTransferSession] = useStockTransferSession();
   const sessionItemsCount = useStockTransferSessionItemsCount();
   const orderItems = useOrderItems();
@@ -513,6 +523,13 @@ const StockTransferSessionWidget = () => {
   const onClearAll = () => {
     setStockTransferSession({ items: [] });
   };
+
+  useEffect(() => {
+    if (fetcher.data?.success) {
+      onClearAll();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetcher.data?.success]);
 
   if (sessionItemsCount === 0) {
     return null;
@@ -688,9 +705,26 @@ const StockTransferSessionWidget = () => {
             {/* Footer */}
             {allItems.length > 0 && (
               <div className="p-4 border-t-2 border-border space-y-2 w-full">
-                <Button size="lg" className="w-full">
-                  Create
-                </Button>
+                <fetcher.Form
+                  method="post"
+                  action={path.to.newJobMaterialsSession(jobId)}
+                >
+                  <input type="hidden" name="jobId" value={jobId} />
+                  <input
+                    type="hidden"
+                    name="items"
+                    value={JSON.stringify(allItems)}
+                  />
+                  <Button
+                    isLoading={fetcher.state !== "idle"}
+                    isDisabled={fetcher.state !== "idle"}
+                    size="lg"
+                    className="w-full"
+                    type="submit"
+                  >
+                    Create
+                  </Button>
+                </fetcher.Form>
                 <Button variant="ghost" className="w-full" onClick={onClearAll}>
                   Clear All
                 </Button>
@@ -724,9 +758,26 @@ const StockTransferSessionWidget = () => {
               </div>
             )}
             {allItems.length > 0 && (
-              <Button size="lg" className="w-full">
-                Create
-              </Button>
+              <fetcher.Form
+                method="post"
+                action={path.to.newJobMaterialsSession(jobId)}
+              >
+                <input type="hidden" name="jobId" value={jobId} />
+                <input
+                  type="hidden"
+                  name="items"
+                  value={JSON.stringify(allItems)}
+                />
+                <Button
+                  isLoading={fetcher.state !== "idle"}
+                  isDisabled={fetcher.state !== "idle"}
+                  size="lg"
+                  className="w-full"
+                  type="submit"
+                >
+                  Create
+                </Button>
+              </fetcher.Form>
             )}
           </div>
         )}

@@ -146,16 +146,31 @@ const StockTransferHeader = () => {
                 Release
               </Button>
             </statusFetcher.Form>
-            <Button
-              variant={canComplete && !isCompleted ? "primary" : "secondary"}
-              onClick={postModal.onOpen}
-              isDisabled={
-                !canComplete || isCompleted || !permissions.is("employee")
-              }
-              leftIcon={<LuCircleCheck />}
+
+            <statusFetcher.Form
+              method="post"
+              action={path.to.stockTransferStatus(id)}
             >
-              Complete
-            </Button>
+              <input type="hidden" name="status" value="Completed" />
+              <Button
+                type="submit"
+                variant={canComplete && !isCompleted ? "primary" : "secondary"}
+                isDisabled={
+                  !canComplete ||
+                  isCompleted ||
+                  !permissions.is("employee") ||
+                  (statusFetcher.state !== "idle" &&
+                    statusFetcher.formData?.get("status") === "Completed")
+                }
+                leftIcon={<LuCircleCheck />}
+                isLoading={
+                  statusFetcher.state !== "idle" &&
+                  statusFetcher.formData?.get("status") === "Completed"
+                }
+              >
+                Complete
+              </Button>
+            </statusFetcher.Form>
             <statusFetcher.Form
               method="post"
               action={path.to.stockTransferStatus(id)}
