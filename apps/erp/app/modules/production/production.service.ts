@@ -288,6 +288,56 @@ export async function convertSalesOrderLinesToJobs(
   return salesOrder;
 }
 
+export async function deleteDemandForecasts(
+  client: SupabaseClient<Database>,
+  params: {
+    itemId: string;
+    locationId: string;
+    companyId: string;
+    futurePeriodIds: string[];
+  }
+) {
+  const { itemId, locationId, companyId, futurePeriodIds } = params;
+
+  const result = await client
+    .from("demandForecast")
+    .delete()
+    .eq("itemId", itemId)
+    .eq("locationId", locationId)
+    .eq("companyId", companyId)
+    .in("periodId", futurePeriodIds);
+
+  return {
+    data: result.data,
+    error: result.error,
+  };
+}
+
+export async function deleteDemandProjections(
+  client: SupabaseClient<Database>,
+  params: {
+    itemId: string;
+    locationId: string;
+    companyId: string;
+    futurePeriodIds: string[];
+  }
+) {
+  const { itemId, locationId, companyId, futurePeriodIds } = params;
+
+  const result = await client
+    .from("demandProjection")
+    .delete()
+    .eq("itemId", itemId)
+    .eq("locationId", locationId)
+    .eq("companyId", companyId)
+    .in("periodId", futurePeriodIds);
+
+  return {
+    data: result.data,
+    error: result.error,
+  };
+}
+
 export async function deleteJob(
   client: SupabaseClient<Database>,
   jobId: string
@@ -445,6 +495,42 @@ export async function deleteScrapReason(
   scrapReasonId: string
 ) {
   return client.from("scrapReason").delete().eq("id", scrapReasonId);
+}
+
+export async function getDemandForecasts(
+  client: SupabaseClient<Database>,
+  params: {
+    itemId: string;
+    locationId: string;
+    companyId: string;
+    periodIds: string[];
+  }
+) {
+  return client
+    .from("demandForecast")
+    .select("*")
+    .eq("itemId", params.itemId)
+    .eq("locationId", params.locationId)
+    .eq("companyId", params.companyId)
+    .in("periodId", params.periodIds);
+}
+
+export async function getDemandProjections(
+  client: SupabaseClient<Database>,
+  params: {
+    itemId: string;
+    locationId: string;
+    companyId: string;
+    periodIds: string[];
+  }
+) {
+  return client
+    .from("demandProjection")
+    .select("*")
+    .eq("itemId", params.itemId)
+    .eq("locationId", params.locationId)
+    .eq("companyId", params.companyId)
+    .in("periodId", params.periodIds);
 }
 
 export async function getJobDocuments(
@@ -2124,24 +2210,6 @@ export async function upsertScrapReason(
   }
 }
 
-export async function getDemandForecasts(
-  client: SupabaseClient<Database>,
-  params: {
-    itemId: string;
-    locationId: string;
-    companyId: string;
-    periodIds: string[];
-  }
-) {
-  return client
-    .from("demandForecast")
-    .select("*")
-    .eq("itemId", params.itemId)
-    .eq("locationId", params.locationId)
-    .eq("companyId", params.companyId)
-    .in("periodId", params.periodIds);
-}
-
 export async function upsertDemandForecasts(
   client: SupabaseClient<Database>,
   forecasts: Array<{
@@ -2198,27 +2266,58 @@ export async function upsertDemandForecasts(
   };
 }
 
-export async function deleteFutureDemandForecasts(
+export async function upsertDemandProjections(
   client: SupabaseClient<Database>,
-  params: {
+  forecasts: Array<{
     itemId: string;
     locationId: string;
+    periodId: string;
+    forecastQuantity: number;
     companyId: string;
-    futurePeriodIds: string[];
-  }
+    createdBy: string;
+    updatedBy?: string;
+  }>
 ) {
-  const { itemId, locationId, companyId, futurePeriodIds } = params;
+  // Delete existing forecasts with 0 quantity, upsert others
+  const toDelete = forecasts.filter((f) => f.forecastQuantity === 0);
+  const toUpsert = forecasts.filter((f) => f.forecastQuantity > 0);
 
-  const result = await client
-    .from("demandForecast")
-    .delete()
-    .eq("itemId", itemId)
-    .eq("locationId", locationId)
-    .eq("companyId", companyId)
-    .in("periodId", futurePeriodIds);
+  const promises = [];
+
+  if (toDelete.length > 0) {
+    for (const forecast of toDelete) {
+      promises.push(
+        client
+          .from("demandProjection")
+          .delete()
+          .eq("itemId", forecast.itemId)
+          .eq("locationId", forecast.locationId)
+          .eq("periodId", forecast.periodId)
+          .eq("companyId", forecast.companyId)
+      );
+    }
+  }
+
+  if (toUpsert.length > 0) {
+    promises.push(
+      client.from("demandProjection").upsert(
+        toUpsert.map((f) => ({
+          ...f,
+          updatedBy: f.updatedBy ?? f.createdBy ?? "system",
+          updatedAt: new Date().toISOString(),
+        })),
+        {
+          onConflict: "itemId,locationId,periodId,companyId",
+        }
+      )
+    );
+  }
+
+  const results = await Promise.all(promises);
+  const hasError = results.some((r) => r.error);
 
   return {
-    data: result.data,
-    error: result.error,
+    data: hasError ? null : toUpsert,
+    error: hasError ? results.find((r) => r.error)?.error : null,
   };
 }

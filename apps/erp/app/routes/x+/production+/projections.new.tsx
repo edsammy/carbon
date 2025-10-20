@@ -7,9 +7,9 @@ import { getLocalTimeZone, startOfWeek, today } from "@internationalized/date";
 import { useNavigate } from "@remix-run/react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
-import { demandForecastsValidator } from "~/modules/production/production.models";
-import { upsertDemandForecasts } from "~/modules/production/production.service";
-import DemandForecastForm from "~/modules/production/ui/Forecast/DemandForecastForm";
+import { demandProjectionValidator } from "~/modules/production/production.models";
+import { upsertDemandProjections } from "~/modules/production/production.service";
+import DemandProjectionForm from "~/modules/production/ui/Projection/DemandProjectionForm";
 import { getPeriods } from "~/modules/shared/shared.service";
 import { path } from "~/utils/path";
 
@@ -41,7 +41,7 @@ export async function action({ request }: ActionFunctionArgs) {
   });
 
   const formData = await request.formData();
-  const validation = await validator(demandForecastsValidator).validate(
+  const validation = await validator(demandProjectionValidator).validate(
     formData
   );
 
@@ -52,7 +52,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const { itemId, locationId, periods, ...weekData } = validation.data;
 
   // Extract week values and create demand forecast records
-  const demandForecasts = [];
+  const demandProjections = [];
 
   for (let i = 0; i < 52; i++) {
     const weekKey = `week${i}` as keyof typeof weekData;
@@ -64,7 +64,7 @@ export async function action({ request }: ActionFunctionArgs) {
       quantity > 0 &&
       periods?.[i]
     ) {
-      demandForecasts.push({
+      demandProjections.push({
         itemId,
         locationId,
         periodId: periods[i],
@@ -75,14 +75,14 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
-  if (demandForecasts.length === 0) {
+  if (demandProjections.length === 0) {
     return json(
       {},
       await flash(request, error(null, "No forecast quantities provided"))
     );
   }
 
-  const result = await upsertDemandForecasts(client, demandForecasts);
+  const result = await upsertDemandProjections(client, demandProjections);
 
   if (result.error) {
     return json(
@@ -95,7 +95,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   return redirect(
-    path.to.demandForecasts + `?location=${locationId}`,
+    path.to.demandProjections + `?location=${locationId}`,
     await flash(request, success("Demand forecasts created successfully"))
   );
 }
@@ -104,7 +104,7 @@ export default function NewProjectionRoute() {
   const navigate = useNavigate();
   const routeData = useRouteData<{
     locationId: string;
-  }>(path.to.demandForecasts);
+  }>(path.to.demandProjections);
 
   const initialValues = {
     itemId: "",
@@ -115,7 +115,7 @@ export default function NewProjectionRoute() {
   };
 
   return (
-    <DemandForecastForm
+    <DemandProjectionForm
       onClose={() => navigate(-1)}
       initialValues={initialValues}
     />

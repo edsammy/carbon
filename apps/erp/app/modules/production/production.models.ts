@@ -842,7 +842,7 @@ export const scrapReasonValidator = z.object({
   name: z.string().min(1, { message: "Name is required" }),
 });
 
-export const demandForecastsValidator = z.object({
+export const demandProjectionValidator = z.object({
   itemId: z.string().min(1, { message: "Item is required" }),
   locationId: z.string().min(1, { message: "Location is required" }),
   periods: z.array(z.string()).optional(),

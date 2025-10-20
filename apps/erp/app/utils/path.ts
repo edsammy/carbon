@@ -607,8 +607,10 @@ export const path = {
       generatePath(`${x}/job/methods/event/delete/${id}`),
     deleteProductionQuantity: (id: string) =>
       generatePath(`${x}/job/methods/quantity/delete/${id}`),
-    deleteDemandForecasts: (itemId: string, locationId: string) =>
-      generatePath(`${x}/production/forecasts/delete/${itemId}/${locationId}`),
+    deleteDemandProjections: (itemId: string, locationId: string) =>
+      generatePath(
+        `${x}/production/projections/delete/${itemId}/${locationId}`
+      ),
     deletePurchaseInvoice: (id: string) =>
       generatePath(`${x}/purchase-invoice/${id}/delete`),
     deletePurchaseInvoiceLine: (invoiceId: string, lineId: string) =>
@@ -680,9 +682,9 @@ export const path = {
       generatePath(`${x}/settings/webhooks/delete/${id}`),
     deleteWorkCenter: (id: string) =>
       generatePath(`${x}/resources/work-centers/delete/${id}`),
-    demandForecast: (itemId: string, locationId: string) =>
-      generatePath(`${x}/production/forecasts/${itemId}/${locationId}`),
-    demandForecasts: `${x}/production/forecasts`,
+    demandProjection: (itemId: string, locationId: string) =>
+      generatePath(`${x}/production/projections/${itemId}/${locationId}`),
+    demandProjections: `${x}/production/projections`,
     department: (id: string) => generatePath(`${x}/people/departments/${id}`),
     departments: `${x}/people/departments`,
     document: (id: string) => generatePath(`${x}/documents/search/${id}`),
@@ -895,7 +897,7 @@ export const path = {
       generatePath(`${x}/settings/custom-fields/${tableId}/new`),
     newCustomerPart: (id: string) =>
       generatePath(`${x}/part/${id}/view/sales/customer-parts/new`),
-    newDemandForecast: `${x}/production/forecasts/new`,
+    newDemandProjection: `${x}/production/projections/new`,
     newDepartment: `${x}/people/departments/new`,
     newDocument: `${x}/documents/new`,
     newEmployee: `${x}/users/employees/new`,

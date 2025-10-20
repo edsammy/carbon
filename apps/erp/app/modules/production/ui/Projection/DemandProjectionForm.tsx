@@ -16,24 +16,24 @@ import type { z } from "zod";
 import { Hidden, Item, Location, Number, Submit } from "~/components/Form";
 import { usePermissions } from "~/hooks";
 import { path } from "~/utils/path";
-import { demandForecastsValidator } from "../../production.models";
+import { demandProjectionValidator } from "../../production.models";
 
 type LoaderData = {
   periods?: Array<{ id: string; name: string }>;
-  initialValues?: z.infer<typeof demandForecastsValidator>;
+  initialValues?: z.infer<typeof demandProjectionValidator>;
 };
 
-type DemandForecastsFormProps = {
-  initialValues?: z.infer<typeof demandForecastsValidator>;
+type DemandProjectionsFormProps = {
+  initialValues?: z.infer<typeof demandProjectionValidator>;
   isEditing?: boolean;
   onClose: () => void;
 };
 
-const DemandForecastsForm = ({
+const DemandProjectionsForm = ({
   initialValues: propInitialValues,
   isEditing = false,
   onClose,
-}: DemandForecastsFormProps) => {
+}: DemandProjectionsFormProps) => {
   const permissions = usePermissions();
   const fetcher = useFetcher<{ id: string }>();
   const loaderData = useLoaderData<LoaderData>();
@@ -67,15 +67,15 @@ const DemandForecastsForm = ({
     >
       <DrawerContent>
         <ValidatedForm
-          validator={demandForecastsValidator}
+          validator={demandProjectionValidator}
           method="post"
           action={
             isEditing
-              ? path.to.demandForecast(
+              ? path.to.demandProjection(
                   initialValues.itemId!,
                   initialValues.locationId!
                 )
-              : path.to.newDemandForecast
+              : path.to.newDemandProjection
           }
           defaultValues={initialValues}
           fetcher={fetcher}
@@ -86,7 +86,7 @@ const DemandForecastsForm = ({
               {isEditing ? "Edit" : "New"} Production Projection
             </CardTitle>
             <CardDescription>
-              Set demand forecast values for each week
+              Set demand projection values for each week
             </CardDescription>
           </DrawerHeader>
           <DrawerBody>
@@ -141,4 +141,4 @@ const DemandForecastsForm = ({
   );
 };
 
-export default DemandForecastsForm;
+export default DemandProjectionsForm;

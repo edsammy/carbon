@@ -6,12 +6,12 @@ import { getLocalTimeZone, startOfWeek, today } from "@internationalized/date";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
-import { demandForecastsValidator } from "~/modules/production/production.models";
+import { demandProjectionValidator } from "~/modules/production/production.models";
 import {
-  getDemandForecasts,
-  upsertDemandForecasts,
+  getDemandProjections,
+  upsertDemandProjections,
 } from "~/modules/production/production.service";
-import DemandForecastsForm from "~/modules/production/ui/Forecast/DemandForecastForm";
+import DemandProjectionsForm from "~/modules/production/ui/Projection/DemandProjectionForm";
 import { getPeriods } from "~/modules/shared/shared.service";
 import { path } from "~/utils/path";
 
@@ -40,7 +40,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   // Load existing demand forecasts for this item and location
-  const existingForecasts = await getDemandForecasts(client, {
+  const existingProjections = await getDemandProjections(client, {
     itemId,
     locationId,
     companyId,
@@ -49,9 +49,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   // Map existing forecasts to week fields
   const weekValues: Record<string, number> = {};
-  if (existingForecasts.data && periods.data) {
+  if (existingProjections.data && periods.data) {
     periods.data.forEach((period, index) => {
-      const forecast = existingForecasts.data?.find(
+      const forecast = existingProjections.data?.find(
         (f) => f.periodId === period.id
       );
       weekValues[`week${index}`] = forecast?.forecastQuantity ?? 0;
@@ -83,7 +83,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 
   const formData = await request.formData();
-  const validation = await validator(demandForecastsValidator).validate(
+  const validation = await validator(demandProjectionValidator).validate(
     formData
   );
 
@@ -94,7 +94,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const { periods, ...weekData } = validation.data;
 
   // Extract week values and create/update demand forecast records
-  const demandForecasts = [];
+  const demandProjections = [];
 
   for (let i = 0; i < 52; i++) {
     const weekKey = `week${i}` as keyof typeof weekData;
@@ -102,7 +102,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     if (periods?.[i]) {
       // Include all periods, even with 0 quantity (to handle deletions)
-      demandForecasts.push({
+      demandProjections.push({
         itemId: routeItemId,
         locationId: routeLocationId,
         periodId: periods[i],
@@ -114,7 +114,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
   }
 
-  const result = await upsertDemandForecasts(client, demandForecasts);
+  const result = await upsertDemandProjections(client, demandProjections);
 
   if (result.error) {
     return json(
@@ -127,7 +127,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 
   return redirect(
-    path.to.demandForecasts + `?location=${routeLocationId}`,
+    path.to.demandProjections + `?location=${routeLocationId}`,
     await flash(request, success("Demand forecasts updated successfully"))
   );
 }
@@ -138,7 +138,7 @@ export default function EditProjectionRoute() {
   const navigate = useNavigate();
 
   return (
-    <DemandForecastsForm
+    <DemandProjectionsForm
       initialValues={initialValues}
       isEditing
       onClose={() => navigate(-1)}

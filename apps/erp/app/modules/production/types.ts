@@ -21,7 +21,7 @@ export type ActiveProductionEvent = NonNullable<
   Awaited<ReturnType<typeof getActiveProductionEvents>>["data"]
 >[number];
 
-export type DemandForecast = NonNullable<
+export type DemandProjection = NonNullable<
   Awaited<ReturnType<typeof getProductionProjections>>["data"]
 >[number];
 

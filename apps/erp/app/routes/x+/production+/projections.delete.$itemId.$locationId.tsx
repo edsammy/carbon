@@ -4,7 +4,7 @@ import { flash } from "@carbon/auth/session.server";
 import { getLocalTimeZone, startOfWeek, today } from "@internationalized/date";
 import type { ActionFunctionArgs } from "@vercel/remix";
 import { json, redirect } from "@vercel/remix";
-import { deleteFutureDemandForecasts } from "~/modules/production/production.service";
+import { deleteDemandProjections } from "~/modules/production/production.service";
 import { getPeriods } from "~/modules/shared/shared.service";
 import { path } from "~/utils/path";
 
@@ -41,10 +41,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
-  // Only delete forecasts for future periods (current week and beyond)
+  // Only delete projections for future periods (current week and beyond)
   const futurePeriodIds = periods.data?.map((p) => p.id) ?? [];
 
-  const result = await deleteFutureDemandForecasts(client, {
+  const result = await deleteDemandProjections(client, {
     itemId,
     locationId,
     companyId,
@@ -56,13 +56,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
       {},
       await flash(
         request,
-        error("Failed to delete demand forecasts", "Delete failed")
+        error("Failed to delete demand projections", "Delete failed")
       )
     );
   }
 
   return redirect(
-    path.to.demandForecasts + `?location=${locationId}`,
-    await flash(request, success("Demand forecasts deleted successfully"))
+    path.to.demandProjections + `?location=${locationId}`,
+    await flash(request, success("Demand projections deleted successfully"))
   );
 }
