@@ -23368,6 +23368,9 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransferLines.outstandingQuantity",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransferLines.trackedEntityId",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransferLines.requiresBatchTracking",
           },
           {
@@ -52291,6 +52294,9 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransferLine.outstandingQuantity",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransferLine.trackedEntityId",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransferLine.requiresBatchTracking",
           },
           {
@@ -52401,6 +52407,9 @@ export default {
             $ref: "#/parameters/rowFilter.stockTransferLine.outstandingQuantity",
           },
           {
+            $ref: "#/parameters/rowFilter.stockTransferLine.trackedEntityId",
+          },
+          {
             $ref: "#/parameters/rowFilter.stockTransferLine.requiresBatchTracking",
           },
           {
@@ -52463,6 +52472,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.stockTransferLine.outstandingQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.stockTransferLine.trackedEntityId",
           },
           {
             $ref: "#/parameters/rowFilter.stockTransferLine.requiresBatchTracking",
@@ -65324,7 +65336,7 @@ export default {
       properties: {
         id: {
           description:
-            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -65373,7 +65385,7 @@ export default {
         },
         supplierLocationId: {
           description:
-            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -72611,6 +72623,12 @@ export default {
         outstandingQuantity: {
           format: "numeric",
           type: "number",
+        },
+        trackedEntityId: {
+          description:
+            "Note:\nThis is a Foreign Key to `trackedEntity.id`.<fk table='trackedEntity' column='id'/>",
+          format: "text",
+          type: "string",
         },
         requiresBatchTracking: {
           format: "boolean",
@@ -86697,6 +86715,12 @@ export default {
           format: "numeric",
           type: "number",
         },
+        trackedEntityId: {
+          description:
+            "Note:\nThis is a Foreign Key to `trackedEntity.id`.<fk table='trackedEntity' column='id'/>",
+          format: "text",
+          type: "string",
+        },
         requiresBatchTracking: {
           default: false,
           format: "boolean",
@@ -100666,6 +100690,12 @@ export default {
     },
     "rowFilter.stockTransferLines.outstandingQuantity": {
       name: "outstandingQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLines.trackedEntityId": {
+      name: "trackedEntityId",
       required: false,
       in: "query",
       type: "string",
@@ -116611,6 +116641,12 @@ export default {
     },
     "rowFilter.stockTransferLine.outstandingQuantity": {
       name: "outstandingQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.stockTransferLine.trackedEntityId": {
+      name: "trackedEntityId",
       required: false,
       in: "query",
       type: "string",
