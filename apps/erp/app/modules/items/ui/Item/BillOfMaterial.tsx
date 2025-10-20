@@ -833,6 +833,12 @@ function MaterialForm({
             name="methodType"
             label="Method Type"
             value={itemData.methodType}
+            onChange={(value) => {
+              setItemData((d) => ({
+                ...d,
+                methodType: value?.value as MethodType,
+              }));
+            }}
             isConfigured={rulesByField.has(key("methodType"))}
             onConfigure={
               configurable && !temporaryItems[item.id]

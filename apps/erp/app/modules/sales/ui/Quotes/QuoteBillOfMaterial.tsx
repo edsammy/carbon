@@ -840,6 +840,12 @@ function MaterialForm({
             name="methodType"
             label="Method Type"
             value={itemData.methodType}
+            onChange={(value) => {
+              setItemData((d) => ({
+                ...d,
+                methodType: value?.value as MethodType,
+              }));
+            }}
             replenishmentSystem="Buy and Make"
           />
           <Shelf
