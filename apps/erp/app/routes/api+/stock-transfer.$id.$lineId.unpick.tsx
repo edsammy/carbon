@@ -11,7 +11,6 @@ export async function loader({ request, params }: ActionFunctionArgs) {
   });
 
   const url = new URL(request.url);
-  const type = url.searchParams.get("type");
 
   const { id, lineId } = params;
   if (!id) throw notFound("id not found");
@@ -76,7 +75,8 @@ export async function loader({ request, params }: ActionFunctionArgs) {
   const result = await fetch(updateQuantityUrl.toString(), {
     method: "POST",
     headers: {
-      ...Object.fromEntries(request.headers.entries()),
+      Authorization: request.headers.get("Authorization") || "",
+      Cookie: request.headers.get("Cookie") || "",
     },
     body: formData,
   });

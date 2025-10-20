@@ -2,19 +2,24 @@ import { error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import { validator } from "@carbon/form";
+import {
+  getLocalTimeZone,
+  parseDate,
+  startOfWeek,
+  today,
+} from "@internationalized/date";
 import type { ActionFunctionArgs } from "@vercel/remix";
 import { json } from "@vercel/remix";
 import { z } from "zod";
 import {
   deleteStockTransfer,
-  getDefaultShelfForJob,
   upsertStockTransfer,
   upsertStockTransferLines,
 } from "~/modules/inventory";
-import { getItem } from "~/modules/items";
-import { getJob, upsertJob, upsertJobMethod } from "~/modules/production";
-import { upsertPurchaseOrder } from "~/modules/purchasing";
+import { getJob } from "~/modules/production";
 import { getNextSequence } from "~/modules/settings";
+import { getPeriods } from "~/modules/shared/shared.service";
+import { path } from "~/utils/path";
 
 const jobMaterialsSessionValidator = z.object({
   jobId: z.string(),
@@ -31,7 +36,7 @@ const jobMaterialsSessionValidator = z.object({
           quantity: z.number().optional(),
           requiresSerialTracking: z.boolean(),
           requiresBatchTracking: z.boolean(),
-          shelfId: z.string().optional(),
+          shelfId: z.string().nullable().optional(),
         })
       );
       return itemsSchema.parse(parsed);
@@ -67,9 +72,22 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 
   const { items: sessionItems } = validation.data;
+  const startDate = startOfWeek(today(getLocalTimeZone()), "en-US");
 
   // Get job information to determine location
-  const jobResult = await getJob(client, jobId);
+  const [jobResult, itemReplenishments] = await Promise.all([
+    getJob(client, jobId),
+    client
+      .from("itemReplenishment")
+      .select(
+        "itemId, leadTime, lotSize, manufacturingBlocked, purchasingBlocked, preferredSupplierId, requiresConfiguration, scrapPercentage, ...item(replenishmentSystem)"
+      )
+      .in(
+        "itemId",
+        sessionItems.map((item) => item.itemId)
+      )
+      .eq("companyId", companyId),
+  ]);
   if (jobResult.error || !jobResult.data) {
     return json(
       { success: false, message: "Failed to get job information" },
@@ -80,8 +98,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
+  const itemReplenishmentsMap = new Map(
+    itemReplenishments.data?.map((item) => [item.itemId, item]) ?? []
+  );
+
   const job = jobResult.data;
   const locationId = job.locationId;
+  const jobStartDate = job.startDate;
 
   if (!locationId) {
     return json(
@@ -90,6 +113,18 @@ export async function action({ request, params }: ActionFunctionArgs) {
         request,
         error("Job location is required", "Invalid job configuration")
       )
+    );
+  }
+
+  const periods = await getPeriods(client, {
+    startDate: startDate.toString(),
+    endDate: (jobStartDate ?? startDate.add({ weeks: 8 })).toString(),
+  });
+
+  if (periods.error || !periods.data) {
+    return json(
+      { success: false, message: "Failed to get periods" },
+      await flash(request, error(periods.error, "Failed to get periods"))
     );
   }
 
@@ -196,266 +231,389 @@ export async function action({ request, params }: ActionFunctionArgs) {
       return acc;
     }, []);
 
-    if (linesWithExpandedSerialTracking.length === 0) {
-      // No valid transfer lines, skip creating the stock transfer
-      return json(
-        { success: false, message: "No valid transfer lines could be created" },
-        await flash(
-          request,
-          error(
-            "No valid transfer lines could be created",
-            "No transfers created"
+    if (linesWithExpandedSerialTracking.length > 0) {
+      // Now that we have valid transfer lines, create the stock transfer
+      // Get next sequence for stock transfer
+      const nextSequence = await getNextSequence(
+        client,
+        "stockTransfer",
+        companyId
+      );
+      if (nextSequence.error) {
+        return json(
+          { success: false, message: "Failed to get next sequence" },
+          await flash(
+            request,
+            error(nextSequence.error, "Failed to get next sequence")
           )
-        )
-      );
-    }
+        );
+      }
 
-    // Now that we have valid transfer lines, create the stock transfer
-    // Get next sequence for stock transfer
-    const nextSequence = await getNextSequence(
-      client,
-      "stockTransfer",
-      companyId
-    );
-    if (nextSequence.error) {
-      return json(
-        { success: false, message: "Failed to get next sequence" },
-        await flash(
-          request,
-          error(nextSequence.error, "Failed to get next sequence")
-        )
-      );
-    }
+      // Create stock transfer
+      const createStockTransfer = await upsertStockTransfer(client, {
+        stockTransferId: nextSequence.data,
+        locationId,
+        companyId,
+        createdBy: userId,
+      });
 
-    // Create stock transfer
-    const createStockTransfer = await upsertStockTransfer(client, {
-      stockTransferId: nextSequence.data,
-      locationId,
-      companyId,
-      createdBy: userId,
-    });
-
-    if (createStockTransfer.error) {
-      return json(
-        { success: false, message: "Failed to create stock transfer" },
-        await flash(
-          request,
-          error(createStockTransfer.error, "Failed to create stock transfer")
-        )
-      );
-    }
-
-    // Create stock transfer lines
-    const createStockTransferLines = await upsertStockTransferLines(client, {
-      lines: linesWithExpandedSerialTracking,
-      stockTransferId: createStockTransfer.data.id,
-      companyId,
-      createdBy: userId,
-    });
-
-    if (createStockTransferLines.error) {
-      await deleteStockTransfer(client, createStockTransfer.data.id);
-      return json(
-        { success: false, message: "Failed to create stock transfer lines" },
-        await flash(
-          request,
-          error(
-            createStockTransferLines.error,
-            "Failed to create stock transfer lines"
+      if (createStockTransfer.error) {
+        return json(
+          { success: false, message: "Failed to create stock transfer" },
+          await flash(
+            request,
+            error(createStockTransfer.error, "Failed to create stock transfer")
           )
-        )
-      );
-    }
+        );
+      }
 
-    hasTransfer = true;
+      // Create stock transfer lines
+      const createStockTransferLines = await upsertStockTransferLines(client, {
+        lines: linesWithExpandedSerialTracking,
+        stockTransferId: createStockTransfer.data.id,
+        companyId,
+        createdBy: userId,
+      });
+
+      if (createStockTransferLines.error) {
+        await deleteStockTransfer(client, createStockTransfer.data.id);
+        return json(
+          { success: false, message: "Failed to create stock transfer lines" },
+          await flash(
+            request,
+            error(
+              createStockTransferLines.error,
+              "Failed to create stock transfer lines"
+            )
+          )
+        );
+      }
+
+      hasTransfer = true;
+    }
   }
 
-  // Handle "order" items (purchase orders and jobs)
   if (orderItems.length > 0) {
-    // Get item details for all order items to determine make/buy
-    const itemDetails = await Promise.all(
-      orderItems.map(async (item) => {
-        const itemResult = await getItem(client, item.itemId);
-        return {
-          ...item,
-          itemDetails: itemResult.data,
-          itemError: itemResult.error,
-        };
-      })
-    );
-
     // Separate items into make vs buy based on replenishment system
     // If replenishment system is "Buy and Make", treat as "Buy" (purchase order)
-    const buyItems = itemDetails.filter(
+    const buyItems = orderItems.filter(
       (item) =>
-        !item.itemError &&
-        item.itemDetails &&
-        (item.itemDetails.replenishmentSystem === "Buy" ||
-          item.itemDetails.replenishmentSystem === "Buy and Make")
+        itemReplenishmentsMap.get(item.itemId)?.replenishmentSystem === "Buy" ||
+        itemReplenishmentsMap.get(item.itemId)?.replenishmentSystem ===
+          "Buy and Make"
     );
 
-    const makeItems = itemDetails.filter(
+    const makeItems = orderItems.filter(
       (item) =>
-        !item.itemError &&
-        item.itemDetails &&
-        item.itemDetails.replenishmentSystem === "Make"
+        itemReplenishmentsMap.get(item.itemId)?.replenishmentSystem === "Make"
     );
 
     // Create purchase orders for buy items
     if (buyItems.length > 0) {
       // Get supplier information for buy items
-      const buyItemIds = buyItems.map((item) => item.itemId);
-      const { data: supplierParts, error: supplierPartsError } = await client
+      const supplierParts = await client
         .from("supplierPart")
-        .select("itemId, supplierId, unitPrice, supplierUnitOfMeasureCode")
-        .in("itemId", buyItemIds)
+        .select("*")
+        .in(
+          "itemId",
+          buyItems.map((item) => item.itemId)
+        )
         .eq("companyId", companyId);
 
-      if (supplierPartsError) {
-        // Continue without supplier parts
-      }
+      if (supplierParts.error) {
+        console.error(supplierParts.error);
+      } else {
+        // Group items by supplier to create one purchase order per supplier
+        const itemsBySupplier = new Map<
+          string,
+          Array<{
+            item: (typeof buyItems)[0];
+            supplier: any;
+            replenishment: any;
+          }>
+        >();
 
-      // Group items by supplier
-      const itemsBySupplier = new Map<string, typeof buyItems>();
+        // First pass: assign suppliers to each item
+        for (const item of buyItems) {
+          const replenishment = itemReplenishmentsMap.get(item.itemId);
 
-      for (const item of buyItems) {
-        const supplierPart = supplierParts?.find(
-          (sp) => sp.itemId === item.itemId
-        );
-        const supplierId = supplierPart?.supplierId || "NO_SUPPLIER";
+          // Find preferred supplier or first available supplier
+          const itemSupplierParts =
+            supplierParts.data?.filter((sp) => sp.itemId === item.itemId) || [];
 
-        if (!itemsBySupplier.has(supplierId)) {
-          itemsBySupplier.set(supplierId, []);
-        }
-        itemsBySupplier.get(supplierId)!.push(item);
-      }
+          let selectedSupplier = null;
 
-      // Create purchase orders for each supplier group
-      for (const [supplierId, items] of itemsBySupplier.entries()) {
-        if (supplierId === "NO_SUPPLIER") {
-          continue;
-        }
+          // First try to find preferred supplier
+          if (replenishment?.preferredSupplierId) {
+            selectedSupplier = itemSupplierParts.find(
+              (sp) => sp.supplierId === replenishment.preferredSupplierId
+            );
+          }
 
-        // Validate that we have valid items with quantities before creating purchase order
-        // This prevents creating empty purchase orders and wasting sequence numbers
-        const validItems = items.filter(
-          (item) => item.quantity && item.quantity > 0
-        );
+          // If no preferred supplier found, take the first one
+          if (!selectedSupplier && itemSupplierParts.length > 0) {
+            selectedSupplier = itemSupplierParts[0];
+          }
 
-        if (validItems.length === 0) {
-          continue;
-        }
-
-        try {
-          // Get next sequence for purchase order
-          const nextSequence = await getNextSequence(
-            client,
-            "purchaseOrder",
-            companyId
-          );
-
-          if (nextSequence.error) {
+          if (!selectedSupplier) {
+            console.error(
+              `[Purchase Orders] No supplier found for item ${item.itemId}`
+            );
             continue;
           }
 
-          // Create purchase order
-          const createPurchaseOrder = await upsertPurchaseOrder(client, {
-            purchaseOrderId: nextSequence.data,
-            purchaseOrderType: "Purchase",
-            supplierId: supplierId,
-            companyId,
-            createdBy: userId,
+          // Group by supplier
+          if (!itemsBySupplier.has(selectedSupplier.supplierId)) {
+            itemsBySupplier.set(selectedSupplier.supplierId, []);
+          }
+          itemsBySupplier.get(selectedSupplier.supplierId)!.push({
+            item,
+            supplier: selectedSupplier,
+            replenishment,
+          });
+        }
+
+        // Build purchase planning payload - one planning item per actual item
+        const purchasePlanningItems = [];
+
+        // Helper function to find period ID
+        const findPeriodId = (dueDate: string) => {
+          const dueDateParsed = parseDate(dueDate);
+          const period = periods.data?.find((p) => {
+            const startDate = parseDate(p.startDate);
+            const endDate = parseDate(p.endDate);
+            return dueDateParsed >= startDate && dueDateParsed <= endDate;
           });
 
-          if (createPurchaseOrder.error) {
-            continue;
+          if (!period) {
+            if (periods.data && periods.data.length > 0) {
+              const firstPeriod = periods.data[0];
+              const lastPeriod = periods.data[periods.data.length - 1];
+              const firstStartDate = parseDate(firstPeriod.startDate);
+              const lastEndDate = parseDate(lastPeriod.endDate);
+
+              if (dueDateParsed < firstStartDate) {
+                return firstPeriod.id;
+              } else if (dueDateParsed > lastEndDate) {
+                return lastPeriod.id;
+              }
+            }
+            return periods.data?.[0]?.id || "";
           }
 
-          // TODO: Add purchase order lines for each valid item
-          // This would require implementing purchase order line creation
+          return period.id;
+        };
 
-          hasPurchaseOrder = true;
-        } catch (error) {
-          // Continue to next supplier
+        for (const [supplierId, supplierItems] of itemsBySupplier.entries()) {
+          // Create one planning item per actual item
+          for (const { item, supplier, replenishment } of supplierItems) {
+            // Calculate dates: due date = job start date, start date = due date - lead time
+            const jobStartDateParsed = jobStartDate
+              ? parseDate(jobStartDate)
+              : today(getLocalTimeZone());
+            const leadTime = replenishment?.leadTime || 0;
+            const purchaseOrderDueDate = jobStartDateParsed.toString();
+            const purchaseOrderStartDate = jobStartDateParsed
+              .subtract({ days: leadTime })
+              .toString();
+
+            const periodId = findPeriodId(purchaseOrderDueDate);
+
+            const orders = [
+              {
+                quantity: Math.max(item.quantity || 0, 1),
+                dueDate: purchaseOrderDueDate,
+                startDate: purchaseOrderStartDate,
+                periodId: periodId,
+                supplierId: supplierId,
+                unitPrice: supplier.unitPrice || 0,
+                unitOfMeasureCode: supplier.supplierUnitOfMeasureCode || "EA",
+                description: item.description,
+              },
+            ];
+
+            purchasePlanningItems.push({
+              id: item.itemId,
+              orders,
+            });
+          }
+        }
+
+        if (purchasePlanningItems.length > 0) {
+          const purchasePlanningPayload = {
+            action: "order" as const,
+            items: purchasePlanningItems,
+            locationId,
+          };
+
+          const purchasePlanningUrl = `${new URL(request.url).origin}${
+            path.to.bulkUpdatePurchasingPlanning
+          }`;
+
+          const result = await fetch(purchasePlanningUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: request.headers.get("Authorization") || "",
+              Cookie: request.headers.get("Cookie") || "",
+            },
+            body: JSON.stringify(purchasePlanningPayload),
+          });
+
+          if (result.ok) {
+            const responseData = await result.json();
+
+            if (responseData?.success) {
+              hasPurchaseOrder = true;
+            } else {
+              console.error(
+                `[Purchase Orders] API returned success: false`,
+                responseData
+              );
+            }
+          } else {
+            const errorText = await result.text();
+            console.error(`[Purchase Orders] API call failed:`, {
+              status: result.status,
+              statusText: result.statusText,
+              error: errorText,
+            });
+          }
         }
       }
     }
 
     // Create jobs for make items
     if (makeItems.length > 0) {
-      for (const item of makeItems) {
-        try {
-          if (!item.quantity || item.quantity <= 0) {
-            continue;
-          }
+      const productionPlanningUrl = `${new URL(request.url).origin}${
+        path.to.bulkUpdateProductionPlanning
+      }`;
 
-          // Get next sequence for job
-          const nextSequence = await getNextSequence(client, "job", companyId);
+      // Build production planning payload with lot size chunking
+      const productionPlanningItems = makeItems.map((item) => {
+        const replenishment = itemReplenishmentsMap.get(item.itemId);
+        const lotSize = replenishment?.lotSize ?? 0;
+        const requiredQuantity = item.quantity || 0;
 
-          if (nextSequence.error) {
-            continue;
-          }
+        // Calculate orders based on lot size chunking
+        const orders = [];
 
-          const shelfId = await getDefaultShelfForJob(
-            client,
-            item.itemId,
-            locationId,
-            companyId
-          );
+        // Calculate dates: due date = job start date, start date = due date - lead time
+        const jobStartDateParsed = jobStartDate
+          ? parseDate(jobStartDate)
+          : today(getLocalTimeZone());
+        const leadTime = replenishment?.leadTime || 0;
+        const productionOrderDueDate = jobStartDateParsed.toString();
+        const productionOrderStartDate = jobStartDateParsed
+          .subtract({ days: leadTime })
+          .toString();
 
-          const createJob = await upsertJob(
-            client,
-            {
-              jobId: nextSequence.data,
-              itemId: item.itemId,
-              quantity: item.quantity,
-              scrapQuantity: 0, // Default to 0 for now
-              locationId: locationId,
-              unitOfMeasureCode: item.itemDetails?.unitOfMeasureCode || "EA", // Default to "EA" if not specified
-              deadlineType: "ASAP", // Default to ASAP for job materials
-              shelfId: shelfId ?? undefined,
-              companyId,
-              createdBy: userId,
-            },
-            "Planned"
-          );
-
-          if (createJob.error) {
-            continue;
-          }
-
-          const jobId = createJob.data?.id;
-          if (!jobId) {
-            continue;
-          }
-
-          // Create job method to link the item to the job
-          const upsertMethod = await upsertJobMethod(client, "itemToJob", {
-            sourceId: item.itemId,
-            targetId: jobId,
-            companyId,
-            userId,
+        // Find the correct period based on the production order due date
+        const findPeriodId = (dueDate: string) => {
+          const dueDateParsed = parseDate(dueDate);
+          const period = periods.data?.find((p) => {
+            const startDate = parseDate(p.startDate);
+            const endDate = parseDate(p.endDate);
+            return dueDateParsed >= startDate && dueDateParsed <= endDate;
           });
 
-          if (upsertMethod.error) {
-            // Continue anyway as the job was created successfully
+          // If no matching period found, use the first period if due date is before it,
+          // or the last period if due date is after all periods
+          if (!period) {
+            if (periods.data && periods.data.length > 0) {
+              const firstPeriod = periods.data[0];
+              const lastPeriod = periods.data[periods.data.length - 1];
+              const firstStartDate = parseDate(firstPeriod.startDate);
+              const lastEndDate = parseDate(lastPeriod.endDate);
+
+              if (dueDateParsed < firstStartDate) {
+                return firstPeriod.id;
+              } else if (dueDateParsed > lastEndDate) {
+                return lastPeriod.id;
+              }
+            }
+            return periods.data?.[0]?.id || "";
           }
 
-          // TODO: Trigger job requirements recalculation
-          // This would typically be done with a background job
+          return period.id;
+        };
 
-          hasJobs = true;
-        } catch (error) {
-          // Continue to next item
+        const periodId = findPeriodId(productionOrderDueDate);
+
+        if (lotSize === 0) {
+          // If lot size is 0, order the exact required quantity
+          const orderQuantity = Math.max(requiredQuantity, 1); // At least 1 if no quantity specified
+          orders.push({
+            quantity: orderQuantity,
+            dueDate: productionOrderDueDate,
+            startDate: productionOrderStartDate,
+            isASAP: startDate.compare(today(getLocalTimeZone())) < 0,
+            periodId: periodId,
+          });
+        } else {
+          // If lot size > 0, use lot size chunking
+          if (requiredQuantity <= 0) {
+            // If no quantity required, create one order with lot size
+            orders.push({
+              quantity: lotSize,
+              dueDate: productionOrderDueDate,
+              startDate: productionOrderStartDate,
+              isASAP: false,
+              periodId: periodId,
+            });
+          } else if (requiredQuantity <= lotSize) {
+            // If required quantity is less than or equal to lot size, order the lot size
+            orders.push({
+              quantity: lotSize,
+              dueDate: productionOrderDueDate,
+              startDate: productionOrderStartDate,
+              isASAP: false,
+              periodId: periodId,
+            });
+          } else {
+            // If required quantity is greater than lot size, create multiple orders
+            const numberOfOrders = Math.ceil(requiredQuantity / lotSize);
+            for (let i = 0; i < numberOfOrders; i++) {
+              orders.push({
+                quantity: lotSize,
+                dueDate: productionOrderDueDate,
+                startDate: productionOrderStartDate,
+                isASAP: false,
+                periodId: periodId,
+              });
+            }
+          }
         }
+
+        return {
+          id: item.itemId,
+          orders,
+        };
+      });
+
+      const productionPlanningPayload = {
+        action: "order" as const,
+        items: productionPlanningItems,
+        locationId,
+      };
+
+      const result = await fetch(productionPlanningUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: request.headers.get("Authorization") || "",
+          Cookie: request.headers.get("Cookie") || "",
+        },
+        body: JSON.stringify(productionPlanningPayload),
+      });
+
+      const data = await result.json();
+      if (data?.success) {
+        hasJobs = true;
       }
     }
   }
 
-  // TODO: Update job material statuses
-  // TODO: Send notifications
-
-  // Determine what was created for the success message
   const createdItems = [];
   if (hasTransfer) createdItems.push("stock transfer");
   if (hasPurchaseOrder) createdItems.push("purchase order(s)");

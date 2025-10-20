@@ -83,7 +83,6 @@ export async function action({ request }: ActionFunctionArgs) {
           return error.message;
         });
 
-        console.error("Validation errors:", parsedItems.error.errors);
         return json(
           {
             success: false,
@@ -120,11 +119,27 @@ export async function action({ request }: ActionFunctionArgs) {
           updatedBy: string;
         }> = [];
 
+        // Group items and orders by supplier
+        const ordersBySupplier: Map<
+          string,
+          Array<{
+            itemId: string;
+            order: (typeof itemsToOrder)[0]["orders"][0];
+          }>
+        > = new Map();
+
         for (const item of itemsToOrder) {
           itemIds.add(item.id);
           for (const order of item.orders) {
             if (order.supplierId) {
               supplierIds.add(order.supplierId);
+              if (!ordersBySupplier.has(order.supplierId)) {
+                ordersBySupplier.set(order.supplierId, []);
+              }
+              ordersBySupplier.get(order.supplierId)!.push({
+                itemId: item.id,
+                order,
+              });
             }
             if (order.periodId) {
               periodIds.add(order.periodId);
@@ -203,32 +218,12 @@ export async function action({ request }: ActionFunctionArgs) {
         let processedItems = 0;
         let errors: string[] = [];
 
-        for (const item of itemsToOrder) {
-          const orders = item.orders;
-          const supplier = suppliersById.get(orders[0]?.supplierId ?? "");
-          const supplierPart =
-            supplierParts?.data?.find(
-              (sp) => sp.itemId === item.id && sp.supplierId === supplier?.id
-            ) ?? undefined;
-
-          const supplyForecastByPeriod: Record<string, number> = {};
-
-          const purchasing = await client
-            .from("itemReplenishment")
-            .select("purchasingBlocked")
-            .eq("itemId", item.id)
-            .single();
-
-          if (purchasing.error) {
-            const errorMsg = `Failed to retrieve purchasing data for item ${item.id}: ${purchasing.error.message}`;
+        // Process orders grouped by supplier
+        for (const [supplierId, ordersForSupplier] of ordersBySupplier) {
+          const supplier = suppliersById.get(supplierId);
+          if (!supplier) {
+            const errorMsg = `Supplier ${supplierId} not found`;
             console.error(errorMsg);
-            errors.push(errorMsg);
-            continue;
-          }
-
-          if (purchasing.data?.purchasingBlocked) {
-            const errorMsg = `Purchasing is blocked for item ${item.id}`;
-            console.warn(errorMsg);
             errors.push(errorMsg);
             continue;
           }
@@ -236,294 +231,271 @@ export async function action({ request }: ActionFunctionArgs) {
           // Get existing purchase orders for this supplier
           const { data: existingPurchaseOrders, error: poError } = await client
             .from("purchaseOrder")
-            .select(
-              "id, purchaseOrderId, orderDate, status, purchaseOrderDelivery(receiptRequestedDate, receiptPromisedDate)"
-            )
-            .eq("supplierId", supplier?.id ?? "")
+            .select("id, purchaseOrderId, status")
+            .eq("supplierId", supplierId)
             .in("status", ["Draft", "Planned"]);
 
           if (poError) {
-            const errorMsg = `Failed to retrieve existing purchase orders for supplier ${supplier?.id}: ${poError.message}`;
+            const errorMsg = `Failed to retrieve existing purchase orders for supplier ${supplierId}: ${poError.message}`;
             console.error(errorMsg);
             errors.push(errorMsg);
             continue;
           }
 
-          const existingPOs =
-            existingPurchaseOrders?.map((order) => {
-              const dueDate =
-                order?.purchaseOrderDelivery?.receiptPromisedDate ??
-                order?.purchaseOrderDelivery?.receiptRequestedDate;
-              return {
-                id: order.id,
-                readableId: order.purchaseOrderId,
-                status: order.status,
-                dueDate,
-              };
-            }) ?? [];
+          // Use the first existing Draft/Planned PO, or create a new one
+          let purchaseOrderId = existingPurchaseOrders?.[0]?.id;
+          let createdNewPO = false;
 
-          // Map orders to existing POs in the same period
-          const ordersMappedToExistingPOs = orders.map((order) => {
-            const period = periods?.data?.find((p) => p.id === order.periodId);
-            if (period) {
-              const firstPOInPeriod = existingPOs.find((po) => {
-                const dueDate = po?.dueDate ? new Date(po.dueDate) : null;
-                return (
-                  dueDate !== null &&
-                  new Date(period.startDate) <= dueDate &&
-                  new Date(period.endDate) >= dueDate
-                );
-              });
-
-              if (firstPOInPeriod) {
-                return {
-                  ...order,
-                  existingId: firstPOInPeriod.id,
-                  existingLineId: undefined,
-                  existingReadableId: firstPOInPeriod.readableId,
-                  existingStatus: firstPOInPeriod.status,
-                };
-              }
-            }
-
-            return order;
-          });
-
-          let itemProcessed = false;
-
-          for (const order of ordersMappedToExistingPOs) {
-            if (!order.supplierId) {
-              const errorMsg = `Supplier ID is missing for item ${item.id}`;
+          if (!purchaseOrderId) {
+            const nextSequence = await getNextSequence(
+              client,
+              "purchaseOrder",
+              companyId
+            );
+            if (nextSequence.error) {
+              const errorMsg = `Failed to generate purchase order sequence for supplier ${supplierId}: ${nextSequence.error.message}`;
               console.error(errorMsg);
               errors.push(errorMsg);
               continue;
             }
 
-            if (!order.existingId) {
-              const nextSequence = await getNextSequence(
-                client,
-                "purchaseOrder",
-                companyId
-              );
-              if (nextSequence.error) {
-                const errorMsg = `Failed to generate purchase order sequence for item ${item.id}: ${nextSequence.error.message}`;
-                console.error(errorMsg);
-                errors.push(errorMsg);
-                continue;
-              }
-
-              const purchaseOrderId = nextSequence.data;
-              if (!purchaseOrderId) {
-                const errorMsg = `Failed to generate purchase order ID for item ${item.id}`;
-                console.error(errorMsg);
-                errors.push(errorMsg);
-                continue;
-              }
-
-              let exchangeRate = 1;
-              if (supplier?.currencyCode !== baseCurrencyCode) {
-                const currency = await getCurrencyByCode(
-                  client,
-                  companyId,
-                  supplier?.currencyCode ?? baseCurrencyCode
-                );
-
-                if (currency.error) {
-                  const errorMsg = `Failed to retrieve exchange rate for currency ${supplier?.currencyCode}: ${currency.error.message}`;
-                  console.error(errorMsg);
-                  errors.push(errorMsg);
-                  continue;
-                }
-
-                if (currency.data) {
-                  exchangeRate = currency.data.exchangeRate ?? 1;
-                }
-              }
-
-              const createPurchaseOrder = await upsertPurchaseOrder(
-                client,
-                {
-                  purchaseOrderId,
-                  status: "Planned" as const,
-                  supplierId: order.supplierId,
-                  purchaseOrderType: "Purchase",
-                  currencyCode: supplier?.currencyCode ?? baseCurrencyCode,
-                  exchangeRate: exchangeRate,
-                  companyId,
-                  createdBy: userId,
-                },
-                order.dueDate ?? undefined
-              );
-
-              if (createPurchaseOrder.error) {
-                const errorMsg = `Failed to create purchase order for item ${item.id}: ${createPurchaseOrder.error.message}`;
-                console.error(errorMsg);
-                errors.push(errorMsg);
-                continue;
-              }
-
-              const purchaseOrder = createPurchaseOrder.data?.[0];
-              if (!purchaseOrder) {
-                const errorMsg = `Purchase order was not returned after creation for item ${item.id}`;
-                console.error(errorMsg);
-                errors.push(errorMsg);
-                continue;
-              }
-
-              const createPurchaseOrderLine = await upsertPurchaseOrderLine(
-                client,
-                {
-                  purchaseOrderId: purchaseOrder.id,
-                  itemId: item.id,
-                  description: order.description,
-                  purchaseOrderLineType: "Part",
-                  purchaseQuantity: order.quantity,
-                  purchaseUnitOfMeasureCode:
-                    supplierPart?.supplierUnitOfMeasureCode ??
-                    order.unitOfMeasureCode,
-                  inventoryUnitOfMeasureCode: order.unitOfMeasureCode,
-                  conversionFactor: supplierPart?.conversionFactor ?? 1,
-                  supplierUnitPrice: supplierPart?.unitPrice ?? 0,
-                  supplierTaxAmount:
-                    ((order.unitPrice ?? 0) * (supplier?.taxPercent ?? 0)) /
-                    100,
-                  supplierShippingCost: 0,
-                  promisedDate: order.dueDate ?? undefined,
-                  locationId,
-                  companyId,
-                  createdBy: userId,
-                }
-              );
-
-              if (createPurchaseOrderLine.error) {
-                const errorMsg = `Failed to create purchase order line for item ${item.id}: ${createPurchaseOrderLine.error.message}`;
-                console.error(errorMsg);
-                errors.push(errorMsg);
-                continue;
-              }
-
-              itemProcessed = true;
-            } else {
-              if (order.existingLineId) {
-                const updatePurchaseOrderLine = await upsertPurchaseOrderLine(
-                  client,
-                  {
-                    id: order.existingLineId,
-                    purchaseOrderId: order.existingId,
-                    itemId: item.id,
-                    description: order.description,
-                    purchaseOrderLineType: "Part",
-                    purchaseQuantity: order.quantity,
-                    purchaseUnitOfMeasureCode:
-                      supplierPart?.supplierUnitOfMeasureCode ??
-                      order.unitOfMeasureCode,
-                    inventoryUnitOfMeasureCode: order.unitOfMeasureCode,
-                    conversionFactor: supplierPart?.conversionFactor ?? 1,
-                    supplierUnitPrice: supplierPart?.unitPrice ?? 0,
-                    supplierTaxAmount:
-                      ((order.unitPrice ?? 0) * (supplier?.taxPercent ?? 0)) /
-                      100,
-                    supplierShippingCost: 0,
-                    promisedDate: order.dueDate ?? undefined,
-                    locationId,
-                    companyId,
-                    createdBy: userId,
-                  }
-                );
-
-                if (updatePurchaseOrderLine.error) {
-                  const errorMsg = `Failed to update purchase order line ${order.existingLineId} for item ${item.id}: ${updatePurchaseOrderLine.error.message}`;
-                  console.error(errorMsg);
-                  errors.push(errorMsg);
-                  continue;
-                }
-              } else {
-                const insertPurchaseOrderLine = await upsertPurchaseOrderLine(
-                  client,
-                  {
-                    purchaseOrderId: order.existingId,
-                    itemId: item.id,
-                    description: order.description,
-                    purchaseOrderLineType: "Part",
-                    purchaseQuantity: order.quantity,
-                    purchaseUnitOfMeasureCode:
-                      supplierPart?.supplierUnitOfMeasureCode ??
-                      order.unitOfMeasureCode,
-                    inventoryUnitOfMeasureCode: order.unitOfMeasureCode,
-                    conversionFactor: supplierPart?.conversionFactor ?? 1,
-                    supplierUnitPrice: supplierPart?.unitPrice ?? 0,
-                    supplierTaxAmount:
-                      ((order.unitPrice ?? 0) * (supplier?.taxPercent ?? 0)) /
-                      100,
-                    supplierShippingCost: 0,
-                    promisedDate: order.dueDate ?? undefined,
-                    locationId,
-                    companyId,
-                    createdBy: userId,
-                  }
-                );
-
-                if (insertPurchaseOrderLine.error) {
-                  const errorMsg = `Failed to add purchase order line for item ${item.id}: ${insertPurchaseOrderLine.error.message}`;
-                  console.error(errorMsg);
-                  errors.push(errorMsg);
-                  continue;
-                }
-              }
-
-              const updateResult = await updatePurchaseOrder(client, {
-                id: order.existingId,
-                status: "Planned" as const,
-                updatedBy: userId,
-              });
-
-              if (updateResult.error) {
-                const errorMsg = `Failed to update purchase order status for item ${item.id}: ${updateResult.error.message}`;
-                console.error(errorMsg);
-                errors.push(errorMsg);
-                continue;
-              }
-
-              itemProcessed = true;
+            const purchaseOrderIdValue = nextSequence.data;
+            if (!purchaseOrderIdValue) {
+              const errorMsg = `Failed to generate purchase order ID for supplier ${supplierId}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+              continue;
             }
 
-            const periodId = order.periodId;
+            let exchangeRate = 1;
+            if (supplier.currencyCode !== baseCurrencyCode) {
+              const currency = await getCurrencyByCode(
+                client,
+                companyId,
+                supplier.currencyCode ?? baseCurrencyCode
+              );
 
-            // Convert purchase quantity back to inventory quantity for supply forecast
-            // Inventory Quantity = Purchase Quantity × Conversion Factor
-            const conversionFactor = supplierPart?.conversionFactor ?? 1;
-            const purchaseQuantityDelta =
-              order.quantity - (order.existingQuantity ?? 0);
-            const inventoryQuantityDelta =
-              purchaseQuantityDelta * conversionFactor;
+              if (currency.error) {
+                const errorMsg = `Failed to retrieve exchange rate for currency ${supplier.currencyCode}: ${currency.error.message}`;
+                console.error(errorMsg);
+                errors.push(errorMsg);
+                continue;
+              }
 
-            supplyForecastByPeriod[periodId] =
-              (supplyForecastByPeriod[periodId] || 0) + inventoryQuantityDelta;
+              if (currency.data) {
+                exchangeRate = currency.data.exchangeRate ?? 1;
+              }
+            }
+
+            const createPurchaseOrder = await upsertPurchaseOrder(
+              client,
+              {
+                purchaseOrderId: purchaseOrderIdValue,
+                status: "Planned" as const,
+                supplierId,
+                purchaseOrderType: "Purchase",
+                currencyCode: supplier.currencyCode ?? baseCurrencyCode,
+                exchangeRate: exchangeRate,
+                companyId,
+                createdBy: userId,
+              },
+              undefined
+            );
+
+            if (createPurchaseOrder.error) {
+              const errorMsg = `Failed to create purchase order for supplier ${supplierId}: ${createPurchaseOrder.error.message}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+              continue;
+            }
+
+            const purchaseOrder = createPurchaseOrder.data?.[0];
+            if (!purchaseOrder) {
+              const errorMsg = `Purchase order was not returned after creation for supplier ${supplierId}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+              continue;
+            }
+
+            purchaseOrderId = purchaseOrder.id;
+            createdNewPO = true;
           }
 
-          if (itemProcessed) {
-            processedItems++;
-            Object.entries(supplyForecastByPeriod).forEach(
-              ([periodId, quantity]) => {
-                allSupplyForecasts.push({
-                  itemId: item.id,
-                  locationId,
-                  sourceType: "Purchase Order" as const,
-                  forecastQuantity: quantity,
-                  periodId,
-                  companyId,
-                  createdBy: userId,
-                  updatedBy: userId,
-                });
+          // Group orders by itemId to consolidate into single lines
+          const ordersByItem = new Map<
+            string,
+            Array<{
+              order: (typeof ordersForSupplier)[0]["order"];
+              periodId: string;
+            }>
+          >();
+
+          for (const { itemId, order } of ordersForSupplier) {
+            if (!ordersByItem.has(itemId)) {
+              ordersByItem.set(itemId, []);
+            }
+            ordersByItem.get(itemId)!.push({
+              order,
+              periodId: order.periodId,
+            });
+          }
+
+          // Now create one line per item (consolidating all orders for that item)
+          for (const [itemId, itemOrders] of ordersByItem) {
+            const supplierPart = supplierParts?.data?.find(
+              (sp) => sp.itemId === itemId && sp.supplierId === supplierId
+            );
+
+            const purchasing = await client
+              .from("itemReplenishment")
+              .select("purchasingBlocked")
+              .eq("itemId", itemId)
+              .single();
+
+            if (purchasing.error) {
+              const errorMsg = `Failed to retrieve purchasing data for item ${itemId}: ${purchasing.error.message}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+              continue;
+            }
+
+            if (purchasing.data?.purchasingBlocked) {
+              const errorMsg = `Purchasing is blocked for item ${itemId}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+              continue;
+            }
+
+            // Sum up all quantities for this item
+            const totalQuantity = itemOrders.reduce(
+              (sum, { order }) => sum + order.quantity,
+              0
+            );
+
+            // Apply minimum order quantity
+            const minimumOrderQuantity =
+              supplierPart?.minimumOrderQuantity ?? 0;
+
+            let adjustedQuantity = totalQuantity;
+
+            // Apply minimum order quantity
+            if (
+              minimumOrderQuantity > 0 &&
+              adjustedQuantity < minimumOrderQuantity
+            ) {
+              adjustedQuantity = minimumOrderQuantity;
+            }
+
+            // Use the earliest due date from all orders for this item
+            const earliestDueDate = itemOrders.reduce((earliest, { order }) => {
+              if (!earliest) return order.dueDate;
+              if (!order.dueDate) return earliest;
+              return order.dueDate < earliest ? order.dueDate : earliest;
+            }, itemOrders[0].order.dueDate);
+
+            // Use the first order's description
+            const description = itemOrders[0].order.description;
+            const unitOfMeasureCode = itemOrders[0].order.unitOfMeasureCode;
+
+            const createPurchaseOrderLine = await upsertPurchaseOrderLine(
+              client,
+              {
+                purchaseOrderId: purchaseOrderId!,
+                itemId: itemId,
+                description: description,
+                purchaseOrderLineType: "Part",
+                purchaseQuantity: adjustedQuantity,
+                purchaseUnitOfMeasureCode:
+                  supplierPart?.supplierUnitOfMeasureCode ?? unitOfMeasureCode,
+                inventoryUnitOfMeasureCode: unitOfMeasureCode,
+                conversionFactor: supplierPart?.conversionFactor ?? 1,
+                supplierUnitPrice: supplierPart?.unitPrice ?? 0,
+                supplierTaxAmount:
+                  ((supplierPart?.unitPrice ?? 0) *
+                    (supplier.taxPercent ?? 0)) /
+                  100,
+                supplierShippingCost: 0,
+                promisedDate: earliestDueDate ?? undefined,
+                locationId,
+                companyId,
+                createdBy: userId,
               }
             );
+
+            if (createPurchaseOrderLine.error) {
+              const errorMsg = `Failed to create purchase order line for item ${itemId}: ${createPurchaseOrderLine.error.message}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+              continue;
+            }
+
+            processedItems++;
+
+            // Add supply forecasts for each period this item appears in
+            const conversionFactor = supplierPart?.conversionFactor ?? 1;
+            const periodQuantities = new Map<string, number>();
+
+            for (const { order, periodId } of itemOrders) {
+              const currentPeriodQty = periodQuantities.get(periodId) || 0;
+              periodQuantities.set(periodId, currentPeriodQty + order.quantity);
+            }
+
+            for (const [periodId, quantity] of periodQuantities) {
+              const inventoryQuantityDelta = quantity * conversionFactor;
+
+              allSupplyForecasts.push({
+                itemId: itemId,
+                locationId,
+                sourceType: "Purchase Order" as const,
+                forecastQuantity: inventoryQuantityDelta,
+                periodId,
+                companyId,
+                createdBy: userId,
+                updatedBy: userId,
+              });
+            }
+          }
+
+          // Update PO status if we added to an existing PO
+          if (!createdNewPO && purchaseOrderId) {
+            const updateResult = await updatePurchaseOrder(client, {
+              id: purchaseOrderId,
+              status: "Planned" as const,
+              updatedBy: userId,
+            });
+
+            if (updateResult.error) {
+              const errorMsg = `Failed to update purchase order status for supplier ${supplierId}: ${updateResult.error.message}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+            }
           }
         }
 
         if (allSupplyForecasts.length > 0) {
+          // Group supply forecasts by unique key to avoid duplicate conflicts
+          const forecastMap = new Map<string, (typeof allSupplyForecasts)[0]>();
+
+          for (const forecast of allSupplyForecasts) {
+            const key = `${forecast.itemId}-${forecast.locationId}-${forecast.periodId}`;
+            const existing = forecastMap.get(key);
+
+            if (existing) {
+              // Combine quantities for the same key
+              existing.forecastQuantity += forecast.forecastQuantity;
+            } else {
+              forecastMap.set(key, { ...forecast });
+            }
+          }
+
+          const uniqueSupplyForecasts = Array.from(forecastMap.values());
+
           const insertForecasts = await client
             .from("supplyForecast")
-            .insert(allSupplyForecasts);
+            .upsert(uniqueSupplyForecasts, {
+              onConflict: "itemId,locationId,periodId",
+              ignoreDuplicates: false,
+            });
 
           if (insertForecasts.error) {
             const errorMsg = `Failed to insert supply forecasts: ${insertForecasts.error.message}`;

@@ -99,6 +99,7 @@ WITH
         ON pol."purchaseOrderId" = po."id"
     WHERE
       po."status" IN (
+        'Planned',
         'To Receive',
         'To Receive and Invoice'
       )
@@ -296,6 +297,7 @@ WITH
         ON pol."purchaseOrderId" = po."id"
     WHERE
       po."status" IN (
+        'Planned',
         'To Receive',
         'To Receive and Invoice'
       )
@@ -448,6 +450,7 @@ WITH
         ON jm."itemId" = pol."itemId"
     WHERE
       po."status" IN (
+        'Planned',
         'To Receive',
         'To Receive and Invoice'
       )

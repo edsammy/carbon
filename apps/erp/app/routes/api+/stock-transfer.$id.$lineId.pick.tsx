@@ -74,7 +74,8 @@ export async function loader({ request, params }: ActionFunctionArgs) {
   const result = await fetch(updateQuantityUrl.toString(), {
     method: "POST",
     headers: {
-      ...Object.fromEntries(request.headers.entries()),
+      Authorization: request.headers.get("Authorization") || "",
+      Cookie: request.headers.get("Cookie") || "",
     },
     body: formData,
   });

@@ -197,71 +197,16 @@ const OrderDrawer = memo(
             };
           });
 
-        if (selectedSupplier) {
-          const { data: existingPurchaseOrders } = await carbon
-            ?.from("purchaseOrder")
-            .select(
-              "id, purchaseOrderId, orderDate, status, purchaseOrderDelivery(receiptRequestedDate, receiptPromisedDate)"
-            )
-            .eq("supplierId", selectedSupplier)
-            .in("status", ["Draft", "Planned"]);
-
-          const existingPOs =
-            existingPurchaseOrders?.map((order) => {
-              const dueDate =
-                order?.purchaseOrderDelivery?.receiptPromisedDate ??
-                order?.purchaseOrderDelivery?.receiptRequestedDate;
-              return {
-                id: order.id,
-                readableId: order.purchaseOrderId,
-                status: order.status,
-                dueDate,
-              };
-            }) ?? [];
-
-          const ordersMappedToExistingPOs = orders.map((order) => {
-            const period = periods.find((p) => p.id === order.periodId);
-
-            if (period) {
-              const firstPOInPeriod = existingPOs.find((po) => {
-                const dueDate = po?.dueDate ? parseDate(po.dueDate) : null;
-                return (
-                  dueDate !== null &&
-                  parseDate(period.startDate) <= dueDate &&
-                  parseDate(period.endDate) >= dueDate
-                );
-              });
-
-              if (firstPOInPeriod) {
-                return {
-                  ...order,
-                  existingId: firstPOInPeriod.id,
-                  existingLineId: undefined,
-                  existingReadableId: firstPOInPeriod.readableId,
-                  existingStatus: firstPOInPeriod.status,
-                };
-              }
-            }
-
-            return order;
-          });
-
-          setOrders(
-            selectedItem,
-            [...ordersMappedToExistingPOs, ...existingOrders].sort((a, b) => {
-              return a.dueDate?.localeCompare(b.dueDate ?? "") ?? 0;
-            })
-          );
-        } else {
-          setOrders(
-            selectedItem,
-            [...orders, ...existingOrders].sort((a, b) => {
-              return a.dueDate?.localeCompare(b.dueDate ?? "") ?? 0;
-            })
-          );
-        }
+        // Backend now handles grouping items by supplier into single POs
+        // So we just need to merge the existing orders with current orders
+        setOrders(
+          selectedItem,
+          [...orders, ...existingOrders].sort((a, b) => {
+            return a.dueDate?.localeCompare(b.dueDate ?? "") ?? 0;
+          })
+        );
       }
-    }, [carbon, selectedItem, selectedSupplier, orders, periods, setOrders]);
+    }, [carbon, selectedItem, orders, periods, setOrders]);
 
     useMount(async () => {
       if (selectedItem.id) {

@@ -297,11 +297,31 @@ export async function action({ request }: ActionFunctionArgs) {
           }
         }
 
-        // Insert all supply forecasts
+        // Insert all supply forecasts using upsert to handle duplicates
         if (allSupplyForecasts.length > 0) {
+          // Group supply forecasts by unique key to avoid duplicate conflicts
+          const forecastMap = new Map<string, (typeof allSupplyForecasts)[0]>();
+
+          for (const forecast of allSupplyForecasts) {
+            const key = `${forecast.itemId}-${forecast.locationId}-${forecast.periodId}`;
+            const existing = forecastMap.get(key);
+
+            if (existing) {
+              // Combine quantities for the same key
+              existing.forecastQuantity += forecast.forecastQuantity;
+            } else {
+              forecastMap.set(key, { ...forecast });
+            }
+          }
+
+          const uniqueSupplyForecasts = Array.from(forecastMap.values());
+
           const insertForecasts = await client
             .from("supplyForecast")
-            .insert(allSupplyForecasts);
+            .upsert(uniqueSupplyForecasts, {
+              onConflict: "itemId,locationId,periodId",
+              ignoreDuplicates: false,
+            });
 
           if (insertForecasts.error) {
             const errorMsg = `Failed to insert supply forecasts: ${insertForecasts.error.message}`;

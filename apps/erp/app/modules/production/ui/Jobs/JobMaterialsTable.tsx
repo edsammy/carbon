@@ -76,7 +76,7 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
   const [session, setStockTransferSession] = useStockTransferSession();
 
   useMount(() => {
-    // Prepopulate stock transfer session with all parts that need transferred or ordered
+    // Pre-populate stock transfer session with all parts that need transferred or ordered
     const itemsToAdd: Array<{
       id: string; // Job material ID
       itemId: string; // Actual item ID
