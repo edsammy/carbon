@@ -2,7 +2,6 @@ import type { Result } from "@carbon/auth";
 import {
   Badge,
   Button,
-  cn,
   Count,
   HStack,
   IconButton,
@@ -18,13 +17,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   LuArrowDown,
-  LuArrowLeft,
   LuArrowLeftRight,
   LuArrowUp,
   LuBookMarked,
   LuCheckCheck,
   LuFlag,
-  LuGitPullRequest,
   LuHash,
   LuMaximize2,
   LuMinus,
@@ -59,6 +56,7 @@ type JobMaterialsTableProps = {
   count: number;
 };
 const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
+  console.log({ data });
   const { jobId } = useParams();
   if (!jobId) throw new Error("Job ID is required");
 
@@ -219,15 +217,6 @@ const JobMaterialsTable = memo(({ data, count }: JobMaterialsTableProps) => {
                 type={row.original.methodType}
                 className="size-3 mr-1"
               />
-              {row.original.methodType}
-            </Badge>
-            <LuArrowLeft
-              className={cn(
-                row.original.methodType === "Make" ? "rotate-180" : ""
-              )}
-            />
-            <Badge variant="secondary">
-              <LuGitPullRequest className="size-3 mr-1" />
               {row.original.shelfName ??
                 (row.original.methodType === "Make" ? "WIP" : "Default Shelf")}
             </Badge>

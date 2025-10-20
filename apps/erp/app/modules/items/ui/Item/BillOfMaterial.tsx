@@ -799,7 +799,7 @@ function MaterialForm({
               {itemData.methodType}
             </Badge>
             <LuArrowLeft
-              className={cn(itemData.methodType === "Make" ? "rotate-180" : "")}
+              className={cn(itemData.methodType !== "Pick" ? "rotate-180" : "")}
             />
             <Badge variant="secondary">
               <LuGitPullRequest className="size-3 mr-1" />
