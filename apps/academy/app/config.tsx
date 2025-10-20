@@ -599,6 +599,15 @@ export const modules: Config = [
                 description: "Learn how to use kanbans to replenish inventory.",
                 duration: 376,
               },
+              {
+                id: "stock-transfers",
+                loomUrl:
+                  "https://www.loom.com/share/5342da8b34ca4ebbbb1a5eede645696f?sid=9aeedb71-8b84-47bc-a6f9-5309586d253a",
+                name: "Stock Transfers",
+                description:
+                  "Learn how to use stock transfers to move inventory between shelves.",
+                duration: 390,
+              },
             ],
           },
         ],
