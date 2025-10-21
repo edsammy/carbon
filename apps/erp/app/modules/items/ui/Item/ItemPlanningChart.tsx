@@ -69,6 +69,7 @@ interface ChartDataPoint {
   "Production Order": number;
   Planned: number;
   Projection: number;
+  "Demand Forecast": number;
 }
 
 const chartConfig = {} satisfies ChartConfig;
@@ -109,6 +110,7 @@ export const ItemPlanningChart = ({
 
     const periods = forecastFetcher.data.periods;
     const demand = forecastFetcher.data.demand;
+    const demandForecast = forecastFetcher.data.demandForecast ?? [];
     const supply = forecastFetcher.data.supply;
     let currentQuantity = forecastFetcher.data.quantityOnHand ?? 0;
 
@@ -124,6 +126,7 @@ export const ItemPlanningChart = ({
           "Production Order": 0,
           Planned: 0,
           Projection: currentQuantity, // Initialize with current quantity
+          "Demand Forecast": 0,
         };
         return acc;
       },
@@ -185,6 +188,15 @@ export const ItemPlanningChart = ({
       }
     });
 
+    // Add demand forecast data
+    demandForecast.forEach((forecast) => {
+      if (groupedData[forecast.periodId] && forecast.forecastQuantity) {
+        groupedData[forecast.periodId]["Demand Forecast"] = -(
+          forecast.forecastQuantity ?? 0
+        );
+      }
+    });
+
     // Calculate running projection
     let runningProjection = currentQuantity;
     const sortedData = Object.values(groupedData).sort(
@@ -198,8 +210,11 @@ export const ItemPlanningChart = ({
         period["Purchase Order"] +
         period["Production Order"] +
         period["Planned"];
-      // Subtract demand
-      runningProjection += period["Sales Order"] + period["Job Material"];
+      // Subtract demand (all values are already negative)
+      runningProjection +=
+        period["Sales Order"] +
+        period["Job Material"] +
+        period["Demand Forecast"];
       // Update projection
       period.Projection = runningProjection;
       return period;
@@ -293,7 +308,8 @@ export const ItemPlanningChart = ({
 
   if (
     forecastFetcher.data?.demand.length === 0 &&
-    forecastFetcher.data?.supply.length === 0
+    forecastFetcher.data?.supply.length === 0 &&
+    (forecastFetcher.data?.demandForecast?.length ?? 0) === 0
   ) {
     return (
       <Card>
@@ -341,6 +357,11 @@ export const ItemPlanningChart = ({
                   <Legend
                     payload={[
                       { value: "Demand", type: "rect", color: "#14b8a6" },
+                      {
+                        value: "Demand Forecast",
+                        type: "rect",
+                        color: "#06b6d4",
+                      },
                       { value: "Supply", type: "rect", color: "#2563eb" },
                       { value: "Planned", type: "rect", color: "#4f46e5" },
                       {
@@ -387,6 +408,11 @@ export const ItemPlanningChart = ({
                       className="fill-teal-500"
                     />
                   ))}
+                  <Bar
+                    dataKey="Demand Forecast"
+                    stackId="stack"
+                    className="fill-cyan-500"
+                  />
                   {supplySourceTypes.map((sourceType) => (
                     <Bar
                       key={sourceType}
@@ -462,10 +488,14 @@ export const ItemPlanningChart = ({
                   <CardTitle className="text-4xl ">
                     <div className="flex justify-start items-center gap-1">
                       {`${numberFormatter.format(
-                        forecastFetcher.data?.demand.reduce(
+                        (forecastFetcher.data?.demand.reduce(
                           (acc, curr) => acc + (curr.actualQuantity ?? 0),
                           0
-                        ) ?? 0
+                        ) ?? 0) +
+                          (forecastFetcher.data?.demandForecast?.reduce(
+                            (acc, curr) => acc + (curr.forecastQuantity ?? 0),
+                            0
+                          ) ?? 0)
                       )}`}
                       <LuMoveDown className="text-red-500 text-lg" />
                     </div>

@@ -480,13 +480,28 @@ export async function getItemDemand(
     companyId: string;
   }
 ) {
-  return client
-    .from("demandActual")
-    .select("*")
-    .eq("itemId", itemId)
-    .eq("locationId", locationId)
-    .eq("companyId", companyId)
-    .in("periodId", periods);
+  const [actuals, forecasts] = await Promise.all([
+    client
+      .from("demandActual")
+      .select("*")
+      .eq("itemId", itemId)
+      .eq("locationId", locationId)
+      .eq("companyId", companyId)
+      .in("periodId", periods),
+    client
+      .from("demandForecast")
+      .select("*")
+      .eq("itemId", itemId)
+      .eq("locationId", locationId)
+      .eq("companyId", companyId)
+      .in("periodId", periods)
+      .order("periodId"),
+  ]);
+
+  return {
+    actuals: actuals.data ?? [],
+    forecasts: forecasts.data ?? [],
+  };
 }
 
 export async function getItemFiles(

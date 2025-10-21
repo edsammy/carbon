@@ -16,6 +16,7 @@ import { getPeriods } from "~/modules/shared/shared.service";
 
 const defaultResponse = {
   demand: [],
+  demandForecast: [],
   supply: [],
   periods: [],
   quantityOnHand: 0,
@@ -78,15 +79,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     getOpenPurchaseOrderLines(client, { itemId, companyId, locationId }),
   ]);
 
-  if (demand.error) {
+  if (demand.actuals.length === 0 && demand.forecasts.length === 0) {
     return json(
       defaultResponse,
-      await flash(request, error(demand.error, "Failed to load demand"))
+      await flash(request, error(null, "Failed to load demand"))
     );
   }
 
   return json({
-    demand: demand.data,
+    demand: demand.actuals,
+    demandForecast: demand.forecasts,
     supply: [
       ...supply.actuals,
       ...supply.forecasts.map((f) => ({
