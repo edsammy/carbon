@@ -256,128 +256,13 @@ serve(async (req: Request) => {
       throw new Error("No demand projections found");
     }
 
-    // Expand demand projections through BOM tree
-    const uniqueProjectedItems = new Set<string>();
-    for (const projection of demandProjections.data) {
-      if (projection.itemId) {
-        uniqueProjectedItems.add(projection.itemId);
-      }
-    }
-
-    console.log({
-      uniqueProjectedItems: Array.from(uniqueProjectedItems),
-      demandProjectionsCount: demandProjections.data.length,
-    });
-
-    // Get active make methods for all projected items in one query
-    const makeMethods = await client
-      .from("activeMakeMethods")
-      .select("id, itemId")
-      .eq("companyId", companyId)
-      .in("itemId", Array.from(uniqueProjectedItems));
-
-    if (makeMethods.error) {
-      throw new Error("Failed to get make methods");
-    }
-
-    console.log({
-      makeMethodsCount: makeMethods.data.length,
-      makeMethods: makeMethods.data,
-    });
-
-    const makeMethodByItem = new Map<string, string>();
-    for (const mm of makeMethods.data) {
-      if (mm.itemId && mm.id) {
-        makeMethodByItem.set(mm.itemId, mm.id);
-      }
-    }
-
-    // Get BOM tree for all projected items
-    const bomExpansions = await Promise.all(
-      Array.from(uniqueProjectedItems).map(async (itemId) => {
-        const makeMethodId = makeMethodByItem.get(itemId);
-        if (!makeMethodId) {
-          console.log(`No make method found for item ${itemId}`);
-          return { itemId, tree: [] };
-        }
-
-        // Get BOM tree using RPC
-        const tree = await client.rpc("get_method_tree", {
-          uid: makeMethodId,
-        });
-
-        if (tree.error) {
-          console.error(`Failed to get BOM tree for ${itemId}:`, tree.error);
-          return { itemId, tree: [] };
-        }
-
-        console.log(`BOM tree for ${itemId}:`, {
-          treeLength: tree.data?.length ?? 0,
-          tree: tree.data,
-        });
-
-        return { itemId, tree: tree.data ?? [] };
-      })
-    );
-
-    // Get all unique items from BOM trees for bulk replenishment query
-    const allBomItems = new Set<string>();
-    for (const expansion of bomExpansions) {
-      for (const node of expansion.tree) {
-        if (node.itemId) {
-          allBomItems.add(node.itemId);
-        }
-      }
-    }
-
-    console.log({
-      allBomItemsCount: allBomItems.size,
-      allBomItems: Array.from(allBomItems),
-    });
-
-    // Fetch item data with replenishment info in a single query
-    const [itemReplenishments, items] = await Promise.all([
-      client
-        .from("itemReplenishment")
-        .select("itemId, leadTime")
-        .eq("companyId", companyId)
-        .in("itemId", Array.from(allBomItems)),
-      client
-        .from("item")
-        .select("id, replenishmentSystem")
-        .eq("companyId", companyId)
-        .in("id", Array.from(allBomItems)),
-    ]);
-
-    if (itemReplenishments.error) {
-      throw new Error("Failed to get item replenishments");
-    }
-
-    if (items.error) {
-      throw new Error("Failed to get items");
-    }
-
-    console.log({
-      itemReplanishmentsCount: itemReplenishments.data.length,
-      itemsCount: items.data.length,
-    });
-
-    // Create lookup maps
+    // Expand demand projections through BOM tree with on-demand fetching
+    // Caches for BOM requirements and metadata
     const leadTimeByItem = new Map<string, number>();
-    for (const ir of itemReplenishments.data) {
-      leadTimeByItem.set(ir.itemId, ir.leadTime ?? 7);
-    }
-
     const replenishmentSystemByItem = new Map<
       string,
       "Buy" | "Make" | "Buy and Make"
     >();
-    for (const item of items.data) {
-      replenishmentSystemByItem.set(
-        item.id,
-        item.replenishmentSystem as "Buy" | "Make" | "Buy and Make"
-      );
-    }
 
     // Define BOM node type
     type BomNode = {
@@ -391,7 +276,56 @@ serve(async (req: Request) => {
       accumulatedLeadTime: number;
     };
 
-    // Traverse tree to accumulate quantities and lead times (for base case of quantity=1)
+    // Type for item requirements
+    type ItemRequirement = {
+      itemId: string;
+      baseQuantity: number; // Quantity required per unit of parent
+      leadTimeOffset: number;
+      replenishmentSystem: "Buy" | "Make";
+      methodType: "Make" | "Pick" | "Buy";
+    };
+
+    // Cache for base requirements by item
+    const baseRequirementsByItem = new Map<string, ItemRequirement[]>();
+
+    // Helper to fetch item metadata (lead time and replenishment system)
+    const fetchItemMetadata = async (itemId: string) => {
+      if (leadTimeByItem.has(itemId) && replenishmentSystemByItem.has(itemId)) {
+        return; // Already cached
+      }
+
+      const [itemReplenishment, item] = await Promise.all([
+        client
+          .from("itemReplenishment")
+          .select("itemId, leadTime")
+          .eq("itemId", itemId)
+          .eq("companyId", companyId)
+          .maybeSingle(),
+        client
+          .from("item")
+          .select("id, replenishmentSystem")
+          .eq("id", itemId)
+          .eq("companyId", companyId)
+          .single(),
+      ]);
+
+      if (!itemReplenishment.error && itemReplenishment.data) {
+        leadTimeByItem.set(itemId, itemReplenishment.data.leadTime ?? 7);
+      } else {
+        leadTimeByItem.set(itemId, 7); // Default
+      }
+
+      if (!item.error && item.data) {
+        replenishmentSystemByItem.set(
+          itemId,
+          item.data.replenishmentSystem as "Buy" | "Make" | "Buy and Make"
+        );
+      } else {
+        replenishmentSystemByItem.set(itemId, "Buy"); // Default
+      }
+    };
+
+    // Traverse tree to accumulate quantities and lead times
     const traverseBomTree = (
       node: BomNode,
       parentQuantity: number,
@@ -411,32 +345,57 @@ serve(async (req: Request) => {
       }
     };
 
-    // Process each unique item once to get base case (quantity=1) requirements
-    type ItemRequirement = {
-      itemId: string;
-      baseQuantity: number; // Quantity required per unit of parent
-      leadTimeOffset: number;
-      replenishmentSystem: "Buy" | "Make";
-      methodType: "Make" | "Pick" | "Buy";
-    };
-
-    const baseRequirementsByItem = new Map<string, ItemRequirement[]>();
-
-    for (const expansion of bomExpansions) {
-      if (expansion.tree.length === 0) {
-        console.log(`No BOM tree for item ${expansion.itemId}`);
-        continue;
+    // Async function to fetch and process BOM for an item
+    const fetchBomRequirements = async (
+      itemId: string
+    ): Promise<ItemRequirement[]> => {
+      // Check cache first
+      if (baseRequirementsByItem.has(itemId)) {
+        return baseRequirementsByItem.get(itemId)!;
       }
 
-      console.log(
-        `Processing BOM expansion for ${expansion.itemId} with ${expansion.tree.length} nodes`
-      );
+      console.log(`Fetching BOM for item ${itemId}`);
 
+      // Get active make method
+      const makeMethod = await client
+        .from("activeMakeMethods")
+        .select("id")
+        .eq("itemId", itemId)
+        .eq("companyId", companyId)
+        .maybeSingle();
+
+      if (makeMethod.error || !makeMethod.data) {
+        console.log(`No make method found for item ${itemId}`);
+        baseRequirementsByItem.set(itemId, []);
+        return [];
+      }
+
+      // Get BOM tree using RPC
+      const tree = await client.rpc("get_method_tree", {
+        uid: makeMethod.data.id!,
+      });
+
+      if (tree.error || !tree.data) {
+        console.error(`Failed to get BOM tree for ${itemId}:`, tree.error);
+        baseRequirementsByItem.set(itemId, []);
+        return [];
+      }
+
+      console.log(`BOM tree for ${itemId}: ${tree.data.length} nodes`);
+
+      // Fetch metadata for all items in this BOM
+      const itemsInBom = new Set<string>();
+      for (const node of tree.data) {
+        if (node.itemId) {
+          itemsInBom.add(node.itemId);
+        }
+      }
+      await Promise.all(Array.from(itemsInBom).map(fetchItemMetadata));
+
+      // Build tree structure
       const nodeMap = new Map<string, BomNode>();
 
-      // Create all nodes
-      for (const treeNode of expansion.tree) {
-        console.log({ treeNode });
+      for (const treeNode of tree.data) {
         const node: BomNode = {
           methodMaterialId: treeNode.methodMaterialId,
           itemId: treeNode.itemId,
@@ -463,26 +422,22 @@ serve(async (req: Request) => {
         }
       }
 
-      console.log(
-        `Built tree with ${roots.length} root nodes for ${expansion.itemId}`
-      );
-
-      // Start traversal from roots with base quantity of 1
+      // Traverse tree with base quantity of 1
       for (const root of roots) {
         traverseBomTree(root, 1, 0);
       }
 
-      // Collect base requirements for this item
+      // Collect requirements
       const requirements: ItemRequirement[] = [];
       for (const node of nodeMap.values()) {
-        if (node.isRoot) continue; // Skip root node (the parent assembly)
+        if (node.isRoot) continue;
 
         const replenishmentSystem =
           replenishmentSystemByItem.get(node.itemId) ?? "Buy";
 
-        // Find the original tree node to get methodType
-        const treeNode = expansion.tree.find(
-          (t) => t.methodMaterialId === node.methodMaterialId
+        const treeNode = tree.data.find(
+          (t: { methodMaterialId: string }) =>
+            t.methodMaterialId === node.methodMaterialId
         );
 
         requirements.push({
@@ -500,27 +455,25 @@ serve(async (req: Request) => {
         });
       }
 
-      baseRequirementsByItem.set(expansion.itemId, requirements);
+      baseRequirementsByItem.set(itemId, requirements);
       console.log(
-        `Stored ${requirements.length} base requirements for ${expansion.itemId}`
+        `Stored ${requirements.length} base requirements for ${itemId}`
       );
-    }
-
-    console.log({
-      baseRequirementsByItemCount: baseRequirementsByItem.size,
-      baseRequirementsByItem: Object.fromEntries(baseRequirementsByItem),
-    });
+      return requirements;
+    };
 
     // Recursively process requirements to expand Pick+Make items
-    const processRequirement = (
+    const processRequirement = async (
       locationId: string,
       periodId: string,
       itemId: string,
       quantity: number,
       accumulatedLeadTime: number
-    ) => {
-      const baseRequirements = baseRequirementsByItem.get(itemId);
-      if (!baseRequirements) {
+    ): Promise<void> => {
+      // Fetch BOM requirements for this item (uses cache if available)
+      const baseRequirements = await fetchBomRequirements(itemId);
+
+      if (baseRequirements.length === 0) {
         console.log(`No base requirements found for item ${itemId}`);
         return;
       }
@@ -562,12 +515,12 @@ serve(async (req: Request) => {
           );
         }
 
-        // If this is a Pick item with Make replenishment, also recursively expand its BOM
+        // If this is a Pick item with Make replenishment, recursively expand its BOM
         if (req.methodType === "Pick" && req.replenishmentSystem === "Make") {
           console.log(
             `Recursively expanding BOM for Pick+Make item ${req.itemId} (quantity: ${requiredQuantity}, leadTime: ${totalLeadTime})`
           );
-          processRequirement(
+          await processRequirement(
             locationId,
             periodId,
             req.itemId,
@@ -595,7 +548,7 @@ serve(async (req: Request) => {
         `Processing projection for item ${projection.itemId} with quantity ${projection.forecastQuantity}`
       );
 
-      processRequirement(
+      await processRequirement(
         projection.locationId!,
         projection.periodId,
         projection.itemId,
