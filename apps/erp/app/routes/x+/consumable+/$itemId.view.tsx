@@ -48,7 +48,6 @@ export default function ConsumableViewRoute() {
                 {(resolvedUsedIn) => {
                   const {
                     jobMaterials,
-
                     methodMaterials,
                     purchaseOrderLines,
                     receiptLines,

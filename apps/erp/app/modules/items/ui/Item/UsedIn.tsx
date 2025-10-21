@@ -104,22 +104,15 @@ export function UsedInTree({
 }) {
   const [filterText, setFilterText] = useState("");
 
-  const revisions = (revisionValidator.safeParse(revisionsJson)?.data ?? [])
-    ?.map((r) => ({
-      id: r.id,
-      documentReadableId: getReadableIdWithRevision(itemReadableId, r.revision),
-      methodType: r.methodType,
-      type: r.type,
-      revision: r.revision,
-    }))
-    .sort((a, b) => {
-      // First sort by length (descending)
-      if (a.revision.length !== b.revision.length) {
-        return b.revision.length - a.revision.length;
-      }
-      // Then sort alphabetically (descending)
-      return b.revision.localeCompare(a.revision);
-    });
+  const revisions = (
+    revisionValidator.safeParse(revisionsJson)?.data ?? []
+  )?.map((r) => ({
+    id: r.id,
+    documentReadableId: getReadableIdWithRevision(itemReadableId, r.revision),
+    methodType: r.methodType,
+    type: r.type,
+    revision: r.revision,
+  }));
 
   return (
     <VStack className="w-full p-2">
