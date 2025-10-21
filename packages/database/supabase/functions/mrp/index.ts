@@ -564,6 +564,77 @@ serve(async (req: Request) => {
       ),
     });
 
+    // Convert requirements to demandForecast records with period offsetting
+    // Use a Map to aggregate by (itemId, locationId, periodId) to avoid duplicates
+    const demandForecastMap = new Map<
+      string,
+      Database["public"]["Tables"]["demandForecast"]["Insert"]
+    >();
+
+    for (const [key, requirement] of requirementsByProjectedItem) {
+      const [locationId, sourcePeriodId, itemId] = key.split("-");
+
+      // Find the source period
+      const sourcePeriod = periods.find((p) => p.id === sourcePeriodId);
+      if (!sourcePeriod) {
+        console.log(`Could not find source period ${sourcePeriodId}`);
+        continue;
+      }
+
+      // Calculate how many days to offset backwards based on lead time
+      const leadTimeDays = requirement.leadTimeOffset;
+      const leadTimeWeeks = Math.ceil(leadTimeDays / 7); // Round up to nearest week
+
+      // Find the target period by going backwards leadTimeWeeks from source period
+      const sourcePeriodIndex = periods.findIndex(
+        (p) => p.id === sourcePeriodId
+      );
+      const targetPeriodIndex = Math.max(0, sourcePeriodIndex - leadTimeWeeks);
+      const targetPeriod = periods[targetPeriodIndex];
+
+      if (!targetPeriod) {
+        console.log(
+          `Could not find target period for item ${itemId}, using earliest period`
+        );
+        continue;
+      }
+
+      console.log(
+        `Item ${itemId}: source period ${sourcePeriodIndex}, lead time ${leadTimeDays} days (${leadTimeWeeks} weeks), target period ${targetPeriodIndex}`
+      );
+
+      // Create unique key for aggregation
+      const forecastKey = `${itemId}-${locationId}-${targetPeriod.id}`;
+      const existing = demandForecastMap.get(forecastKey);
+
+      if (existing) {
+        // Aggregate quantities for same item/location/period
+        existing.forecastQuantity =
+          Number(existing.forecastQuantity) + requirement.estimatedQuantity;
+        console.log(
+          `Aggregated forecast for ${forecastKey}: ${existing.forecastQuantity}`
+        );
+      } else {
+        demandForecastMap.set(forecastKey, {
+          itemId,
+          locationId,
+          periodId: targetPeriod.id!,
+          forecastQuantity: requirement.estimatedQuantity,
+          forecastMethod: "mrp",
+          companyId,
+          createdBy: userId,
+          updatedBy: userId,
+        });
+      }
+    }
+
+    const demandForecastUpserts = Array.from(demandForecastMap.values());
+
+    console.log({
+      demandForecastUpsertsCount: demandForecastUpserts.length,
+      demandForecastUpserts: demandForecastUpserts.slice(0, 5), // Show first 5
+    });
+
     // Group sales order lines into demand periods
     for (const line of salesOrderLines.data) {
       if (!line.itemId || !line.quantityToSend) continue;
@@ -886,6 +957,13 @@ serve(async (req: Request) => {
 
     try {
       await db.transaction().execute(async (trx) => {
+        // Delete existing demandForecast for this company
+        await trx
+          .deleteFrom("demandForecast")
+          .where("companyId", "=", companyId)
+          .where("forecastMethod", "=", "mrp")
+          .execute();
+
         await trx
           .deleteFrom("supplyForecast")
           .where(
@@ -895,6 +973,22 @@ serve(async (req: Request) => {
           )
           .where("companyId", "=", companyId)
           .execute();
+
+        // Insert new demandForecast records
+        if (demandForecastUpserts.length > 0) {
+          await trx
+            .insertInto("demandForecast")
+            .values(demandForecastUpserts)
+            .onConflict((oc) =>
+              oc.columns(["itemId", "locationId", "periodId"]).doUpdateSet({
+                forecastQuantity: (eb) => eb.ref("excluded.forecastQuantity"),
+                forecastMethod: (eb) => eb.ref("excluded.forecastMethod"),
+                updatedAt: new Date().toISOString(),
+                updatedBy: userId,
+              })
+            )
+            .execute();
+        }
 
         if (demandActualUpserts.length > 0) {
           await trx
