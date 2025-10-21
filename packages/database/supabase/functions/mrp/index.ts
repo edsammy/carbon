@@ -62,7 +62,7 @@ const payloadValidator = z.discriminatedUnion("type", [
   }),
 ]);
 
-// TODO: we can do a reduced version based on the type of the payload, but for now, we're just running full MRP
+// TODO: we can do a reduced version based on the type of the payload, but for now, we're just running full MRP any time it's called
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -97,6 +97,20 @@ serve(async (req: Request) => {
   if (locations.error) throw locations.error;
 
   // Create map to store demand by location, period and item
+  const demandProjectionByLocationAndPeriod = new Map<
+    string,
+    Map<string, Map<string, number>>
+  >();
+
+  const requirementsByProjectedItem = new Map<
+    string,
+    {
+      estimatedQuantity: number;
+      leadTimeOffset: number;
+      replenishmentSystem: "Buy" | "Make";
+    }
+  >();
+
   const salesDemandByLocationAndPeriod = new Map<
     string,
     Map<string, Map<string, number>>
@@ -119,6 +133,11 @@ serve(async (req: Request) => {
 
   // Initialize locations in map
   for (const location of locations.data) {
+    demandProjectionByLocationAndPeriod.set(
+      location.id,
+      new Map<string, Map<string, number>>()
+    );
+
     salesDemandByLocationAndPeriod.set(
       location.id,
       new Map<string, Map<string, number>>()
@@ -191,6 +210,7 @@ serve(async (req: Request) => {
       jobMaterialLines,
       productionLines,
       purchaseOrderLines,
+      demandProjections,
     ] = await Promise.all([
       client.from("openSalesOrderLines").select("*").eq("companyId", companyId),
       client
@@ -205,6 +225,14 @@ serve(async (req: Request) => {
         .from("openPurchaseOrderLines")
         .select("*")
         .eq("companyId", companyId),
+      client
+        .from("demandProjection")
+        .select("*")
+        .eq("companyId", companyId)
+        .in(
+          "periodId",
+          periods.map((p) => p.id ?? "")
+        ),
     ]);
 
     if (salesOrderLines.error) {
@@ -221,6 +249,204 @@ serve(async (req: Request) => {
 
     if (purchaseOrderLines.error) {
       throw new Error("No purchase order lines found");
+    }
+
+    if (demandProjections.error) {
+      throw new Error("No demand projections found");
+    }
+
+    // Expand demand projections through BOM tree
+    const uniqueProjectedItems = new Set<string>();
+    for (const projection of demandProjections.data) {
+      if (projection.itemId) {
+        uniqueProjectedItems.add(projection.itemId);
+      }
+    }
+
+    // Get active make methods for all projected items in one query
+    const makeMethods = await client
+      .from("activeMakeMethods")
+      .select("id, itemId")
+      .eq("companyId", companyId)
+      .in("itemId", Array.from(uniqueProjectedItems));
+
+    if (makeMethods.error) {
+      throw new Error("Failed to get make methods");
+    }
+
+    const makeMethodByItem = new Map<string, string>();
+    for (const mm of makeMethods.data) {
+      if (mm.itemId && mm.id) {
+        makeMethodByItem.set(mm.itemId, mm.id);
+      }
+    }
+
+    // Get BOM tree for all projected items
+    const bomExpansions = await Promise.all(
+      Array.from(uniqueProjectedItems).map(async (itemId) => {
+        const makeMethodId = makeMethodByItem.get(itemId);
+        if (!makeMethodId) {
+          return { itemId, tree: [] };
+        }
+
+        // Get BOM tree using RPC
+        const tree = await client.rpc("get_method_tree", {
+          uid: makeMethodId,
+        });
+
+        if (tree.error) {
+          console.error(`Failed to get BOM tree for ${itemId}:`, tree.error);
+          return { itemId, tree: [] };
+        }
+
+        return { itemId, tree: tree.data ?? [] };
+      })
+    );
+
+    // Get all unique items from BOM trees for bulk replenishment query
+    const allBomItems = new Set<string>();
+    for (const expansion of bomExpansions) {
+      for (const node of expansion.tree) {
+        if (node.itemId) {
+          allBomItems.add(node.itemId);
+        }
+      }
+    }
+
+    // Fetch item data with replenishment info in a single query
+    const [itemReplenishments, items] = await Promise.all([
+      client
+        .from("itemReplenishment")
+        .select("itemId, leadTime")
+        .eq("companyId", companyId)
+        .in("itemId", Array.from(allBomItems)),
+      client
+        .from("item")
+        .select("id, replenishmentSystem")
+        .eq("companyId", companyId)
+        .in("id", Array.from(allBomItems)),
+    ]);
+
+    if (itemReplenishments.error) {
+      throw new Error("Failed to get item replenishments");
+    }
+
+    if (items.error) {
+      throw new Error("Failed to get items");
+    }
+
+    // Create lookup maps
+    const leadTimeByItem = new Map<string, number>();
+    for (const ir of itemReplenishments.data) {
+      leadTimeByItem.set(ir.itemId, ir.leadTime ?? 7);
+    }
+
+    const replenishmentSystemByItem = new Map<
+      string,
+      "Buy" | "Make" | "Buy and Make"
+    >();
+    for (const item of items.data) {
+      replenishmentSystemByItem.set(
+        item.id,
+        item.replenishmentSystem as "Buy" | "Make" | "Buy and Make"
+      );
+    }
+
+    // Define BOM node type
+    type BomNode = {
+      methodMaterialId: string;
+      itemId: string;
+      quantity: number;
+      parentMaterialId: string | null;
+      isRoot: boolean;
+      children: BomNode[];
+      accumulatedQuantity: number;
+      accumulatedLeadTime: number;
+    };
+
+    // Traverse tree to accumulate quantities and lead times
+    const traverseBomTree = (
+      node: BomNode,
+      parentQuantity: number,
+      parentLeadTime: number
+    ) => {
+      const itemLeadTime = leadTimeByItem.get(node.itemId) ?? 7;
+      node.accumulatedQuantity = node.quantity * parentQuantity;
+      node.accumulatedLeadTime = parentLeadTime + itemLeadTime;
+
+      // Process children
+      for (const child of node.children) {
+        traverseBomTree(child, node.accumulatedQuantity, node.accumulatedLeadTime);
+      }
+    };
+
+    // Process each demand projection and expand through BOM
+    for (const projection of demandProjections.data) {
+      if (!projection.itemId || !projection.quantity) continue;
+
+      const expansion = bomExpansions.find(
+        (e) => e.itemId === projection.itemId
+      );
+      if (!expansion || expansion.tree.length === 0) continue;
+
+      const nodeMap = new Map<string, BomNode>();
+
+      // Create all nodes
+      for (const treeNode of expansion.tree) {
+        const node: BomNode = {
+          methodMaterialId: treeNode.methodMaterialId,
+          itemId: treeNode.itemId,
+          quantity: Number(treeNode.quantity ?? 1),
+          parentMaterialId: treeNode.parentMaterialId,
+          isRoot: treeNode.isRoot ?? false,
+          children: [],
+          accumulatedQuantity: 0,
+          accumulatedLeadTime: 0,
+        };
+        nodeMap.set(treeNode.methodMaterialId, node);
+      }
+
+      // Build tree relationships
+      const roots: BomNode[] = [];
+      for (const node of nodeMap.values()) {
+        if (node.isRoot || !node.parentMaterialId) {
+          roots.push(node);
+        } else {
+          const parent = nodeMap.get(node.parentMaterialId);
+          if (parent) {
+            parent.children.push(node);
+          }
+        }
+      }
+
+      // Start traversal from roots
+      for (const root of roots) {
+        traverseBomTree(root, projection.quantity, 0);
+      }
+
+      // Flatten and aggregate by itemId
+      for (const node of nodeMap.values()) {
+        if (node.isRoot) continue; // Skip root node (the parent assembly)
+
+        const key = `${projection.locationId}-${projection.periodId}-${node.itemId}`;
+        const existing = requirementsByProjectedItem.get(key);
+
+        const replenishmentSystem =
+          replenishmentSystemByItem.get(node.itemId) ?? "Buy";
+
+        if (existing) {
+          existing.estimatedQuantity += node.accumulatedQuantity;
+        } else {
+          requirementsByProjectedItem.set(key, {
+            estimatedQuantity: node.accumulatedQuantity,
+            leadTimeOffset: node.accumulatedLeadTime,
+            replenishmentSystem:
+              replenishmentSystem === "Buy and Make"
+                ? "Make"
+                : (replenishmentSystem as "Buy" | "Make"),
+          });
+        }
+      }
     }
 
     // Group sales order lines into demand periods
