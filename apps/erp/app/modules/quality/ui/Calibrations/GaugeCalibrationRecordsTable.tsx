@@ -6,6 +6,7 @@ import {
   LuBookMarked,
   LuCalendar,
   LuCheck,
+  LuContainer,
   LuFileText,
   LuPencil,
   LuShapes,
@@ -13,7 +14,13 @@ import {
   LuUser,
   LuUsers,
 } from "react-icons/lu";
-import { EmployeeAvatar, Hyperlink, New, Table } from "~/components";
+import {
+  EmployeeAvatar,
+  Hyperlink,
+  New,
+  SupplierAvatar,
+  Table,
+} from "~/components";
 
 import { flushSync } from "react-dom";
 import { ConfirmDelete } from "~/components/Modals";
@@ -25,7 +32,7 @@ import type { GaugeCalibrationRecord } from "../../types";
 import { formatDate } from "@carbon/utils";
 import { Enumerable } from "~/components/Enumerable";
 import { useCustomColumns } from "~/hooks/useCustomColumns";
-import { usePeople } from "~/stores";
+import { usePeople, useSuppliers } from "~/stores";
 import { GaugeCalibrationRecordStatus } from "./GaugeCalibrationRecordStatus";
 
 type GaugeCalibrationRecordsTableProps = {
@@ -55,6 +62,7 @@ const GaugeCalibrationRecordsTable = memo(
     );
 
     const [people] = usePeople();
+    const [suppliers] = useSuppliers();
 
     const columns = useMemo<ColumnDef<GaugeCalibrationRecord>[]>(() => {
       const defaultColumns: ColumnDef<GaugeCalibrationRecord>[] = [
@@ -178,6 +186,23 @@ const GaugeCalibrationRecordsTable = memo(
           },
         },
         {
+          id: "supplierId",
+          header: "Calibration Supplier",
+          cell: ({ row }) => (
+            <SupplierAvatar supplierId={row.original.supplierId} />
+          ),
+          meta: {
+            filter: {
+              type: "static",
+              options: suppliers?.map((supplier) => ({
+                value: supplier.id,
+                label: supplier.name,
+              })),
+            },
+            icon: <LuContainer />,
+          },
+        },
+        {
           id: "createdBy",
           header: "Created By",
           cell: ({ row }) => (
@@ -229,7 +254,7 @@ const GaugeCalibrationRecordsTable = memo(
         },
       ];
       return [...defaultColumns, ...customColumns];
-    }, [customColumns, people, types]);
+    }, [customColumns, people, suppliers, types]);
 
     const renderContextMenu = useCallback(
       (row: GaugeCalibrationRecord) => {

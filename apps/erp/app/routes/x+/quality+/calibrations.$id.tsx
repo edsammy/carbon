@@ -105,13 +105,14 @@ export default function GaugeCalibrationRecordRoute() {
   const { record, files } = useLoaderData<typeof loader>();
 
   const initialValues = {
-    id: record.id || undefined,
+    id: record.id!,
     gaugeId: record.gaugeId || "",
     dateCalibrated: record.dateCalibrated || "",
     requiresAction: record.requiresAction || false,
     requiresAdjustment: record.requiresAdjustment || false,
     requiresRepair: record.requiresRepair || false,
     notes: JSON.stringify(record.notes),
+    supplierId: record.supplierId ?? "",
 
     ...getCustomFields(record.customFields),
   };
@@ -121,7 +122,6 @@ export default function GaugeCalibrationRecordRoute() {
   return (
     <GaugeCalibrationRecordForm
       key={id}
-      // @ts-ignore
       initialValues={initialValues}
       files={files}
       onClose={() => navigate(-1)}

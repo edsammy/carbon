@@ -40,7 +40,7 @@ import { LuDraftingCompass, LuHash, LuShapes, LuShield } from "react-icons/lu";
 import type { z } from "zod";
 import { Documents } from "~/components";
 import { Enumerable } from "~/components/Enumerable";
-import { CustomFormFields, Hidden, Submit } from "~/components/Form";
+import { CustomFormFields, Hidden, Submit, Supplier } from "~/components/Form";
 import { useGauges } from "~/components/Form/Gauge";
 import { usePermissions, useUser } from "~/hooks";
 import { getPrivateUrl, path } from "~/utils/path";
@@ -248,6 +248,11 @@ const GaugeCalibrationRecordForm = ({
                   </Loading>
                 </Card>
                 <DatePicker name="dateCalibrated" label="Date Calibrated" />
+                <Supplier
+                  name="supplierId"
+                  label="Calibration Supplier"
+                  isOptional
+                />
                 <Boolean name="requiresAction" label="Requires Action" />
                 <Boolean
                   name="requiresAdjustment"

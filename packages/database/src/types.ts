@@ -7398,6 +7398,7 @@ export type Database = {
           requiresAction: boolean
           requiresAdjustment: boolean
           requiresRepair: boolean
+          supplierId: string | null
           updatedAt: string | null
           updatedBy: string | null
         }
@@ -7414,6 +7415,7 @@ export type Database = {
           requiresAction?: boolean
           requiresAdjustment?: boolean
           requiresRepair?: boolean
+          supplierId?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -7430,6 +7432,7 @@ export type Database = {
           requiresAction?: boolean
           requiresAdjustment?: boolean
           requiresRepair?: boolean
+          supplierId?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -7509,6 +7512,41 @@ export type Database = {
             columns: ["gaugeId"]
             isOneToOne: false
             referencedRelation: "gauges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["supplierId"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["supplierId"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "purchaseOrderSuppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "supplier"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
           {
@@ -38579,6 +38617,7 @@ export type Database = {
           requiresAction: boolean | null
           requiresAdjustment: boolean | null
           requiresRepair: boolean | null
+          supplierId: string | null
           updatedAt: string | null
           updatedBy: string | null
         }
@@ -38665,6 +38704,41 @@ export type Database = {
             columns: ["gaugeId"]
             isOneToOne: false
             referencedRelation: "gauges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["supplierId"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["supplierId"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "purchaseOrderSuppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "supplier"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gaugeCalibrationRecord_supplierId_fkey"
+            columns: ["supplierId"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
           {
@@ -43109,14 +43183,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["supplierCountryCode"]
+            columns: ["customerCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["customerCountryCode"]
+            columns: ["supplierCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -46171,14 +46245,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["paymentCountryCode"]
+            columns: ["customerCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["customerCountryCode"]
+            columns: ["paymentCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -50157,6 +50231,8 @@ export type Database = {
         | "Tool"
         | "Fixture"
         | "Consumable"
+        | "Issue"
+        | "Gauge Calibration Record"
       documentthreadtype:
         | "nonConformance"
         | "quote"
