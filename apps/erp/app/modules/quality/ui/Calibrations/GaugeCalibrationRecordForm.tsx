@@ -1,5 +1,6 @@
 import { useCarbon } from "@carbon/auth";
-import { Boolean, DatePicker, ValidatedForm } from "@carbon/form";
+import type { Database } from "@carbon/database";
+import { Boolean, DatePicker, Number, ValidatedForm } from "@carbon/form";
 import type { JSONContent } from "@carbon/react";
 import {
   Button,
@@ -40,9 +41,15 @@ import { LuDraftingCompass, LuHash, LuShapes, LuShield } from "react-icons/lu";
 import type { z } from "zod";
 import { Documents } from "~/components";
 import { Enumerable } from "~/components/Enumerable";
-import { CustomFormFields, Hidden, Submit, Supplier } from "~/components/Form";
+import {
+  CustomFormFields,
+  Employee,
+  Hidden,
+  Submit,
+  Supplier,
+} from "~/components/Form";
 import { useGauges } from "~/components/Form/Gauge";
-import { usePermissions, useUser } from "~/hooks";
+import { usePermissions, useRouteData, useUser } from "~/hooks";
 import { getPrivateUrl, path } from "~/utils/path";
 import { gaugeCalibrationRecordValidator } from "../../quality.models";
 import type { Gauge } from "../../types";
@@ -73,6 +80,11 @@ const GaugeCalibrationRecordForm = ({
   const isDisabled = isEditing
     ? !permissions.can("update", "quality")
     : !permissions.can("create", "quality");
+
+  const routeData = useRouteData<{
+    companySettings: Database["public"]["Tables"]["companySettings"]["Row"];
+  }>(path.to.authenticatedRoot);
+  const isMetric = routeData?.companySettings?.useMetric ?? false;
 
   const [selectedGauge, setSelectedGauge] = useState<Gauge | null>(null);
   const gaugeSelectionModal = useDisclosure({
@@ -259,6 +271,25 @@ const GaugeCalibrationRecordForm = ({
                   label="Requires Adjustment"
                 />
                 <Boolean name="requiresRepair" label="Requires Repair" />
+                <Number
+                  name="temperature"
+                  label="Temperature"
+                  formatOptions={{
+                    maximumFractionDigits: 2,
+                    style: "unit",
+                    unit: isMetric ? "celsius" : "fahrenheit",
+                  }}
+                />
+                <Number
+                  name="humidity"
+                  label="Humidity"
+                  formatOptions={{
+                    maximumFractionDigits: 2,
+                    style: "percent",
+                    minimumFractionDigits: 0,
+                  }}
+                />
+                <Employee name="approvedBy" label="Approved By" />
                 <div className="flex flex-col gap-2 w-full">
                   <Label>Notes</Label>
                   <Editor

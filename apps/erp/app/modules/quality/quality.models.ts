@@ -79,6 +79,9 @@ export const gaugeCalibrationRecordValidator = z.object({
   requiresAction: zfd.checkbox(),
   requiresAdjustment: zfd.checkbox(),
   requiresRepair: zfd.checkbox(),
+  temperature: zfd.numeric(z.number().min(-200).max(500).optional()),
+  humidity: zfd.numeric(z.number().min(0).max(1).optional()),
+  approvedBy: zfd.text(z.string().optional()),
   notes: z
     .string()
     .optional()

@@ -111,9 +111,11 @@ export default function GaugeCalibrationRecordRoute() {
     requiresAction: record.requiresAction || false,
     requiresAdjustment: record.requiresAdjustment || false,
     requiresRepair: record.requiresRepair || false,
+    temperature: record.temperature ?? undefined,
+    humidity: record.humidity ?? undefined,
+    approvedBy: record.approvedBy ?? undefined,
     notes: JSON.stringify(record.notes),
     supplierId: record.supplierId ?? "",
-
     ...getCustomFields(record.customFields),
   };
 

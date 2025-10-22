@@ -8,6 +8,7 @@ import {
   getGaugeTypesList,
 } from "~/modules/quality";
 import GaugeCalibrationRecordsTable from "~/modules/quality/ui/Calibrations/GaugeCalibrationRecordsTable";
+import { getCompanySettings } from "~/modules/settings";
 import type { Handle } from "~/utils/handle";
 import { path } from "~/utils/path";
 import { getGenericQueryFilters } from "~/utils/query";
@@ -29,21 +30,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { limit, offset, sorts, filters } =
     getGenericQueryFilters(searchParams);
 
-  const [gaugeCalibrationRecords, gaugeTypes] = await Promise.all([
-    getGaugeCalibrationRecords(client, companyId, {
-      search,
-      limit,
-      offset,
-      sorts,
-      filters,
-    }),
-    getGaugeTypesList(client, companyId),
-  ]);
+  const [gaugeCalibrationRecords, gaugeTypes, companySettings] =
+    await Promise.all([
+      getGaugeCalibrationRecords(client, companyId, {
+        search,
+        limit,
+        offset,
+        sorts,
+        filters,
+      }),
+      getGaugeTypesList(client, companyId),
+      getCompanySettings(client, companyId),
+    ]);
 
   return json({
     gaugeCalibrationRecords: gaugeCalibrationRecords.data ?? [],
     count: gaugeCalibrationRecords.count ?? 0,
     gaugeTypes: gaugeTypes.data ?? [],
+    useMetric: companySettings.data?.useMetric ?? false,
   });
 }
 

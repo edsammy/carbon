@@ -61,6 +61,8 @@ export async function action({ request }: ActionFunctionArgs) {
       ? "Fail"
       : "Pass";
 
+  console.log({ data });
+
   const createGauge = await upsertGaugeCalibrationRecord(client, {
     ...data,
     inspectionStatus,
@@ -106,8 +108,10 @@ export default function GaugeCalibrationRecordNewRoute() {
     requiresAction: false,
     requiresAdjustment: false,
     requiresRepair: false,
+    temperature: undefined,
+    humidity: undefined,
+    approvedBy: undefined,
     notes: "{}",
-    dateAcquired: today(getLocalTimeZone()).toString(),
   };
 
   return (

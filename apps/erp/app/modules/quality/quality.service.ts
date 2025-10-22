@@ -1113,9 +1113,13 @@ export async function upsertGaugeCalibrationRecord(
   }
 
   if ("createdBy" in gaugeCalibrationRecord) {
+    const data = sanitize(gaugeCalibrationRecord);
+    if (data.humidity === 0) data.humidity = undefined;
+    if (data.temperature === 0) data.temperature = undefined;
+
     return client
       .from("gaugeCalibrationRecord")
-      .insert([gaugeCalibrationRecord])
+      .insert([data])
       .select("id")
       .single();
   }

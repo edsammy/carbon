@@ -7,9 +7,11 @@ import {
   LuCalendar,
   LuCheck,
   LuContainer,
+  LuDroplets,
   LuFileText,
   LuPencil,
   LuShapes,
+  LuThermometer,
   LuTrash,
   LuUser,
   LuUsers,
@@ -24,12 +26,14 @@ import {
 
 import { flushSync } from "react-dom";
 import { ConfirmDelete } from "~/components/Modals";
-import { usePermissions, useUrlParams } from "~/hooks";
+import { usePermissions, useRouteData, useUrlParams } from "~/hooks";
 import type { ListItem } from "~/types";
 import { path } from "~/utils/path";
 import type { GaugeCalibrationRecord } from "../../types";
 
+import type { Database } from "@carbon/database";
 import { formatDate } from "@carbon/utils";
+import { useNumberFormatter } from "@react-aria/i18n";
 import { Enumerable } from "~/components/Enumerable";
 import { useCustomColumns } from "~/hooks/useCustomColumns";
 import { usePeople, useSuppliers } from "~/stores";
@@ -46,6 +50,9 @@ const defaultColumnVisibility = {
   createdAt: false,
   updatedAt: false,
   updatedBy: false,
+  temperature: false,
+  humidity: false,
+  approvedBy: false,
 };
 
 const GaugeCalibrationRecordsTable = memo(
@@ -63,6 +70,22 @@ const GaugeCalibrationRecordsTable = memo(
 
     const [people] = usePeople();
     const [suppliers] = useSuppliers();
+
+    const routeData = useRouteData<{
+      companySettings: Database["public"]["Tables"]["companySettings"]["Row"];
+    }>(path.to.authenticatedRoot);
+    const isMetric = routeData?.companySettings?.useMetric ?? false;
+
+    const temperatureFormatter = useNumberFormatter({
+      maximumFractionDigits: 2,
+      style: "unit",
+      unit: isMetric ? "celsius" : "fahrenheit",
+    });
+    const humidityFormatter = useNumberFormatter({
+      maximumFractionDigits: 2,
+      style: "percent",
+      minimumFractionDigits: 0,
+    });
 
     const columns = useMemo<ColumnDef<GaugeCalibrationRecord>[]>(() => {
       const defaultColumns: ColumnDef<GaugeCalibrationRecord>[] = [
@@ -185,6 +208,7 @@ const GaugeCalibrationRecordsTable = memo(
             icon: <LuCheck />,
           },
         },
+
         {
           id: "supplierId",
           header: "Calibration Supplier",
@@ -200,6 +224,50 @@ const GaugeCalibrationRecordsTable = memo(
               })),
             },
             icon: <LuContainer />,
+          },
+        },
+
+        {
+          accessorKey: "temperature",
+          header: "Temperature",
+          cell: (item) => {
+            const value = item.getValue<number | null>();
+            return value !== null && value !== undefined
+              ? temperatureFormatter.format(value)
+              : "—";
+          },
+          meta: {
+            icon: <LuThermometer />,
+          },
+        },
+        {
+          accessorKey: "humidity",
+          header: "Humidity",
+          cell: (item) => {
+            const value = item.getValue<number | null>();
+            return value !== null && value !== undefined
+              ? humidityFormatter.format(value)
+              : "—";
+          },
+          meta: {
+            icon: <LuDroplets />,
+          },
+        },
+        {
+          id: "approvedBy",
+          header: "Approved By",
+          cell: ({ row }) => (
+            <EmployeeAvatar employeeId={row.original.approvedBy} />
+          ),
+          meta: {
+            icon: <LuUser />,
+            filter: {
+              type: "static",
+              options: people.map((employee) => ({
+                value: employee.id,
+                label: employee.name,
+              })),
+            },
           },
         },
         {
@@ -254,7 +322,14 @@ const GaugeCalibrationRecordsTable = memo(
         },
       ];
       return [...defaultColumns, ...customColumns];
-    }, [customColumns, people, suppliers, types]);
+    }, [
+      customColumns,
+      humidityFormatter,
+      people,
+      suppliers,
+      temperatureFormatter,
+      types,
+    ]);
 
     const renderContextMenu = useCallback(
       (row: GaugeCalibrationRecord) => {
@@ -263,7 +338,11 @@ const GaugeCalibrationRecordsTable = memo(
             <MenuItem
               disabled={!permissions.can("update", "quality")}
               onClick={() => {
-                navigate(`${path.to.gauge(row.id!)}?${params?.toString()}`);
+                navigate(
+                  `${path.to.gaugeCalibrationRecord(
+                    row.id!
+                  )}?${params?.toString()}`
+                );
               }}
             >
               <MenuIcon icon={<LuPencil />} />
