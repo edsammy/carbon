@@ -685,6 +685,7 @@ export async function getMaterialUsedIn(
   companyId: string
 ) {
   const [
+    issues,
     jobMaterials,
     methodMaterials,
     purchaseOrderLines,
@@ -694,6 +695,15 @@ export async function getMaterialUsedIn(
     shipmentLines,
     supplierQuotes,
   ] = await Promise.all([
+    client
+      .from("nonConformanceItem")
+      .select(
+        "id, ...nonConformance(documentReadableId:nonConformanceId, documentId:id)"
+      )
+      .eq("itemId", itemId)
+      .eq("companyId", companyId)
+      .limit(100)
+      .order("createdAt", { ascending: false }),
     client
       .from("jobMaterial")
       .select("id, methodType, ...job(documentReadableId:jobId, documentId:id)")
@@ -760,6 +770,7 @@ export async function getMaterialUsedIn(
   ]);
 
   return {
+    issues: issues.data ?? [],
     jobMaterials: jobMaterials.data ?? [],
     methodMaterials: methodMaterials.data ?? [],
     purchaseOrderLines: purchaseOrderLines.data ?? [],
@@ -1379,6 +1390,7 @@ export async function getPartUsedIn(
   companyId: string
 ) {
   const [
+    issues,
     jobMaterials,
     jobs,
     methodMaterials,
@@ -1390,6 +1402,15 @@ export async function getPartUsedIn(
     shipmentLines,
     supplierQuotes,
   ] = await Promise.all([
+    client
+      .from("nonConformanceItem")
+      .select(
+        "id, ...nonConformance(documentReadableId:nonConformanceId, documentId:id)"
+      )
+      .eq("itemId", itemId)
+      .eq("companyId", companyId)
+      .limit(100)
+      .order("createdAt", { ascending: false }),
     client
       .from("jobMaterial")
       .select("id, methodType, ...job(documentReadableId:jobId, documentId:id)")
@@ -1474,6 +1495,7 @@ export async function getPartUsedIn(
   ]);
 
   return {
+    issues: issues.data ?? [],
     jobMaterials: jobMaterials.data ?? [],
     jobs: jobs.data ?? [],
     methodMaterials: methodMaterials.data ?? [],

@@ -47,6 +47,7 @@ export default function MaterialViewRoute() {
               <Await resolve={usedIn}>
                 {(resolvedUsedIn) => {
                   const {
+                    issues,
                     jobMaterials,
 
                     methodMaterials,
@@ -60,6 +61,12 @@ export default function MaterialViewRoute() {
                   } = resolvedUsedIn;
 
                   const tree: UsedInNode[] = [
+                    {
+                      key: "issues",
+                      name: "Issues",
+                      module: "quality",
+                      children: issues,
+                    },
                     {
                       key: "jobMaterials",
                       name: "Job Materials",

@@ -88,10 +88,36 @@ All tasks have the following statuses:
 ## Database Tables
 
 - `nonConformance` - Main issue records
+- `nonConformanceItem` - Junction table linking issues to items (many-to-many relationship)
 - `nonConformanceInvestigationTask` - Investigation tasks
 - `nonConformanceActionTask` - Action tasks
 - `nonConformanceApprovalTask` - Approval tasks
 - `nonConformanceReviewer` - Reviewer records for MRB approvals
+
+## Item Associations
+
+Issues can be associated with multiple items (parts, materials, tools, consumables, services) through the `nonConformanceItem` junction table.
+
+### Used In Integration
+
+Issues now appear in the "Used In" panel for all item types:
+- **Service Functions**: `getPartUsedIn()` and `getMaterialUsedIn()` in `/apps/erp/app/modules/items/items.service.ts` query the `nonConformanceItem` table
+- **UI Component**: `/apps/erp/app/modules/items/ui/Item/UsedIn.tsx` handles rendering issues in the tree
+- **View Routes**: All item view routes (part, material, tool, consumable) include issues in their UsedIn tree
+- Issues are displayed under the "Issues" category with module set to "quality"
+
+### Implementation Details
+
+When querying items for issues:
+```typescript
+client
+  .from("nonConformanceItem")
+  .select("id, ...nonConformance(documentReadableId:nonConformanceId, documentId:id)")
+  .eq("itemId", itemId)
+  .eq("companyId", companyId)
+  .limit(100)
+  .order("createdAt", { ascending: false })
+```
 
 ## Routes
 

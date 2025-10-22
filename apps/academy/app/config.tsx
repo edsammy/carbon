@@ -583,6 +583,15 @@ export const modules: Config = [
                 duration: 370,
               },
               {
+                id: "demand-forecasting",
+                loomUrl:
+                  "https://www.loom.com/share/7b696fc6a59345c082e0711441bd948c?sid=9e9d62db-9218-472e-8c45-0d8b58323135",
+                name: "Demand Forecasting",
+                description:
+                  "Learn how to use Carbon's demand forecasting tools to help you plan your inventory.",
+                duration: 246,
+              },
+              {
                 id: "reorder-policy",
                 loomUrl:
                   "https://www.loom.com/share/3f80467543934dc3b0fe8978abf09825?sid=32db62c3-bbb7-43f8-a66b-8b8d726c3667",

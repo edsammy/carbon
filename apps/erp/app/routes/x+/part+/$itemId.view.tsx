@@ -47,6 +47,7 @@ export default function PartViewRoute() {
               <Await resolve={usedIn}>
                 {(resolvedUsedIn) => {
                   const {
+                    issues,
                     jobMaterials,
                     jobs,
                     methodMaterials,
@@ -60,6 +61,12 @@ export default function PartViewRoute() {
                   } = resolvedUsedIn;
 
                   const tree: UsedInNode[] = [
+                    {
+                      key: "issues",
+                      name: "Issues",
+                      module: "quality",
+                      children: issues,
+                    },
                     {
                       key: "jobs",
                       name: "Jobs",

@@ -53,6 +53,7 @@ export function UsedInSkeleton() {
 
 export type UsedInKey =
   | Database["public"]["Enums"]["itemType"]
+  | "issues"
   | "jobMaterials"
   | "jobs"
   | "methodMaterials"
@@ -456,6 +457,9 @@ function getUseInLink(
       return path.to.consumableDetails(child.id);
     case "Service":
       return path.to.serviceDetails(child.id);
+    case "issues":
+      if (!child.documentId) return "#";
+      return path.to.issue(child.documentId);
     case "jobs":
       return path.to.job(child.id);
     case "jobMaterials":
