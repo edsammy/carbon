@@ -26,6 +26,7 @@ import {
   LuPencil,
   LuPlus,
   LuSearch,
+  LuShieldX,
   LuStar,
   LuTruck,
 } from "react-icons/lu";
@@ -420,6 +421,8 @@ export function UsedInItem({
                 <LevelLine isSelected={false} className="mr-2" />
                 {child.methodType === "Shipment" ? (
                   <LuTruck className="mr-2 text-indigo-600" />
+                ) : node.module === "quality" ? (
+                  <LuShieldX className="mr-2 text-red-600" />
                 ) : (
                   <MethodIcon
                     type={child.methodType ?? "Method"}

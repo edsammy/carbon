@@ -1,6 +1,7 @@
 import {
   LuBarcode,
   LuBox,
+  LuClipboardCheck,
   LuCreditCard,
   LuCrown,
   LuFactory,
@@ -78,6 +79,12 @@ const settingsRoutes: AuthenticatedRouteGroup<{
         to: path.to.productionSettings,
         role: "employee",
         icon: <LuFactory />,
+      },
+      {
+        name: "Quality",
+        to: path.to.qualitySettings,
+        role: "employee",
+        icon: <LuClipboardCheck />,
       },
       {
         name: "Sales",

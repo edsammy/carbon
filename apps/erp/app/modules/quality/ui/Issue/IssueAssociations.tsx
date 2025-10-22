@@ -320,7 +320,6 @@ function NewItemAssociation() {
         label={itemType}
         // @ts-ignore
         type={itemType}
-        replenishmentSystem="Buy"
         onTypeChange={onTypeChange}
       />
     </>

@@ -135,6 +135,129 @@ export const cleanup = schedules.task({
         }
       }
 
+      // Check for gauges going out of calibration
+      console.log("Checking for gauges going out of calibration...");
+      const outOfCalibrationGauges = await serviceRole
+        .from("gauge")
+        .select("*")
+        .eq("gaugeCalibrationStatus", "Out-of-Calibration")
+        .neq("lastCalibrationStatus", "Out-of-Calibration");
+
+      if (outOfCalibrationGauges.error) {
+        console.error(
+          `Error fetching out of calibration gauges: ${JSON.stringify(
+            outOfCalibrationGauges.error
+          )}`
+        );
+      } else if (outOfCalibrationGauges.data.length > 0) {
+        console.log(
+          `Found ${outOfCalibrationGauges.data.length} gauges going out of calibration`
+        );
+
+        // Get unique company IDs
+        const companyIds = [
+          ...new Set(outOfCalibrationGauges.data.map((g) => g.companyId)),
+        ];
+
+        // Fetch all company settings at once
+        const companySettingsResult = await serviceRole
+          .from("companySettings")
+          .select("id, gaugeCalibrationExpiredNotificationGroup")
+          .in("id", companyIds);
+
+        if (companySettingsResult.error) {
+          console.error(
+            `Error fetching company settings: ${JSON.stringify(
+              companySettingsResult.error
+            )}`
+          );
+        } else {
+          // Create a map of companyId -> notification group
+          const notificationGroupsByCompany = new Map(
+            companySettingsResult.data.map((settings) => [
+              settings.id,
+              settings.gaugeCalibrationExpiredNotificationGroup ?? [],
+            ])
+          );
+
+          const gaugeNotificationPayloads: TriggerPayload[] = [];
+
+          // Create notification payloads for each gauge
+          for (const gauge of outOfCalibrationGauges.data) {
+            const notificationGroup =
+              notificationGroupsByCompany.get(gauge.companyId) ?? [];
+
+            if (notificationGroup.length === 0) {
+              console.log(
+                `No notification group configured for company ${gauge.companyId}, skipping gauge ${gauge.gaugeId}`
+              );
+              continue;
+            }
+
+            // Create notification payloads for each user in the notification group
+            for (const userId of notificationGroup) {
+              gaugeNotificationPayloads.push({
+                workflow: NotificationWorkflow.GaugeCalibration,
+                payload: {
+                  event: NotificationEvent.GaugeCalibrationExpired,
+                  recordId: gauge.id,
+                  description: `Gauge ${gauge.gaugeId} is out of calibration`,
+                },
+                user: {
+                  subscriberId: getSubscriberId({
+                    companyId: gauge.companyId,
+                    userId,
+                  }),
+                },
+              });
+            }
+          }
+
+          if (gaugeNotificationPayloads.length > 0) {
+            console.log(
+              `Triggering ${gaugeNotificationPayloads.length} gauge calibration notifications`
+            );
+            try {
+              await triggerBulk(novu, gaugeNotificationPayloads);
+
+              // Update lastCalibrationStatus for gauges that had notifications sent
+              // Extract unique gauge IDs from the notification payloads
+              const gaugeIdsToUpdate = [
+                ...new Set(
+                  gaugeNotificationPayloads.map(
+                    (payload) => payload.payload.recordId
+                  )
+                ),
+              ];
+
+              const updateGauges = await serviceRole
+                .from("gauge")
+                .update({ lastCalibrationStatus: "Out-of-Calibration" })
+                .in("id", gaugeIdsToUpdate);
+
+              if (updateGauges.error) {
+                console.error(
+                  `Error updating gauge lastCalibrationStatus: ${JSON.stringify(
+                    updateGauges.error
+                  )}`
+                );
+              } else {
+                console.log(
+                  `Updated lastCalibrationStatus for ${gaugeIdsToUpdate.length} gauges`
+                );
+              }
+            } catch (error) {
+              console.error("Error triggering gauge calibration notifications");
+              console.error(error);
+            }
+          } else {
+            console.log("No gauge calibration notifications to trigger");
+          }
+        }
+      } else {
+        console.log("No gauges going out of calibration found");
+      }
+
       console.log(`🧹 Cleanup tasks completed: ${new Date().toISOString()}`);
     } catch (error) {
       console.error(

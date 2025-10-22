@@ -223,6 +223,23 @@ export const notifyTask = task({
 
           return `Digital Quote ${digitalQuote?.data?.quoteId} was accepted`;
 
+        case NotificationEvent.GaugeCalibrationExpired:
+          const gaugeCalibration = await client
+            .from("gaugeCalibrationRecord")
+            .select("*")
+            .eq("id", documentId)
+            .single();
+
+          if (gaugeCalibration.error) {
+            console.error(
+              "Failed to get gaugeCalibration",
+              gaugeCalibration.error
+            );
+            throw gaugeCalibration.error;
+          }
+
+          return `Gauge ${gaugeCalibration?.data?.gaugeId} is out of calibration`;
+
         case NotificationEvent.StockTransferAssignment:
           const stockTransfer = await client
             .from("stockTransfer")

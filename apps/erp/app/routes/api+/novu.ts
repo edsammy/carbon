@@ -3,6 +3,7 @@ import {
   assignmentWorkflow,
   digitalQuoteResponseWorkflow,
   expirationWorkflow,
+  gaugeCalibrationExpiredWorkflow,
   jobCompletedWorkflow,
   messageWorkflow,
 } from "~/novu/workflows";
@@ -12,6 +13,7 @@ const handler = serve({
     assignmentWorkflow,
     jobCompletedWorkflow,
     digitalQuoteResponseWorkflow,
+    gaugeCalibrationExpiredWorkflow,
     expirationWorkflow,
     messageWorkflow,
   ],

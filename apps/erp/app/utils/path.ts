@@ -1103,6 +1103,7 @@ export const path = {
       generatePath(`${x}/production/planning/${itemId}`),
     productionSettings: `${x}/settings/production`,
     profile: `${x}/account/profile`,
+    qualitySettings: `${x}/settings/quality`,
     purchaseInvoice: (id: string) =>
       generatePath(`${x}/purchase-invoice/${id}`),
     purchaseInvoiceDelivery: (id: string) =>

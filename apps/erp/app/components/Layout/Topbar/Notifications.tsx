@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import {
   LuBell,
   LuCalendarX,
+  LuCircleGauge,
   LuDollarSign,
   LuHammer,
   LuHardHat,
@@ -131,6 +132,14 @@ function GenericNotification({
         <Notification
           icon={<LuDollarSign />}
           to={path.to.quoteDetails(id)}
+          {...props}
+        />
+      );
+    case NotificationEvent.GaugeCalibrationExpired:
+      return (
+        <Notification
+          icon={<LuCircleGauge />}
+          to={path.to.gauge(id)}
           {...props}
         />
       );

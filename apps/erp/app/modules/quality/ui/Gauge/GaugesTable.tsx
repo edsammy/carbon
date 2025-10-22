@@ -116,22 +116,7 @@ const GaugesTable = memo(({ data, types, count }: GaugesTableProps) => {
           icon: <LuContainer />,
         },
       },
-      {
-        accessorKey: "modelNumber",
-        header: "Model Number",
-        cell: ({ row }) => row.original.modelNumber,
-        meta: {
-          icon: <LuHash />,
-        },
-      },
-      {
-        accessorKey: "serialNumber",
-        header: "Serial Number",
-        cell: ({ row }) => row.original.serialNumber,
-        meta: {
-          icon: <LuHash />,
-        },
-      },
+
       {
         accessorKey: "gaugeTypeId",
         header: "Type",
@@ -171,6 +156,22 @@ const GaugesTable = memo(({ data, types, count }: GaugesTableProps) => {
               value: status,
             })),
           },
+        },
+      },
+      {
+        accessorKey: "modelNumber",
+        header: "Model Number",
+        cell: ({ row }) => row.original.modelNumber,
+        meta: {
+          icon: <LuHash />,
+        },
+      },
+      {
+        accessorKey: "serialNumber",
+        header: "Serial Number",
+        cell: ({ row }) => row.original.serialNumber,
+        meta: {
+          icon: <LuHash />,
         },
       },
       {

@@ -11,6 +11,7 @@ const payloadSchema = z.object({
   description: z.string(),
   event: z.enum([
     NotificationEvent.DigitalQuoteResponse,
+    NotificationEvent.GaugeCalibrationExpired,
     NotificationEvent.JobAssignment,
     NotificationEvent.JobCompleted,
     NotificationEvent.JobOperationAssignment,
@@ -61,6 +62,17 @@ export const expirationWorkflow = workflow(
   async ({ payload, step }) => {
     await step.inApp(NotificationType.ExpirationInApp, () => ({
       body: "Expired",
+      payload,
+    }));
+  },
+  { payloadSchema }
+);
+
+export const gaugeCalibrationExpiredWorkflow = workflow(
+  NotificationWorkflow.GaugeCalibration,
+  async ({ payload, step }) => {
+    await step.inApp(NotificationType.ExpirationInApp, () => ({
+      body: "Gauge Calibration Expired",
       payload,
     }));
   },

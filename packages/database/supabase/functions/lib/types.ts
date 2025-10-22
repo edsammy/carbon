@@ -2244,6 +2244,7 @@ export type Database = {
           digitalQuoteEnabled: boolean
           digitalQuoteIncludesPurchaseOrders: boolean
           digitalQuoteNotificationGroup: string[]
+          gaugeCalibrationExpiredNotificationGroup: string[]
           id: string
           inventoryJobCompletedNotificationGroup: string[]
           kanbanOutput: Database["public"]["Enums"]["kanbanOutput"]
@@ -2258,6 +2259,7 @@ export type Database = {
           digitalQuoteEnabled?: boolean
           digitalQuoteIncludesPurchaseOrders?: boolean
           digitalQuoteNotificationGroup?: string[]
+          gaugeCalibrationExpiredNotificationGroup?: string[]
           id: string
           inventoryJobCompletedNotificationGroup?: string[]
           kanbanOutput?: Database["public"]["Enums"]["kanbanOutput"]
@@ -2272,6 +2274,7 @@ export type Database = {
           digitalQuoteEnabled?: boolean
           digitalQuoteIncludesPurchaseOrders?: boolean
           digitalQuoteNotificationGroup?: string[]
+          gaugeCalibrationExpiredNotificationGroup?: string[]
           id?: string
           inventoryJobCompletedNotificationGroup?: string[]
           kanbanOutput?: Database["public"]["Enums"]["kanbanOutput"]
@@ -7170,6 +7173,7 @@ export type Database = {
           gaugeTypeId: string
           id: string
           lastCalibrationDate: string | null
+          lastCalibrationStatus: Database["public"]["Enums"]["gaugeCalibrationStatus"]
           locationId: string | null
           modelNumber: string | null
           nextCalibrationDate: string | null
@@ -7194,6 +7198,7 @@ export type Database = {
           gaugeTypeId: string
           id?: string
           lastCalibrationDate?: string | null
+          lastCalibrationStatus?: Database["public"]["Enums"]["gaugeCalibrationStatus"]
           locationId?: string | null
           modelNumber?: string | null
           nextCalibrationDate?: string | null
@@ -7218,6 +7223,7 @@ export type Database = {
           gaugeTypeId?: string
           id?: string
           lastCalibrationDate?: string | null
+          lastCalibrationStatus?: Database["public"]["Enums"]["gaugeCalibrationStatus"]
           locationId?: string | null
           modelNumber?: string | null
           nextCalibrationDate?: string | null

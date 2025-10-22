@@ -1101,6 +1101,11 @@ export async function upsertGaugeCalibrationRecord(
             : "Out-of-Calibration",
         lastCalibrationDate: gaugeCalibrationRecord.dateCalibrated,
         nextCalibrationDate: nextCalibrationDate,
+        // Reset lastCalibrationStatus when gauge passes calibration to allow future notifications
+        lastCalibrationStatus:
+          gaugeCalibrationRecord.inspectionStatus === "Pass"
+            ? "In-Calibration"
+            : gauge.data.lastCalibrationStatus,
       })
       .eq("id", gaugeCalibrationRecord.gaugeId);
 

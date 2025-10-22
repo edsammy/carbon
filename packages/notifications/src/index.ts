@@ -6,12 +6,14 @@ export enum NotificationWorkflow {
   Assignment = "assignment",
   DigitalQuoteResponse = "digital-quote-response",
   Expiration = "expiration",
+  GaugeCalibration = "gauge-calibration",
   JobCompleted = "job-completed",
   Message = "message",
 }
 
 export enum NotificationEvent {
   DigitalQuoteResponse = "digital-quote-response",
+  GaugeCalibrationExpired = "gauge-calibration-expired",
   JobAssignment = "job-assignment",
   JobCompleted = "job-completed",
   JobOperationAssignment = "job-operation-assignment",
