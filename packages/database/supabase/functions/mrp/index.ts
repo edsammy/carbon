@@ -264,27 +264,6 @@ serve(async (req: Request) => {
       "Buy" | "Make" | "Buy and Make"
     >();
 
-    // Define BOM node type
-    type BomNode = {
-      methodMaterialId: string;
-      itemId: string;
-      quantity: number;
-      parentMaterialId: string | null;
-      isRoot: boolean;
-      children: BomNode[];
-      accumulatedQuantity: number;
-      accumulatedLeadTime: number;
-    };
-
-    // Type for item requirements
-    type ItemRequirement = {
-      itemId: string;
-      baseQuantity: number; // Quantity required per unit of parent
-      leadTimeOffset: number;
-      replenishmentSystem: "Buy" | "Make";
-      methodType: "Make" | "Pick" | "Buy";
-    };
-
     // Cache for base requirements by item
     const baseRequirementsByItem = new Map<string, ItemRequirement[]>();
 
@@ -354,8 +333,6 @@ serve(async (req: Request) => {
         return baseRequirementsByItem.get(itemId)!;
       }
 
-      console.log(`Fetching BOM for item ${itemId}`);
-
       // Get active make method
       const makeMethod = await client
         .from("activeMakeMethods")
@@ -365,7 +342,6 @@ serve(async (req: Request) => {
         .maybeSingle();
 
       if (makeMethod.error || !makeMethod.data) {
-        console.log(`No make method found for item ${itemId}`);
         baseRequirementsByItem.set(itemId, []);
         return [];
       }
@@ -380,8 +356,6 @@ serve(async (req: Request) => {
         baseRequirementsByItem.set(itemId, []);
         return [];
       }
-
-      console.log(`BOM tree for ${itemId}: ${tree.data.length} nodes`);
 
       // Fetch metadata for all items in this BOM
       const itemsInBom = new Set<string>();
@@ -456,9 +430,6 @@ serve(async (req: Request) => {
       }
 
       baseRequirementsByItem.set(itemId, requirements);
-      console.log(
-        `Stored ${requirements.length} base requirements for ${itemId}`
-      );
       return requirements;
     };
 
@@ -474,13 +445,8 @@ serve(async (req: Request) => {
       const baseRequirements = await fetchBomRequirements(itemId);
 
       if (baseRequirements.length === 0) {
-        console.log(`No base requirements found for item ${itemId}`);
         return;
       }
-
-      console.log(
-        `Processing ${baseRequirements.length} requirements for ${itemId} with quantity ${quantity}`
-      );
 
       for (const req of baseRequirements) {
         const requiredQuantity = req.baseQuantity * quantity;
@@ -488,9 +454,6 @@ serve(async (req: Request) => {
 
         // Skip Make+Make items - they will be produced, not procured
         if (req.methodType === "Make" && req.replenishmentSystem === "Make") {
-          console.log(
-            `Skipping Make+Make item ${req.itemId} - will be produced internally`
-          );
           continue;
         }
 
@@ -500,9 +463,6 @@ serve(async (req: Request) => {
 
         if (existing) {
           existing.estimatedQuantity += requiredQuantity;
-          console.log(
-            `Updated requirement for ${key}: ${existing.estimatedQuantity}`
-          );
         } else {
           requirementsByProjectedItem.set(key, {
             estimatedQuantity: requiredQuantity,
@@ -510,16 +470,10 @@ serve(async (req: Request) => {
             replenishmentSystem: req.replenishmentSystem,
             methodType: req.methodType,
           });
-          console.log(
-            `Created requirement for ${key}: ${requiredQuantity} (quantity: ${req.baseQuantity} × ${quantity}, leadTime: ${totalLeadTime})`
-          );
         }
 
         // If this is a Pick item with Make replenishment, recursively expand its BOM
         if (req.methodType === "Pick" && req.replenishmentSystem === "Make") {
-          console.log(
-            `Recursively expanding BOM for Pick+Make item ${req.itemId} (quantity: ${requiredQuantity}, leadTime: ${totalLeadTime})`
-          );
           await processRequirement(
             locationId,
             periodId,
@@ -531,183 +485,8 @@ serve(async (req: Request) => {
       }
     };
 
-    // Now apply demand projections by multiplying base requirements
-    for (const projection of demandProjections.data) {
-      if (!projection.itemId || !projection.forecastQuantity) {
-        console.log(
-          `Skipping projection - missing itemId or forecastQuantity:`,
-          {
-            itemId: projection.itemId,
-            forecastQuantity: projection.forecastQuantity,
-          }
-        );
-        continue;
-      }
-
-      console.log(
-        `Processing projection for item ${projection.itemId} with quantity ${projection.forecastQuantity}`
-      );
-
-      await processRequirement(
-        projection.locationId!,
-        projection.periodId,
-        projection.itemId,
-        projection.forecastQuantity,
-        0
-      );
-    }
-
-    console.log({
-      requirementsByProjectedItemCount: requirementsByProjectedItem.size,
-      requirementsByProjectedItem: Object.fromEntries(
-        requirementsByProjectedItem
-      ),
-    });
-
-    // Convert requirements to demandForecast records with period offsetting
-    // Use a Map to aggregate by (itemId, locationId, periodId) to avoid duplicates
-    const demandForecastMap = new Map<
-      string,
-      Database["public"]["Tables"]["demandForecast"]["Insert"]
-    >();
-
-    for (const [key, requirement] of requirementsByProjectedItem) {
-      const [locationId, sourcePeriodId, itemId] = key.split("-");
-
-      // Find the source period
-      const sourcePeriod = periods.find((p) => p.id === sourcePeriodId);
-      if (!sourcePeriod) {
-        console.log(`Could not find source period ${sourcePeriodId}`);
-        continue;
-      }
-
-      // Calculate how many days to offset backwards based on lead time
-      const leadTimeDays = requirement.leadTimeOffset;
-      const leadTimeWeeks = Math.ceil(leadTimeDays / 7); // Round up to nearest week
-
-      // Find the target period by going backwards leadTimeWeeks from source period
-      const sourcePeriodIndex = periods.findIndex(
-        (p) => p.id === sourcePeriodId
-      );
-      const targetPeriodIndex = Math.max(0, sourcePeriodIndex - leadTimeWeeks);
-      const targetPeriod = periods[targetPeriodIndex];
-
-      if (!targetPeriod) {
-        console.log(
-          `Could not find target period for item ${itemId}, using earliest period`
-        );
-        continue;
-      }
-
-      console.log(
-        `Item ${itemId}: source period ${sourcePeriodIndex}, lead time ${leadTimeDays} days (${leadTimeWeeks} weeks), target period ${targetPeriodIndex}`
-      );
-
-      // Create unique key for aggregation
-      const forecastKey = `${itemId}-${locationId}-${targetPeriod.id}`;
-      const existing = demandForecastMap.get(forecastKey);
-
-      if (existing) {
-        // Aggregate quantities for same item/location/period
-        existing.forecastQuantity =
-          Number(existing.forecastQuantity) + requirement.estimatedQuantity;
-        console.log(
-          `Aggregated forecast for ${forecastKey}: ${existing.forecastQuantity}`
-        );
-      } else {
-        demandForecastMap.set(forecastKey, {
-          itemId,
-          locationId,
-          periodId: targetPeriod.id!,
-          forecastQuantity: requirement.estimatedQuantity,
-          forecastMethod: "mrp",
-          companyId,
-          createdBy: userId,
-          updatedBy: userId,
-        });
-      }
-    }
-
-    const demandForecastUpserts = Array.from(demandForecastMap.values());
-
-    console.log({
-      demandForecastUpsertsCount: demandForecastUpserts.length,
-      demandForecastUpserts: demandForecastUpserts.slice(0, 5), // Show first 5
-    });
-
-    // Group sales order lines into demand periods
-    for (const line of salesOrderLines.data) {
-      if (!line.itemId || !line.quantityToSend) continue;
-
-      const promiseDate = line.promisedDate
-        ? parseDate(line.promisedDate)
-        : today;
-      const requiredDate = promiseDate;
-
-      // If promised date is before today, use first period
-      let period;
-      if (requiredDate.compare(today) < 0) {
-        period = periods[0];
-      } else {
-        // Find matching period for promised date
-        period = periods.find((p) => {
-          return (
-            p.startDate?.compare(requiredDate) <= 0 &&
-            p.endDate?.compare(requiredDate) >= 0
-          );
-        });
-      }
-
-      if (period) {
-        const locationDemand = salesDemandByLocationAndPeriod.get(
-          line.locationId ?? ""
-        );
-        if (locationDemand) {
-          const periodDemand = locationDemand.get(period.id ?? "");
-          if (periodDemand) {
-            const currentDemand = periodDemand.get(line.itemId) ?? 0;
-            periodDemand.set(line.itemId, currentDemand + line.quantityToSend);
-          }
-        }
-      }
-    }
-
-    // Group job material lines into demand periods
-    for (const line of jobMaterialLines.data) {
-      if (!line.itemId || !line.quantityToIssue) continue;
-
-      const dueDate = line.dueDate ? parseDate(line.dueDate) : today;
-      const requiredDate = dueDate.add({ days: -(line.leadTime ?? 7) });
-
-      // If required date is before today, use first period
-      let period;
-      if (requiredDate.compare(today) < 0) {
-        period = periods[0];
-      } else {
-        // Find matching period for required date
-        period = periods.find((p) => {
-          return (
-            p.startDate?.compare(requiredDate) <= 0 &&
-            p.endDate?.compare(requiredDate) >= 0
-          );
-        });
-      }
-
-      if (period) {
-        const locationDemand = jobMaterialDemandByLocationAndPeriod.get(
-          line.locationId ?? ""
-        );
-        if (locationDemand) {
-          const periodDemand = locationDemand.get(period.id ?? "");
-          if (periodDemand) {
-            const currentDemand = periodDemand.get(line.itemId) ?? 0;
-            periodDemand.set(line.itemId, currentDemand + line.quantityToIssue);
-          }
-        }
-      }
-    }
-
-    // Group job lines into supply periods
+    // First, group production orders by location/period/item to offset demand projections
+    // This prevents double-counting of planned production
     for (const line of productionLines.data) {
       if (!line.itemId || !line.quantityToReceive) continue;
 
@@ -748,7 +527,184 @@ serve(async (req: Request) => {
       }
     }
 
-    // Group job lines into supply periods
+    // Now apply demand projections by multiplying base requirements
+    // Subtract planned production orders to avoid double-counting
+    for (const projection of demandProjections.data) {
+      if (!projection.itemId || !projection.forecastQuantity) {
+        continue;
+      }
+
+      // Calculate net demand after subtracting planned production orders
+      let netDemand = projection.forecastQuantity;
+      const locationSupply = jobSupplyByLocationAndPeriod.get(
+        projection.locationId ?? ""
+      );
+      if (locationSupply) {
+        const periodSupply = locationSupply.get(projection.periodId);
+        if (periodSupply) {
+          const plannedProduction = periodSupply.get(projection.itemId) ?? 0;
+          netDemand = Math.max(0, projection.forecastQuantity - plannedProduction);
+        }
+      }
+
+      // Only process if there's net demand after offsetting
+      if (netDemand > 0) {
+        await processRequirement(
+          projection.locationId!,
+          projection.periodId,
+          projection.itemId,
+          netDemand,
+          0
+        );
+      }
+    }
+
+    // Group sales order lines into demand periods AND process their BOM requirements
+    for (const line of salesOrderLines.data) {
+      if (!line.itemId || !line.quantityToSend) continue;
+
+      const promiseDate = line.promisedDate
+        ? parseDate(line.promisedDate)
+        : today;
+      const requiredDate = promiseDate;
+
+      // If promised date is before today, use first period
+      let period;
+      if (requiredDate.compare(today) < 0) {
+        period = periods[0];
+      } else {
+        // Find matching period for promised date
+        period = periods.find((p) => {
+          return (
+            p.startDate?.compare(requiredDate) <= 0 &&
+            p.endDate?.compare(requiredDate) >= 0
+          );
+        });
+      }
+
+      if (period) {
+        const locationDemand = salesDemandByLocationAndPeriod.get(
+          line.locationId ?? ""
+        );
+        if (locationDemand) {
+          const periodDemand = locationDemand.get(period.id ?? "");
+          if (periodDemand) {
+            const currentDemand = periodDemand.get(line.itemId) ?? 0;
+            periodDemand.set(line.itemId, currentDemand + line.quantityToSend);
+          }
+        }
+
+        // Process BOM requirements for this sales order line
+        await processRequirement(
+          line.locationId ?? "",
+          period.id ?? "",
+          line.itemId,
+          line.quantityToSend,
+          0
+        );
+      }
+    }
+
+    // Group job material lines into demand periods AND process their BOM requirements
+    for (const line of jobMaterialLines.data) {
+      if (!line.itemId || !line.quantityToIssue) continue;
+
+      const dueDate = line.dueDate ? parseDate(line.dueDate) : today;
+      const requiredDate = dueDate.add({ days: -(line.leadTime ?? 7) });
+
+      // If required date is before today, use first period
+      let period;
+      if (requiredDate.compare(today) < 0) {
+        period = periods[0];
+      } else {
+        // Find matching period for required date
+        period = periods.find((p) => {
+          return (
+            p.startDate?.compare(requiredDate) <= 0 &&
+            p.endDate?.compare(requiredDate) >= 0
+          );
+        });
+      }
+
+      if (period) {
+        const locationDemand = jobMaterialDemandByLocationAndPeriod.get(
+          line.locationId ?? ""
+        );
+        if (locationDemand) {
+          const periodDemand = locationDemand.get(period.id ?? "");
+          if (periodDemand) {
+            const currentDemand = periodDemand.get(line.itemId) ?? 0;
+            periodDemand.set(line.itemId, currentDemand + line.quantityToIssue);
+          }
+        }
+
+        // Process BOM requirements for this job material line
+        await processRequirement(
+          line.locationId ?? "",
+          period.id ?? "",
+          line.itemId,
+          line.quantityToIssue,
+          0
+        );
+      }
+    }
+
+    // Convert requirements to demandForecast records with period offsetting
+    // Use a Map to aggregate by (itemId, locationId, periodId) to avoid duplicates
+    const demandForecastMap = new Map<
+      string,
+      Database["public"]["Tables"]["demandForecast"]["Insert"]
+    >();
+
+    for (const [key, requirement] of requirementsByProjectedItem) {
+      const [locationId, sourcePeriodId, itemId] = key.split("-");
+
+      // Find the source period
+      const sourcePeriod = periods.find((p) => p.id === sourcePeriodId);
+      if (!sourcePeriod) {
+        continue;
+      }
+
+      // Calculate how many days to offset backwards based on lead time
+      const leadTimeDays = requirement.leadTimeOffset;
+      const leadTimeWeeks = Math.ceil(leadTimeDays / 7); // Round up to nearest week
+
+      // Find the target period by going backwards leadTimeWeeks from source period
+      const sourcePeriodIndex = periods.findIndex(
+        (p) => p.id === sourcePeriodId
+      );
+      const targetPeriodIndex = Math.max(0, sourcePeriodIndex - leadTimeWeeks);
+      const targetPeriod = periods[targetPeriodIndex];
+
+      if (!targetPeriod) {
+        continue;
+      }
+
+      // Create unique key for aggregation
+      const forecastKey = `${itemId}-${locationId}-${targetPeriod.id}`;
+      const existing = demandForecastMap.get(forecastKey);
+
+      if (existing) {
+        // Aggregate quantities for same item/location/period
+        existing.forecastQuantity =
+          Number(existing.forecastQuantity) + requirement.estimatedQuantity;
+      } else {
+        demandForecastMap.set(forecastKey, {
+          itemId,
+          locationId,
+          periodId: targetPeriod.id!,
+          forecastQuantity: requirement.estimatedQuantity,
+          forecastMethod: "mrp",
+          companyId,
+          createdBy: userId,
+          updatedBy: userId,
+        });
+      }
+    }
+
+    const demandForecastUpserts = Array.from(demandForecastMap.values());
+
+    // Group purchase order lines into supply periods
     for (const line of purchaseOrderLines.data) {
       if (!line.itemId || !line.quantityToReceive) continue;
 
@@ -1147,3 +1103,23 @@ async function getOrCreateDemandPeriods(
     createdAt: p.createdAt,
   }));
 }
+
+type BomNode = {
+  methodMaterialId: string;
+  itemId: string;
+  quantity: number;
+  parentMaterialId: string | null;
+  isRoot: boolean;
+  children: BomNode[];
+  accumulatedQuantity: number;
+  accumulatedLeadTime: number;
+};
+
+// Type for item requirements
+type ItemRequirement = {
+  itemId: string;
+  baseQuantity: number; // Quantity required per unit of parent
+  leadTimeOffset: number;
+  replenishmentSystem: "Buy" | "Make";
+  methodType: "Make" | "Pick" | "Buy";
+};
