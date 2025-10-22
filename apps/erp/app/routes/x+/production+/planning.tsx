@@ -106,13 +106,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return json({
     items: (items.data ?? []) as ProductionPlanningItem[],
+    count: items.count ?? 0,
     periods: periods.data ?? [],
     locationId,
   });
 }
 
 export default function ProductionPlanningRoute() {
-  const { items, locationId, periods } = useLoaderData<typeof loader>();
+  const { items, count, locationId, periods } = useLoaderData<typeof loader>();
 
   return (
     <VStack spacing={0} className="h-full ">
@@ -125,7 +126,7 @@ export default function ProductionPlanningRoute() {
         >
           <ProductionPlanningTable
             data={items}
-            count={items.length}
+            count={count}
             locationId={locationId}
             periods={periods}
           />
