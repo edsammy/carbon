@@ -29,6 +29,7 @@ import { useFetcher } from "@remix-run/react";
 
 import { useMemo, useState } from "react";
 import {
+  LuChartLine,
   LuClipboardList,
   LuCrown,
   LuFactory,
@@ -58,7 +59,8 @@ const demandSourceTypes = ["Sales Order", "Job Material"] as const;
 type SourceType =
   | (typeof supplySourceTypes)[number]
   | (typeof demandSourceTypes)[number]
-  | "Planned";
+  | "Planned"
+  | "Demand Forecast";
 
 interface ChartDataPoint {
   startDate: string;
@@ -223,6 +225,7 @@ export const ItemPlanningChart = ({
 
   const combinedSupplyAndDemand = useMemo(() => {
     let projectedQuantity = forecastFetcher.data?.quantityOnHand ?? 0;
+    const periods = forecastFetcher.data?.periods ?? [];
 
     // First get all forecast data
     const forecastData = [
@@ -246,6 +249,17 @@ export const ItemPlanningChart = ({
         sourceType: "Production Order" as SourceType,
         quantity: line.quantity ?? 0,
       })),
+      ...(forecastFetcher.data?.demandForecast ?? []).map((forecast) => {
+        const period = periods.find((p) => p.id === forecast.periodId);
+        return {
+          id: null,
+          sourceType: "Demand Forecast" as SourceType,
+          quantity: forecast.forecastQuantity ?? 0,
+          dueDate: period?.startDate ?? null,
+          documentReadableId: "Demand Forecast",
+          documentId: null,
+        };
+      }),
     ];
 
     // Filter out planned orders that have matching existing IDs in forecast data
@@ -285,7 +299,8 @@ export const ItemPlanningChart = ({
       .map((item) => {
         if (
           item.sourceType === "Sales Order" ||
-          item.sourceType === "Job Material"
+          item.sourceType === "Job Material" ||
+          item.sourceType === "Demand Forecast"
         ) {
           projectedQuantity -= item.quantity;
         } else {
@@ -511,7 +526,7 @@ export const ItemPlanningChart = ({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
-              <LuSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <LuSearch className="absolute left-3 top-3 size-4 text-muted-foreground" />
             </div>
 
             <TabsContent value="all" className="border rounded-lg">
@@ -534,10 +549,11 @@ export const ItemPlanningChart = ({
 
             <TabsContent value="demand" className="border rounded-lg">
               {combinedSupplyAndDemand
-                .filter((item) =>
-                  demandSourceTypes.includes(
-                    item.sourceType as (typeof demandSourceTypes)[number]
-                  )
+                .filter(
+                  (item) =>
+                    demandSourceTypes.includes(
+                      item.sourceType as (typeof demandSourceTypes)[number]
+                    ) || item.sourceType === "Demand Forecast"
                 )
                 .map((item, index) => (
                   <SupplyDemandPlanningItem key={index} item={item} />
@@ -565,11 +581,12 @@ interface PlanningItem {
 }
 
 const sourceTypeIcons: Record<SourceType, JSX.Element> = {
-  "Sales Order": <LuCrown className="h-4 w-4 text-teal-500" />,
-  "Job Material": <LuClipboardList className="h-4 w-4 text-teal-500" />,
-  "Purchase Order": <LuShoppingCart className="h-4 w-4 text-blue-600" />,
-  "Production Order": <LuFactory className="h-4 w-4 text-blue-600" />,
-  Planned: <LuMoveUp className="h-4 w-4 text-indigo-600" />,
+  "Sales Order": <LuCrown className="size-4 text-teal-500" />,
+  "Job Material": <LuClipboardList className="size-4 text-teal-500" />,
+  "Purchase Order": <LuShoppingCart className="size-4 text-blue-600" />,
+  "Production Order": <LuFactory className="size-4 text-blue-600" />,
+  Planned: <LuMoveUp className="size-4 text-indigo-600" />,
+  "Demand Forecast": <LuChartLine className="size-4 text-cyan-500" />,
 };
 
 function SupplyDemandPlanningItem({ item }: { item: PlanningItem }) {
@@ -596,7 +613,8 @@ function SupplyDemandPlanningItem({ item }: { item: PlanningItem }) {
           <div className="flex items-center gap-1 text-sm text-muted-foreground text-right">
             <span>{numberFormatter.format(item.quantity)}</span>
             {item.sourceType === "Sales Order" ||
-            item.sourceType === "Job Material" ? (
+            item.sourceType === "Job Material" ||
+            item.sourceType === "Demand Forecast" ? (
               <LuMoveDown className="text-red-500" />
             ) : (
               <LuMoveUp className="text-teal-500" />
@@ -629,6 +647,8 @@ function getPathToDocument(item: PlanningItem) {
     case "Production Order":
       return path.to.job(item.documentId ?? "");
     case "Planned":
+      return "#";
+    case "Demand Forecast":
       return "#";
     default:
       return "";
