@@ -35,6 +35,7 @@ import { usePermissions } from "~/hooks";
 import { itemTypes } from "~/modules/inventory/inventory.models";
 import { itemReorderingPolicies } from "~/modules/items/items.models";
 import {
+  clearOrdersCache,
   getProductionOrdersFromPlanning,
   getReorderPolicyDescription,
   ItemReorderPolicy,
@@ -69,6 +70,19 @@ const ProductionPlanningTable = memo(
     const mrpFetcher = useFetcher<typeof mrpAction>();
     const bulkUpdateFetcher = useFetcher<typeof bulkUpdateAction>();
 
+    // Clear cache when MRP completes
+    useEffect(() => {
+      if (mrpFetcher.state === "idle" && mrpFetcher.data) {
+        clearOrdersCache();
+        setOrdersMap({}); // Reset local state to force recalculation
+      }
+    }, [mrpFetcher.state, mrpFetcher.data]);
+
+    // Clear local state when data changes (e.g., filters, search)
+    useEffect(() => {
+      setOrdersMap({});
+    }, [data]);
+
     useEffect(() => {
       if (
         bulkUpdateFetcher.data?.success === false &&
@@ -88,32 +102,10 @@ const ProductionPlanningTable = memo(
       bulkUpdateFetcher.state !== "idle" ||
       mrpFetcher.state !== "idle";
 
-    const getOrders = useCallback(() => {
-      const initialMap: Record<string, ProductionOrder[]> = {};
-      data.forEach((item) => {
-        if (item.id) {
-          initialMap[item.id] = getProductionOrdersFromPlanning(item, periods);
-        }
-      });
-      return initialMap;
-    }, [data, periods]);
-
-    // Store orders in a map keyed by item id
+    // Store orders in a map keyed by item id - calculate on-demand instead of eagerly
     const [ordersMap, setOrdersMap] = useState<
       Record<string, ProductionOrder[]>
-    >(() => {
-      const initialMap: Record<string, ProductionOrder[]> = {};
-      data.forEach((item) => {
-        if (item.id) {
-          initialMap[item.id] = getProductionOrdersFromPlanning(item, periods);
-        }
-      });
-      return initialMap;
-    });
-
-    useEffect(() => {
-      setOrdersMap(getOrders());
-    }, [getOrders]);
+    >({});
 
     const onBulkUpdate = useCallback(
       (selectedRows: typeof data, action: "order") => {
@@ -183,6 +175,15 @@ const ProductionPlanningTable = memo(
     );
 
     const columns = useMemo<ColumnDef<ProductionPlanningItem>[]>(() => {
+      // Helper to get orders with on-demand calculation
+      const getOrdersForItem = (itemId: string): ProductionOrder[] => {
+        if (ordersMap[itemId]) {
+          return ordersMap[itemId];
+        }
+        const item = data.find((i) => i.id === itemId);
+        if (!item) return [];
+        return getProductionOrdersFromPlanning(item, periods);
+      };
       const periodColumns: ColumnDef<ProductionPlanningItem>[] = periods.map(
         (period, index) => {
           const isCurrentWeek = index === 0;
@@ -337,7 +338,7 @@ const ProductionPlanningTable = memo(
           header: "",
           cell: ({ row }) => {
             const orders = row.original.id
-              ? ordersMap[row.original.id] || []
+              ? getOrdersForItem(row.original.id)
               : [];
             const orderQuantity = orders.reduce(
               (acc, order) =>
@@ -372,13 +373,15 @@ const ProductionPlanningTable = memo(
           },
         },
       ];
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       periods,
       dateFormatter,
       numberFormatter,
       unitOfMeasures,
       isDisabled,
-      ordersMap,
+      // Note: ordersMap is intentionally not in deps to avoid column regeneration
+      // getOrdersForItem inside the cell will access the latest ordersMap via closure
     ]);
 
     const renderActions = useCallback(
@@ -466,7 +469,12 @@ const ProductionPlanningTable = memo(
           <ProductionPlanningOrderDrawer
             locationId={locationId}
             row={selectedItem}
-            orders={selectedItem.id ? ordersMap[selectedItem.id] || [] : []}
+            orders={
+              selectedItem.id
+                ? ordersMap[selectedItem.id] ||
+                  getProductionOrdersFromPlanning(selectedItem, periods)
+                : []
+            }
             setOrders={setOrders}
             periods={periods}
             isOpen={!!selectedItem}

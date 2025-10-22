@@ -43,6 +43,7 @@ import { itemTypes } from "~/modules/inventory/inventory.models";
 import { itemReorderingPolicies } from "~/modules/items/items.models";
 import type { SupplierPart } from "~/modules/items/types";
 import {
+  clearOrdersCache,
   getPurchaseOrdersFromPlanning,
   getReorderPolicyDescription,
   ItemReorderPolicy,
@@ -110,27 +111,22 @@ const PlanningTable = memo(
 
     const [items] = useItems();
 
-    const getOrders = useCallback(() => {
-      const initialMap: Record<string, PlannedOrder[]> = {};
-      data.forEach((item) => {
-        if (item.id) {
-          initialMap[item.id] = getPurchaseOrdersFromPlanning(
-            item,
-            periods,
-            items,
-            suppliersMap[item.id]
-          );
-        }
-      });
-      return initialMap;
-    }, [data, periods, suppliersMap, items]);
+    // Store orders in a map keyed by item id - calculate on-demand instead of eagerly
+    const [ordersMap, setOrdersMap] = useState<Record<string, PlannedOrder[]>>(
+      {}
+    );
 
-    const [ordersMap, setOrdersMap] =
-      useState<Record<string, PlannedOrder[]>>(getOrders);
-
+    // Clear cache when MRP completes
     useEffect(() => {
-      setOrdersMap(getOrders());
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (mrpFetcher.state === "idle" && mrpFetcher.data) {
+        clearOrdersCache();
+        setOrdersMap({}); // Reset local state to force recalculation
+      }
+    }, [mrpFetcher.state, mrpFetcher.data]);
+
+    // Clear local state when data changes (e.g., filters, search)
+    useEffect(() => {
+      setOrdersMap({});
     }, [data]);
 
     const onBulkUpdate = useCallback(
@@ -199,6 +195,21 @@ const PlanningTable = memo(
     );
 
     const columns = useMemo<ColumnDef<PurchasingPlanningItem>[]>(() => {
+      // Helper to get orders with on-demand calculation
+      const getOrdersForItem = (itemId: string): PlannedOrder[] => {
+        if (ordersMap[itemId]) {
+          return ordersMap[itemId];
+        }
+        const item = data.find((i) => i.id === itemId);
+        if (!item) return [];
+        return getPurchaseOrdersFromPlanning(
+          item,
+          periods,
+          items,
+          suppliersMap[itemId]
+        );
+      };
+
       const periodColumns: ColumnDef<PurchasingPlanningItem>[] = periods.map(
         (period, index) => {
           const isCurrentWeek = index === 0;
@@ -388,7 +399,7 @@ const PlanningTable = memo(
           header: "",
           cell: ({ row }) => {
             const orders = row.original.id
-              ? ordersMap[row.original.id] || []
+              ? getOrdersForItem(row.original.id)
               : [];
             const orderQuantity = orders.reduce(
               (acc, order) =>
@@ -423,6 +434,7 @@ const PlanningTable = memo(
           },
         },
       ];
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       periods,
       suppliers,
@@ -430,8 +442,9 @@ const PlanningTable = memo(
       numberFormatter,
       unitOfMeasures,
       suppliersMap,
-      ordersMap,
       isDisabled,
+      // Note: ordersMap is intentionally not in deps to avoid column regeneration
+      // getOrdersForItem inside the cell will access the latest ordersMap via closure
     ]);
 
     const renderActions = useCallback(
@@ -520,7 +533,17 @@ const PlanningTable = memo(
             selectedItem={selectedItem}
             setSelectedItem={setSelectedItem}
             selectedSupplier={suppliersMap[selectedItem.id]}
-            orders={selectedItem.id ? ordersMap[selectedItem.id] || [] : []}
+            orders={
+              selectedItem.id
+                ? ordersMap[selectedItem.id] ||
+                  getPurchaseOrdersFromPlanning(
+                    selectedItem,
+                    periods,
+                    items,
+                    suppliersMap[selectedItem.id]
+                  )
+                : []
+            }
             setOrders={setOrders}
             periods={periods}
             isOpen={!!selectedItem}

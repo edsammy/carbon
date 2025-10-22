@@ -77,6 +77,33 @@ type BaseOrderParams = {
   periods: { startDate: string; id: string }[];
 };
 
+// Cache for memoizing calculateOrders results
+const ordersCache = new Map<
+  string,
+  {
+    startDate: string;
+    dueDate: string;
+    quantity: number;
+    periodId: string;
+    isASAP: boolean;
+  }[]
+>();
+
+// Generate cache key from itemPlanning and periods
+function getCacheKey(
+  itemPlanning: ProductionPlanningItem | PurchasingPlanningItem,
+  periods: { startDate: string; id: string }[]
+): string {
+  // Include all relevant properties that affect order calculation
+  const periodIds = periods.map((p) => p.id).join(",");
+  const weekValues = Array.from({ length: 48 }, (_, i) => {
+    const key = `week${i + 1}` as keyof typeof itemPlanning;
+    return itemPlanning[key] ?? 0;
+  }).join(",");
+
+  return `${itemPlanning.id}_${itemPlanning.reorderingPolicy}_${itemPlanning.reorderPoint}_${itemPlanning.reorderQuantity}_${itemPlanning.maximumInventoryQuantity}_${itemPlanning.demandAccumulationPeriod}_${itemPlanning.demandAccumulationSafetyStock}_${itemPlanning.leadTime}_${itemPlanning.lotSize}_${itemPlanning.minimumOrderQuantity}_${itemPlanning.maximumOrderQuantity}_${itemPlanning.orderMultiple}_${periodIds}_${weekValues}`;
+}
+
 function calculateOrders({ itemPlanning, periods }: BaseOrderParams): {
   startDate: string;
   dueDate: string;
@@ -84,8 +111,22 @@ function calculateOrders({ itemPlanning, periods }: BaseOrderParams): {
   periodId: string;
   isASAP: boolean;
 }[] {
+  // Check cache first
+  const cacheKey = getCacheKey(itemPlanning, periods);
+  const cached = ordersCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
   if (itemPlanning.reorderingPolicy === "Manual Reorder") {
-    return [];
+    const emptyOrders: {
+      startDate: string;
+      dueDate: string;
+      quantity: number;
+      periodId: string;
+      isASAP: boolean;
+    }[] = [];
+    ordersCache.set(cacheKey, emptyOrders);
+    return emptyOrders;
   }
 
   const orders: {
@@ -203,6 +244,7 @@ function calculateOrders({ itemPlanning, periods }: BaseOrderParams): {
         }
       }
 
+      ordersCache.set(cacheKey, orders);
       return orders;
     case "Fixed Reorder Quantity":
       for (let i = 0; i < periods.length; i++) {
@@ -236,6 +278,7 @@ function calculateOrders({ itemPlanning, periods }: BaseOrderParams): {
         }
       }
 
+      ordersCache.set(cacheKey, orders);
       return orders;
     case "Maximum Quantity":
       for (let i = 0; i < periods.length; i++) {
@@ -298,10 +341,17 @@ function calculateOrders({ itemPlanning, periods }: BaseOrderParams): {
             reorderPoint - (projectedQuantity + orderedQuantity);
         }
       }
+      ordersCache.set(cacheKey, orders);
       return orders;
     default:
+      ordersCache.set(cacheKey, orders);
       return orders;
   }
+}
+
+// Export function to clear the cache if needed (e.g., after MRP runs)
+export function clearOrdersCache() {
+  ordersCache.clear();
 }
 
 export function getProductionOrdersFromPlanning(
