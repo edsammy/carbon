@@ -30,30 +30,28 @@ import {
   useDisclosure,
   VStack,
 } from "@carbon/react";
-import { useFetcher } from "@remix-run/react";
+import { Editor } from "@carbon/react/Editor";
+import { useFetcher, useLocation } from "@remix-run/react";
+import type { FileObject } from "@supabase/storage-js";
+import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { LuDraftingCompass, LuHash, LuShapes, LuShield } from "react-icons/lu";
 import type { z } from "zod";
+import { Documents } from "~/components";
 import { Enumerable } from "~/components/Enumerable";
 import { CustomFormFields, Hidden, Submit } from "~/components/Form";
 import { useGauges } from "~/components/Form/Gauge";
 import { usePermissions, useUser } from "~/hooks";
-
-import { Editor } from "@carbon/react/Editor";
-import { nanoid } from "nanoid";
 import { getPrivateUrl, path } from "~/utils/path";
 import { gaugeCalibrationRecordValidator } from "../../quality.models";
 import type { Gauge } from "../../types";
 import { GaugeRole } from "../Gauge/GaugeStatus";
 
-type GaugeCalibrationRecordFormValues = z.infer<
-  typeof gaugeCalibrationRecordValidator
->;
-
 type GaugeCalibrationRecordFormProps = {
-  initialValues: GaugeCalibrationRecordFormValues;
+  initialValues: z.infer<typeof gaugeCalibrationRecordValidator>;
   type?: "modal" | "drawer";
+  files: FileObject[];
   open?: boolean;
   onClose?: () => void;
 };
@@ -61,12 +59,17 @@ type GaugeCalibrationRecordFormProps = {
 const GaugeCalibrationRecordForm = ({
   initialValues,
   open = true,
+  files,
   type = "drawer",
   onClose,
 }: GaugeCalibrationRecordFormProps) => {
   const permissions = usePermissions();
+  const {
+    company: { id: companyId },
+  } = useUser();
   const fetcher = useFetcher<{}>();
-  const isEditing = initialValues.id !== undefined;
+  const location = useLocation();
+  const isEditing = !location.pathname.includes("new");
   const isDisabled = isEditing
     ? !permissions.can("update", "quality")
     : !permissions.can("create", "quality");
@@ -109,10 +112,6 @@ const GaugeCalibrationRecordForm = ({
   const [notes, setNotes] = useState<JSONContent>(
     (JSON.parse(initialValues?.notes ?? {}) as JSONContent) ?? {}
   );
-
-  const {
-    company: { id: companyId },
-  } = useUser();
 
   const onUploadImage = async (file: File) => {
     const fileType = file.name.split(".").pop();
@@ -267,6 +266,13 @@ const GaugeCalibrationRecordForm = ({
                   />
                 </div>
                 <CustomFormFields table="gaugeCalibrationRecord" />
+                <Documents
+                  files={files}
+                  sourceDocument="Gauge Calibration Record"
+                  sourceDocumentId={initialValues.id}
+                  writeBucket="quality"
+                  writeBucketPermission="quality"
+                />
               </VStack>
             </ModalDrawerBody>
             <ModalDrawerFooter>

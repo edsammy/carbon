@@ -2,12 +2,17 @@ import { assertIsPost, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
+import { useUrlParams } from "@carbon/remix";
 import { getLocalTimeZone, today } from "@internationalized/date";
-import { useNavigate } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
+import type { FileObject } from "@supabase/storage-js";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@vercel/remix";
-import { redirect } from "@vercel/remix";
+import { json, redirect } from "@vercel/remix";
+import { nanoid } from "nanoid";
+import { useEffect, useMemo } from "react";
 import {
   gaugeCalibrationRecordValidator,
+  getQualityFiles,
   upsertGaugeCalibrationRecord,
 } from "~/modules/quality";
 import GaugeCalibrationRecordForm from "~/modules/quality/ui/Calibrations/GaugeCalibrationRecordForm";
@@ -16,11 +21,22 @@ import { setCustomFields } from "~/utils/form";
 import { getParams, path } from "~/utils/path";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await requirePermissions(request, {
+  const { client, companyId } = await requirePermissions(request, {
     create: "quality",
   });
 
-  return null;
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id");
+
+  if (id) {
+    return json({
+      files: await getQualityFiles(client, id, companyId),
+    });
+  }
+
+  return json({
+    files: [] as FileObject[],
+  });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -38,7 +54,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
-  const { id: _id, ...data } = validation.data;
+  const data = validation.data;
 
   const inspectionStatus =
     data.requiresAction || data.requiresAdjustment || data.requiresRepair
@@ -71,9 +87,20 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function GaugeCalibrationRecordNewRoute() {
   const navigate = useNavigate();
+  const { files } = useLoaderData<typeof loader>();
+  const id = useMemo(() => nanoid(), []);
+  const [params, setParams] = useUrlParams();
+
+  useEffect(() => {
+    if (params.get("id") !== id) {
+      setParams({
+        id,
+      });
+    }
+  }, [id, params, setParams]);
 
   const initialValues = {
-    id: undefined,
+    id,
     gaugeId: "",
     dateCalibrated: today(getLocalTimeZone()).toString(),
     requiresAction: false,
@@ -86,7 +113,8 @@ export default function GaugeCalibrationRecordNewRoute() {
   return (
     <GaugeCalibrationRecordForm
       initialValues={initialValues}
-      onClose={() => navigate(-1)}
+      files={files}
+      onClose={() => navigate(path.to.calibrations)}
     />
   );
 }

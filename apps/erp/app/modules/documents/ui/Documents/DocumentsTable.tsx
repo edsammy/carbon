@@ -612,6 +612,10 @@ function getDocumentLocation(
       return path.to.tool(sourceDocumentId);
     case "Consumable":
       return path.to.consumable(sourceDocumentId);
+    case "Gauge Calibration Record":
+      return path.to.gaugeCalibrationRecord(sourceDocumentId);
+    case "Job":
+      return path.to.job(sourceDocumentId);
     // case "Service":
     //   return path.to.service(sourceDocumentId);
     case "Purchase Order":
@@ -628,8 +632,6 @@ function getDocumentLocation(
       return path.to.salesInvoice(sourceDocumentId);
     case "Supplier Quote":
       return path.to.supplierQuote(sourceDocumentId);
-    case "Job":
-      return path.to.job(sourceDocumentId);
     default:
       return "#";
   }

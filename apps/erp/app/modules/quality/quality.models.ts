@@ -72,7 +72,7 @@ export const gaugeValidator = z.object({
 });
 
 export const gaugeCalibrationRecordValidator = z.object({
-  id: zfd.text(z.string().optional()),
+  id: z.string().min(1, { message: "ID is required" }),
   gaugeId: z.string().min(1, { message: "Gauge is required" }),
   dateCalibrated: z.string().min(1, { message: "Date is required" }),
   requiresAction: zfd.checkbox(),

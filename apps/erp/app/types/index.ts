@@ -79,5 +79,5 @@ export interface SelectOption {
 }
 
 export type StorageItem = FileObject & {
-  bucket: string;
+  bucket?: string;
 };

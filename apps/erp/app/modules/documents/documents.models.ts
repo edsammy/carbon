@@ -3,6 +3,8 @@ import { methodItemType } from "~/modules/shared";
 
 export const documentSourceTypes = [
   "Job",
+  "Gauge Calibration Record",
+  "Issue",
   "Purchase Order",
   "Purchase Invoice",
   "Quote",

@@ -38,7 +38,7 @@ import { stripSpecialCharacters } from "~/utils/string";
 type DocumentsProps = {
   files: StorageItem[];
   modelUpload?: ModelUpload;
-  sourceDocument?: "Job" | "Issue";
+  sourceDocument?: "Job" | "Issue" | "Gauge Calibration Record";
   sourceDocumentId?: string;
   sourceDocumentLineId?: string;
   writeBucket: string;

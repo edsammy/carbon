@@ -905,6 +905,17 @@ export async function getQualityDocumentsList(
   );
 }
 
+export async function getQualityFiles(
+  client: SupabaseClient<Database>,
+  id: string,
+  companyId: string
+) {
+  const result = await client.storage
+    .from("private")
+    .list(`${companyId}/quality/${id}`);
+  return result.data || [];
+}
+
 export async function getRequiredActionsList(
   client: SupabaseClient<Database>,
   companyId: string

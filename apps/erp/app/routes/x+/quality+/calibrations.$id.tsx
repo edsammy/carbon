@@ -8,6 +8,7 @@ import { json, redirect } from "@vercel/remix";
 import {
   gaugeCalibrationRecordValidator,
   getGaugeCalibrationRecord,
+  getQualityFiles,
   upsertGaugeCalibrationRecord,
 } from "~/modules/quality";
 import GaugeCalibrationRecordForm from "~/modules/quality/ui/Calibrations/GaugeCalibrationRecordForm";
@@ -20,7 +21,7 @@ export const handle: Handle = {
 };
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { client } = await requirePermissions(request, {
+  const { client, companyId } = await requirePermissions(request, {
     view: "quality",
     bypassRls: true,
   });
@@ -28,7 +29,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const { id } = params;
   if (!id) throw new Error("Could not find id");
 
-  const [record] = await Promise.all([getGaugeCalibrationRecord(client, id)]);
+  const [record, files] = await Promise.all([
+    getGaugeCalibrationRecord(client, id),
+    getQualityFiles(client, id, companyId),
+  ]);
 
   if (record.error) {
     throw redirect(
@@ -42,6 +46,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   return json({
     record: record.data,
+    files: files ?? [],
   });
 }
 
@@ -97,7 +102,7 @@ export default function GaugeCalibrationRecordRoute() {
   const { id } = useParams();
   if (!id) throw new Error("Could not find id");
 
-  const { record } = useLoaderData<typeof loader>();
+  const { record, files } = useLoaderData<typeof loader>();
 
   const initialValues = {
     id: record.id || undefined,
@@ -118,6 +123,7 @@ export default function GaugeCalibrationRecordRoute() {
       key={id}
       // @ts-ignore
       initialValues={initialValues}
+      files={files}
       onClose={() => navigate(-1)}
     />
   );
