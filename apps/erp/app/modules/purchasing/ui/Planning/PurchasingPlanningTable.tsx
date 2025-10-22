@@ -7,6 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   HStack,
+  Loading,
   PulsingDot,
   Status,
   Tooltip,
@@ -18,7 +19,14 @@ import { getLocalTimeZone, parseDate } from "@internationalized/date";
 import { useDateFormatter, useNumberFormatter } from "@react-aria/i18n";
 import { useFetcher } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import {
   LuBookMarked,
   LuBox,
@@ -176,7 +184,8 @@ const PlanningTable = memo(
           encType: "application/json",
         });
       },
-      [bulkUpdateFetcher, locationId, ordersMap, periods, suppliersMap]
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [bulkUpdateFetcher, locationId, ordersMap, suppliersMap]
     );
 
     const [selectedItem, setSelectedItem] =
@@ -194,22 +203,31 @@ const PlanningTable = memo(
       []
     );
 
-    const columns = useMemo<ColumnDef<PurchasingPlanningItem>[]>(() => {
-      // Helper to get orders with on-demand calculation
-      const getOrdersForItem = (itemId: string): PlannedOrder[] => {
-        if (ordersMap[itemId]) {
-          return ordersMap[itemId];
-        }
-        const item = data.find((i) => i.id === itemId);
-        if (!item) return [];
-        return getPurchaseOrdersFromPlanning(
-          item,
-          periods,
-          items,
-          suppliersMap[itemId]
-        );
-      };
+    const [ordersByItemId, setOrdersByItemId] = useState<
+      Map<string, PlannedOrder[]>
+    >(new Map());
+    const [isPending, startTransition] = useTransition();
 
+    useEffect(() => {
+      startTransition(() => {
+        const ordersByItemId = new Map<string, PlannedOrder[]>();
+        data.forEach((item) => {
+          ordersByItemId.set(
+            item.id,
+            getPurchaseOrdersFromPlanning(
+              item,
+              periods,
+              items,
+              suppliersMap[item.id]
+            )
+          );
+        });
+        setOrdersByItemId(ordersByItemId);
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data]);
+
+    const columns = useMemo<ColumnDef<PurchasingPlanningItem>[]>(() => {
       const periodColumns: ColumnDef<PurchasingPlanningItem>[] = periods.map(
         (period, index) => {
           const isCurrentWeek = index === 0;
@@ -399,7 +417,7 @@ const PlanningTable = memo(
           header: "",
           cell: ({ row }) => {
             const orders = row.original.id
-              ? getOrdersForItem(row.original.id)
+              ? ordersByItemId.get(row.original.id) ?? []
               : [];
             const orderQuantity = orders.reduce(
               (acc, order) =>
@@ -436,7 +454,6 @@ const PlanningTable = memo(
       ];
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
-      periods,
       suppliers,
       dateFormatter,
       numberFormatter,
@@ -478,7 +495,7 @@ const PlanningTable = memo(
     };
 
     return (
-      <>
+      <Loading isLoading={isPending}>
         <Table<PurchasingPlanningItem>
           count={count}
           columns={columns}
@@ -556,7 +573,7 @@ const PlanningTable = memo(
             }}
           />
         )}
-      </>
+      </Loading>
     );
   }
 );

@@ -7,6 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   HStack,
+  Loading,
   PulsingDot,
   toast,
   Tooltip,
@@ -18,7 +19,13 @@ import { getLocalTimeZone, parseDate } from "@internationalized/date";
 import { useDateFormatter, useNumberFormatter } from "@react-aria/i18n";
 import { useFetcher } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import {
   LuBookMarked,
   LuBox,
@@ -160,7 +167,8 @@ const ProductionPlanningTable = ({
         encType: "application/json",
       });
     },
-    [bulkUpdateFetcher, locationId, ordersMap, periods]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [bulkUpdateFetcher, locationId, ordersMap]
   );
 
   const [selectedItem, setSelectedItem] =
@@ -178,16 +186,26 @@ const ProductionPlanningTable = ({
     []
   );
 
+  const [ordersByItemId, setOrdersByItemId] = useState<
+    Map<string, ProductionOrder[]>
+  >(new Map());
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    startTransition(() => {
+      const ordersByItemId = new Map<string, ProductionOrder[]>();
+      data.forEach((item) => {
+        ordersByItemId.set(
+          item.id,
+          getProductionOrdersFromPlanning(item, periods)
+        );
+      });
+      setOrdersByItemId(ordersByItemId);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
   const columns = useMemo<ColumnDef<ProductionPlanningItem>[]>(() => {
-    // Helper to get orders with on-demand calculation
-    const getOrdersForItem = (itemId: string): ProductionOrder[] => {
-      if (ordersMap[itemId]) {
-        return ordersMap[itemId];
-      }
-      const item = data.find((i) => i.id === itemId);
-      if (!item) return [];
-      return getProductionOrdersFromPlanning(item, periods);
-    };
     const periodColumns: ColumnDef<ProductionPlanningItem>[] = periods.map(
       (period, index) => {
         const isCurrentWeek = index === 0;
@@ -339,7 +357,7 @@ const ProductionPlanningTable = ({
         header: "",
         cell: ({ row }) => {
           const orders = row.original.id
-            ? getOrdersForItem(row.original.id)
+            ? ordersByItemId.get(row.original.id) ?? []
             : [];
           const orderQuantity = orders.reduce(
             (acc, order) =>
@@ -376,7 +394,6 @@ const ProductionPlanningTable = ({
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    periods,
     dateFormatter,
     numberFormatter,
     unitOfMeasures,
@@ -416,7 +433,7 @@ const ProductionPlanningTable = ({
   };
 
   return (
-    <>
+    <Loading isLoading={isPending}>
       <Table<ProductionPlanningItem>
         count={count}
         columns={columns}
@@ -479,7 +496,7 @@ const ProductionPlanningTable = ({
           onClose={() => setSelectedItem(null)}
         />
       )}
-    </>
+    </Loading>
   );
 };
 
