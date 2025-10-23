@@ -17,6 +17,7 @@ import { usePermissions } from "./usePermissions";
 import { useRealtime } from "./useRealtime";
 import { useScrollPosition } from "./useScrollPosition";
 import { useUser } from "./useUser";
+import { useGooglePlaces } from "./useGooglePlaces";
 
 export {
   useCurrencyFormatter,
@@ -34,4 +35,5 @@ export {
   useScrollPosition,
   useUrlParams,
   useUser,
+  useGooglePlaces,
 };
