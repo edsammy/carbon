@@ -46,10 +46,8 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
-  const [newInvestigationType] = createResult.data ?? [];
-
   return redirect(
-    path.to.investigationType(newInvestigationType.id),
+    path.to.investigationTypes,
     await flash(request, success("Investigation type created successfully"))
   );
 }

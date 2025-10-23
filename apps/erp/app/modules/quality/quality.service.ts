@@ -1299,13 +1299,11 @@ export async function upsertRequiredAction(
   requiredAction:
     | (Omit<z.infer<typeof issueTypeValidator>, "id"> & {
         companyId: string;
-        sortOrder?: number;
         active?: boolean;
         createdBy: string;
       })
     | (Omit<z.infer<typeof issueTypeValidator>, "id"> & {
         id: string;
-        sortOrder?: number;
         active?: boolean;
         updatedBy: string;
       })
@@ -1313,7 +1311,7 @@ export async function upsertRequiredAction(
   if ("createdBy" in requiredAction) {
     return client
       .from("nonConformanceRequiredAction")
-      .insert([{ sortOrder: 1, active: true, ...requiredAction }])
+      .insert([requiredAction])
       .select("id");
   } else {
     return client

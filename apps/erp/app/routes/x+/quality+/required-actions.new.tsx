@@ -46,10 +46,8 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
-  const [newRequiredAction] = createResult.data ?? [];
-
   return redirect(
-    path.to.requiredAction(newRequiredAction.id),
+    path.to.requiredActions,
     await flash(request, success("Required action created successfully"))
   );
 }
