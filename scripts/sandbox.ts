@@ -5,21 +5,18 @@ config();
 
 const carbon = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_ANON_KEY!,
+  {
+    global: {
+      headers: {
+        "carbon-key": "crbn_**************",
+      },
+    },
+  }
 );
 
-const companyId = "fkeqqGSn7VGrHtjk8LVFz";
-
 (async () => {
-  const holidays = await carbon
-    .from("holiday")
-    .select("*")
-    .eq("companyId", companyId)
-    .gte("date", new Date().toISOString())
-    .lte(
-      "date",
-      new Date(new Date().setDate(new Date().getDate() + 30)).toISOString()
-    );
+  const employees = await carbon.from("employees").select("*").limit(1000);
 
-  console.log(holidays);
+  console.log(employees);
 })();
