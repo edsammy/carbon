@@ -61,6 +61,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     NOVU_APPLICATION_ID,
     VERCEL_ENV,
     VERCEL_URL,
+    GOOGLE_PLACES_API_KEY,
   } = getBrowserEnv();
 
   const sessionFlash = await getSessionFlash(request);
@@ -78,6 +79,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         NOVU_APPLICATION_ID,
         VERCEL_ENV,
         VERCEL_URL,
+        GOOGLE_PLACES_API_KEY,
       },
       mode: getMode(request),
       theme: getTheme(request),

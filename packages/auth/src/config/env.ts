@@ -97,6 +97,10 @@ export const EXCHANGE_RATES_API_KEY = getEnv("EXCHANGE_RATES_API_KEY", {
   isSecret: true,
 });
 
+export const GOOGLE_PLACES_API_KEY = getEnv("GOOGLE_PLACES_API_KEY", {
+  isRequired: false,
+});
+
 const itarEnvironment = getEnv("CONTROLLED_ENVIRONMENT", {
   isRequired: false,
   isSecret: false,
@@ -230,6 +234,7 @@ export function getBrowserEnv() {
     VERCEL_URL,
     NODE_ENV,
     CLOUDFLARE_TURNSTILE_SITE_KEY,
+    GOOGLE_PLACES_API_KEY,
   };
 }
 
