@@ -279,7 +279,8 @@ export async function getGaugeCalibrationRecordsByGaugeId(
   return client
     .from("gaugeCalibrationRecords")
     .select("*")
-    .eq("gaugeId", gaugeId);
+    .eq("gaugeId", gaugeId)
+    .order("createdAt", { ascending: false });
 }
 
 export async function getGaugeTypesList(
@@ -1073,6 +1074,10 @@ export async function upsertGaugeCalibrationRecord(
         customFields?: Json;
       })
 ) {
+  const userId =
+    "updatedBy" in gaugeCalibrationRecord
+      ? gaugeCalibrationRecord.updatedBy
+      : gaugeCalibrationRecord.createdBy;
   const gauge = await client
     .from("gauge")
     .select("*")
@@ -1106,6 +1111,8 @@ export async function upsertGaugeCalibrationRecord(
           gaugeCalibrationRecord.inspectionStatus === "Pass"
             ? "In-Calibration"
             : gauge.data.lastCalibrationStatus,
+        updatedBy: userId,
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", gaugeCalibrationRecord.gaugeId);
 
@@ -1125,7 +1132,13 @@ export async function upsertGaugeCalibrationRecord(
   }
   return client
     .from("gaugeCalibrationRecord")
-    .update(sanitize(gaugeCalibrationRecord))
+    .update(
+      sanitize({
+        ...gaugeCalibrationRecord,
+        updatedBy: userId,
+        updatedAt: new Date().toISOString(),
+      })
+    )
     .eq("id", gaugeCalibrationRecord.id);
 }
 

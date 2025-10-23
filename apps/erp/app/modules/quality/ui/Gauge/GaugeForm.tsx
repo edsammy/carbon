@@ -11,6 +11,7 @@ import {
   ModalDrawer,
   ModalDrawerBody,
   ModalDrawerContent,
+  ModalDrawerDescription,
   ModalDrawerFooter,
   ModalDrawerHeader,
   ModalDrawerProvider,
@@ -26,6 +27,7 @@ import { formatRelativeTime } from "@carbon/utils";
 import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
 import { Await, Link, useFetcher } from "@remix-run/react";
 import type { PostgrestResponse } from "@supabase/supabase-js";
+import { nanoid } from "nanoid";
 import { Suspense, useState } from "react";
 import {
   LuCalendar,
@@ -119,9 +121,14 @@ const GaugeForm = ({
               >
                 <ModalDrawerHeader className="flex flex-col gap-4">
                   <HStack className="w-full justify-between pr-8">
-                    <ModalDrawerTitle>
-                      {isEditing ? `${initialValues.gaugeId}` : "New Gauge"}
-                    </ModalDrawerTitle>
+                    <VStack>
+                      <ModalDrawerTitle>
+                        {isEditing ? `${initialValues.gaugeId}` : "New Gauge"}
+                      </ModalDrawerTitle>
+                      <ModalDrawerDescription>
+                        {isEditing ? initialValues.description : undefined}
+                      </ModalDrawerDescription>
+                    </VStack>
 
                     {isEditing && (
                       <div>
@@ -312,8 +319,9 @@ const GaugeForm = ({
       </ModalDrawerProvider>
       {newRecordDisclosure.isOpen && (
         <GaugeCalibrationRecordForm
+          files={[]}
           initialValues={{
-            id: undefined,
+            id: nanoid(),
             gaugeId: initialValues.id!,
             dateCalibrated: today(getLocalTimeZone()).toString(),
             requiresAction: false,
