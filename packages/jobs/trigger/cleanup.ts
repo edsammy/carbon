@@ -138,9 +138,9 @@ export const cleanup = schedules.task({
       // Check for gauges going out of calibration
       console.log("Checking for gauges going out of calibration...");
       const outOfCalibrationGauges = await serviceRole
-        .from("gauge")
+        .from("gauges")
         .select("*")
-        .eq("gaugeCalibrationStatus", "Out-of-Calibration")
+        .eq("gaugeCalibrationStatusWithDueDate", "Out-of-Calibration")
         .neq("lastCalibrationStatus", "Out-of-Calibration");
 
       if (outOfCalibrationGauges.error) {

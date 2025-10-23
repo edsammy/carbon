@@ -8692,6 +8692,9 @@ export default {
             $ref: "#/parameters/rowFilter.gauges.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.gauges.lastCalibrationStatus",
+          },
+          {
             $ref: "#/parameters/rowFilter.gauges.gaugeCalibrationStatusWithDueDate",
           },
           {
@@ -8820,6 +8823,9 @@ export default {
             $ref: "#/parameters/rowFilter.gauges.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.gauges.lastCalibrationStatus",
+          },
+          {
             $ref: "#/parameters/rowFilter.gauges.gaugeCalibrationStatusWithDueDate",
           },
           {
@@ -8900,6 +8906,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.gauges.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gauges.lastCalibrationStatus",
           },
           {
             $ref: "#/parameters/rowFilter.gauges.gaugeCalibrationStatusWithDueDate",
@@ -9071,6 +9080,18 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.gaugeCalibrationRecords.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecords.supplierId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecords.temperature",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecords.humidity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecords.approvedBy",
           },
           {
             $ref: "#/parameters/rowFilter.gaugeCalibrationRecords.gaugeReadableId",
@@ -47077,6 +47098,18 @@ export default {
             $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.supplierId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.temperature",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.humidity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.approvedBy",
+          },
+          {
             $ref: "#/parameters/select",
           },
           {
@@ -47178,6 +47211,18 @@ export default {
             $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.supplierId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.temperature",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.humidity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.approvedBy",
+          },
+          {
             $ref: "#/parameters/preferReturn",
           },
         ],
@@ -47231,6 +47276,18 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.updatedBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.supplierId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.temperature",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.humidity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.gaugeCalibrationRecord.approvedBy",
           },
           {
             $ref: "#/parameters/body.gaugeCalibrationRecord",
@@ -53068,6 +53125,9 @@ export default {
             $ref: "#/parameters/rowFilter.gauge.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.gauge.lastCalibrationStatus",
+          },
+          {
             $ref: "#/parameters/select",
           },
           {
@@ -53193,6 +53253,9 @@ export default {
             $ref: "#/parameters/rowFilter.gauge.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.gauge.lastCalibrationStatus",
+          },
+          {
             $ref: "#/parameters/preferReturn",
           },
         ],
@@ -53272,6 +53335,9 @@ export default {
             $ref: "#/parameters/rowFilter.gauge.updatedBy",
           },
           {
+            $ref: "#/parameters/rowFilter.gauge.lastCalibrationStatus",
+          },
+          {
             $ref: "#/parameters/body.gauge",
           },
           {
@@ -53284,6 +53350,204 @@ export default {
           },
         },
         tags: ["gauge"],
+      },
+    },
+    "/demandProjection": {
+      get: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.itemId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.locationId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.periodId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.forecastQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.forecastMethod",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.confidence",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.notes",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.updatedBy",
+          },
+          {
+            $ref: "#/parameters/select",
+          },
+          {
+            $ref: "#/parameters/order",
+          },
+          {
+            $ref: "#/parameters/range",
+          },
+          {
+            $ref: "#/parameters/rangeUnit",
+          },
+          {
+            $ref: "#/parameters/offset",
+          },
+          {
+            $ref: "#/parameters/limit",
+          },
+          {
+            $ref: "#/parameters/preferCount",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            schema: {
+              items: {
+                $ref: "#/definitions/demandProjection",
+              },
+              type: "array",
+            },
+          },
+          "206": {
+            description: "Partial Content",
+          },
+        },
+        tags: ["demandProjection"],
+      },
+      post: {
+        parameters: [
+          {
+            $ref: "#/parameters/body.demandProjection",
+          },
+          {
+            $ref: "#/parameters/select",
+          },
+          {
+            $ref: "#/parameters/preferPost",
+          },
+        ],
+        responses: {
+          "201": {
+            description: "Created",
+          },
+        },
+        tags: ["demandProjection"],
+      },
+      delete: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.itemId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.locationId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.periodId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.forecastQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.forecastMethod",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.confidence",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.notes",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.updatedBy",
+          },
+          {
+            $ref: "#/parameters/preferReturn",
+          },
+        ],
+        responses: {
+          "204": {
+            description: "No Content",
+          },
+        },
+        tags: ["demandProjection"],
+      },
+      patch: {
+        parameters: [
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.itemId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.locationId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.periodId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.forecastQuantity",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.forecastMethod",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.confidence",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.notes",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.companyId",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.createdBy",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.createdAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.updatedAt",
+          },
+          {
+            $ref: "#/parameters/rowFilter.demandProjection.updatedBy",
+          },
+          {
+            $ref: "#/parameters/body.demandProjection",
+          },
+          {
+            $ref: "#/parameters/preferReturn",
+          },
+        ],
+        responses: {
+          "204": {
+            description: "No Content",
+          },
+        },
+        tags: ["demandProjection"],
       },
     },
     "/supplierProcess": {
@@ -55408,6 +55672,9 @@ export default {
             $ref: "#/parameters/rowFilter.companySettings.kanbanOutput",
           },
           {
+            $ref: "#/parameters/rowFilter.companySettings.gaugeCalibrationExpiredNotificationGroup",
+          },
+          {
             $ref: "#/parameters/select",
           },
           {
@@ -55503,6 +55770,9 @@ export default {
             $ref: "#/parameters/rowFilter.companySettings.kanbanOutput",
           },
           {
+            $ref: "#/parameters/rowFilter.companySettings.gaugeCalibrationExpiredNotificationGroup",
+          },
+          {
             $ref: "#/parameters/preferReturn",
           },
         ],
@@ -55550,6 +55820,9 @@ export default {
           },
           {
             $ref: "#/parameters/rowFilter.companySettings.kanbanOutput",
+          },
+          {
+            $ref: "#/parameters/rowFilter.companySettings.gaugeCalibrationExpiredNotificationGroup",
           },
           {
             $ref: "#/parameters/body.companySettings",
@@ -65336,7 +65609,7 @@ export default {
       properties: {
         id: {
           description:
-            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -65385,7 +65658,7 @@ export default {
         },
         supplierLocationId: {
           description:
-            "Note:\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `supplierLocation.id`.<fk table='supplierLocation' column='id'/>",
           format: "text",
           type: "string",
         },
@@ -65784,6 +66057,11 @@ export default {
           format: "text",
           type: "string",
         },
+        lastCalibrationStatus: {
+          enum: ["Pending", "In-Calibration", "Out-of-Calibration"],
+          format: 'public."gaugeCalibrationStatus"',
+          type: "string",
+        },
         gaugeCalibrationStatusWithDueDate: {
           enum: ["Pending", "In-Calibration", "Out-of-Calibration"],
           format: 'public."gaugeCalibrationStatus"',
@@ -65868,6 +66146,26 @@ export default {
           type: "string",
         },
         updatedBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        supplierId: {
+          description:
+            "Note:\nThis is a Foreign Key to `supplier.id`.<fk table='supplier' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        temperature: {
+          format: "real",
+          type: "number",
+        },
+        humidity: {
+          format: "real",
+          type: "number",
+        },
+        approvedBy: {
           description:
             "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
           format: "text",
@@ -73535,6 +73833,8 @@ export default {
             "Tool",
             "Fixture",
             "Consumable",
+            "Issue",
+            "Gauge Calibration Record",
           ],
           format: 'public."documentSourceType"',
           type: "string",
@@ -82886,6 +83186,8 @@ export default {
             "Tool",
             "Fixture",
             "Consumable",
+            "Issue",
+            "Gauge Calibration Record",
           ],
           format: 'public."documentSourceType"',
           type: "string",
@@ -84036,6 +84338,26 @@ export default {
           type: "string",
         },
         updatedBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        supplierId: {
+          description:
+            "Note:\nThis is a Foreign Key to `supplier.id`.<fk table='supplier' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        temperature: {
+          format: "real",
+          type: "number",
+        },
+        humidity: {
+          format: "real",
+          type: "number",
+        },
+        approvedBy: {
           description:
             "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
           format: "text",
@@ -86992,6 +87314,7 @@ export default {
         "customFields",
         "createdAt",
         "createdBy",
+        "lastCalibrationStatus",
       ],
       properties: {
         id: {
@@ -87096,6 +87419,91 @@ export default {
           type: "string",
         },
         updatedAt: {
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        updatedBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        lastCalibrationStatus: {
+          default: "Pending",
+          enum: ["Pending", "In-Calibration", "Out-of-Calibration"],
+          format: 'public."gaugeCalibrationStatus"',
+          type: "string",
+        },
+      },
+      type: "object",
+    },
+    demandProjection: {
+      required: [
+        "itemId",
+        "locationId",
+        "periodId",
+        "forecastQuantity",
+        "companyId",
+        "createdBy",
+        "createdAt",
+        "updatedAt",
+        "updatedBy",
+      ],
+      properties: {
+        itemId: {
+          description:
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `item.id`.<fk table='item' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        locationId: {
+          description:
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `location.id`.<fk table='location' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        periodId: {
+          description:
+            "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `period.id`.<fk table='period' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        forecastQuantity: {
+          default: 0,
+          format: "numeric",
+          type: "number",
+        },
+        forecastMethod: {
+          format: "text",
+          type: "string",
+        },
+        confidence: {
+          format: "numeric",
+          type: "number",
+        },
+        notes: {
+          format: "text",
+          type: "string",
+        },
+        companyId: {
+          description:
+            "Note:\nThis is a Foreign Key to `company.id`.<fk table='company' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        createdBy: {
+          description:
+            "Note:\nThis is a Foreign Key to `user.id`.<fk table='user' column='id'/>",
+          format: "text",
+          type: "string",
+        },
+        createdAt: {
+          default: "now()",
+          format: "timestamp with time zone",
+          type: "string",
+        },
+        updatedAt: {
+          default: "now()",
           format: "timestamp with time zone",
           type: "string",
         },
@@ -87985,6 +88393,7 @@ export default {
         "materialGeneratedIds",
         "useMetric",
         "kanbanOutput",
+        "gaugeCalibrationExpiredNotificationGroup",
       ],
       properties: {
         id: {
@@ -88056,6 +88465,13 @@ export default {
           enum: ["label", "qrcode", "url"],
           format: 'public."kanbanOutput"',
           type: "string",
+        },
+        gaugeCalibrationExpiredNotificationGroup: {
+          format: "text[]",
+          items: {
+            type: "string",
+          },
+          type: "array",
         },
       },
       type: "object",
@@ -92954,6 +93370,12 @@ export default {
       in: "query",
       type: "string",
     },
+    "rowFilter.gauges.lastCalibrationStatus": {
+      name: "lastCalibrationStatus",
+      required: false,
+      in: "query",
+      type: "string",
+    },
     "rowFilter.gauges.gaugeCalibrationStatusWithDueDate": {
       name: "gaugeCalibrationStatusWithDueDate",
       required: false,
@@ -93070,6 +93492,30 @@ export default {
     },
     "rowFilter.gaugeCalibrationRecords.updatedBy": {
       name: "updatedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.gaugeCalibrationRecords.supplierId": {
+      name: "supplierId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.gaugeCalibrationRecords.temperature": {
+      name: "temperature",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.gaugeCalibrationRecords.humidity": {
+      name: "humidity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.gaugeCalibrationRecords.approvedBy": {
+      name: "approvedBy",
       required: false,
       in: "query",
       type: "string",
@@ -113570,6 +114016,30 @@ export default {
       in: "query",
       type: "string",
     },
+    "rowFilter.gaugeCalibrationRecord.supplierId": {
+      name: "supplierId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.gaugeCalibrationRecord.temperature": {
+      name: "temperature",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.gaugeCalibrationRecord.humidity": {
+      name: "humidity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.gaugeCalibrationRecord.approvedBy": {
+      name: "approvedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
     "body.purchaseInvoicePaymentRelation": {
       name: "purchaseInvoicePaymentRelation",
       description: "purchaseInvoicePaymentRelation",
@@ -117056,6 +117526,93 @@ export default {
       in: "query",
       type: "string",
     },
+    "rowFilter.gauge.lastCalibrationStatus": {
+      name: "lastCalibrationStatus",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "body.demandProjection": {
+      name: "demandProjection",
+      description: "demandProjection",
+      required: false,
+      in: "body",
+      schema: {
+        $ref: "#/definitions/demandProjection",
+      },
+    },
+    "rowFilter.demandProjection.itemId": {
+      name: "itemId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.locationId": {
+      name: "locationId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.periodId": {
+      name: "periodId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.forecastQuantity": {
+      name: "forecastQuantity",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.forecastMethod": {
+      name: "forecastMethod",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.confidence": {
+      name: "confidence",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.notes": {
+      name: "notes",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.companyId": {
+      name: "companyId",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.createdBy": {
+      name: "createdBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.createdAt": {
+      name: "createdAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.updatedAt": {
+      name: "updatedAt",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.demandProjection.updatedBy": {
+      name: "updatedBy",
+      required: false,
+      in: "query",
+      type: "string",
+    },
     "body.supplierProcess": {
       name: "supplierProcess",
       description: "supplierProcess",
@@ -118063,6 +118620,12 @@ export default {
     },
     "rowFilter.companySettings.kanbanOutput": {
       name: "kanbanOutput",
+      required: false,
+      in: "query",
+      type: "string",
+    },
+    "rowFilter.companySettings.gaugeCalibrationExpiredNotificationGroup": {
+      name: "gaugeCalibrationExpiredNotificationGroup",
       required: false,
       in: "query",
       type: "string",
