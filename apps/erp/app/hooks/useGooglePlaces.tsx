@@ -155,6 +155,8 @@ export const useGooglePlaces = () => {
   const parseAddressComponents = (
     components: Array<{ longText: string; shortText: string; types: string[] }>
   ): AddressComponents => {
+    // console.debug("components");
+    // console.debug(components);
     if (!components) {
       return {
         addressLine1: "",
@@ -183,6 +185,9 @@ export const useGooglePlaces = () => {
       if (types.includes("locality")) {
         addressMap.city = component.longText;
       }
+      if (types.includes("sublocality")) {
+        addressMap.sublocality = component.longText;
+      }
       if (types.includes("administrative_area_level_1")) {
         addressMap.stateProvince = component.shortText;
       }
@@ -199,7 +204,7 @@ export const useGooglePlaces = () => {
         addressMap.route || ""
       }`.trim(),
       addressLine2: addressMap.subpremise || "",
-      city: addressMap.city || "",
+      city: addressMap.city || addressMap.sublocality || "",
       stateProvince: addressMap.stateProvince || "",
       postalCode: addressMap.postalCode || "",
       countryCode: addressMap.countryCode || "",
