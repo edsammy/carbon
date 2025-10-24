@@ -2,7 +2,7 @@ import { ValidatedForm } from "@carbon/form";
 import { VStack } from "@carbon/react";
 import type { z } from "zod";
 import { Currency, Hidden, Input, Submit } from "~/components/Form";
-import Country from "~/components/Form/Country";
+import AddressAutocomplete from "~/components/Form/AddressAutocomplete";
 import { companyValidator } from "~/modules/settings";
 import { path } from "~/utils/path";
 
@@ -25,12 +25,25 @@ const CompanyForm = ({ company }: CompanyFormProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
             <Input name="name" label="Company Name" />
             <Input name="taxId" label="Tax ID" />
-            <Input name="addressLine1" label="Address Line 1" />
-            <Input name="addressLine2" label="Address Line 2" />
-            <Input name="city" label="City" />
-            <Input name="stateProvince" label="State / Province" />
-            <Input name="postalCode" label="Postal Code" />
-            <Country name="countryCode" label="Country" />
+            <AddressAutocomplete>
+              {({
+                autocomplete,
+                addressLine2,
+                city,
+                stateProvince,
+                postalCode,
+                country,
+              }) => (
+                <>
+                  {autocomplete}
+                  {addressLine2}
+                  {city}
+                  {stateProvince}
+                  {postalCode}
+                  {country}
+                </>
+              )}
+            </AddressAutocomplete>
             <Currency
               name="baseCurrencyCode"
               label="Base Currency"
