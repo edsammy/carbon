@@ -32,12 +32,6 @@ type AddressAutocompleteProps = {
   stateProvinceName?: string;
   postalCodeName?: string;
   countryCodeName?: string;
-  // Control which fields to show
-  showAddressLine2?: boolean;
-  showCity?: boolean;
-  showStateProvince?: boolean;
-  showPostalCode?: boolean;
-  showCountryCode?: boolean;
   // Custom layout via children function
   children?: (fields: AddressFields) => React.ReactNode;
 };
@@ -51,11 +45,6 @@ const AddressAutocomplete = ({
   stateProvinceName = "stateProvince",
   postalCodeName = "postalCode",
   countryCodeName = "countryCode",
-  showAddressLine2 = true,
-  showCity = true,
-  showStateProvince = true,
-  showPostalCode = true,
-  showCountryCode = true,
   children,
 }: AddressAutocompleteProps) => {
   // Use provided name or default to addressLine1Name
@@ -214,6 +203,7 @@ const AddressAutocomplete = ({
                       <CommandItem
                         key={suggestion.placeId}
                         value={suggestion.placeId}
+                        className="cursor-pointer"
                         onMouseDown={(e) => {
                           e.preventDefault();
                           handleSelect(suggestion.placeId);
@@ -230,27 +220,25 @@ const AddressAutocomplete = ({
         )}
       </div>
     ),
-    addressLine2: showAddressLine2 ? (
+    addressLine2: (
       <Input
         ref={addressLine2Ref}
         name={addressLine2Name}
         label="Address Line 2"
       />
-    ) : null,
-    city: showCity ? (
-      <Input ref={cityRef} name={cityName} label="City" />
-    ) : null,
-    stateProvince: showStateProvince ? (
+    ),
+    city: <Input ref={cityRef} name={cityName} label="City" />,
+    stateProvince: (
       <Input
         ref={stateProvinceRef}
         name={stateProvinceName}
         label="State / Province"
       />
-    ) : null,
-    postalCode: showPostalCode ? (
+    ),
+    postalCode: (
       <Input ref={postalCodeRef} name={postalCodeName} label="Postal Code" />
-    ) : null,
-    country: showCountryCode ? <Country name={countryCodeName} /> : null,
+    ),
+    country: <Country name={countryCodeName} />,
   };
 
   // If children function provided, use it for custom layout
