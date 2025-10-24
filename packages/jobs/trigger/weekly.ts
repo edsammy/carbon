@@ -76,11 +76,11 @@ export const weekly = schedules.task({
               return false;
             }
 
-            // // Keep companies created in the last week
-            // const createdAt = new Date(company.createdAt);
-            // if (createdAt > oneWeekAgo) {
-            //   return false;
-            // }
+            // Keep companies created in the last week
+            const createdAt = new Date(company.createdAt);
+            if (createdAt > oneWeekAgo) {
+              return false;
+            }
 
             // Delete this company
             return true;
@@ -88,8 +88,24 @@ export const weekly = schedules.task({
 
         console.log(`Companies to delete: ${companiesToDelete.length}`);
 
-        for (const company of companiesToDelete) {
-          console.log(`Deleting company ${company.name}`);
+        const { error: deletedCompaniesError } = await serviceRole
+          .from("company")
+          .delete()
+          .in(
+            "id",
+            companiesToDelete.map((company) => company.id)
+          );
+
+        if (deletedCompaniesError) {
+          console.error(
+            `Failed to delete companies: ${deletedCompaniesError.message}`
+          );
+          return;
+        } else {
+          console.log(`Deleted ${companiesToDelete.length} companies`);
+          for (const company of companiesToDelete) {
+            console.log(`Deleted company ${company.name}`);
+          }
         }
       }
 
