@@ -28,6 +28,7 @@ import {
 import Abilities from "./Abilities";
 import Ability from "./Ability";
 import Account from "./Account";
+import AddressAutocomplete from "./AddressAutocomplete";
 import AccountCategory from "./AccountCategory";
 import AccountSubcategory from "./AccountSubcategory";
 import Color from "./Color";
@@ -80,6 +81,7 @@ export {
   Account,
   AccountCategory,
   AccountSubcategory,
+  AddressAutocomplete,
   Array,
   ArrayNumeric,
   Boolean,

@@ -14,7 +14,14 @@ import {
 import { ValidatedForm } from "@carbon/form";
 import { useFetcher } from "@remix-run/react";
 import type { z } from "zod";
-import { CustomFormFields, Hidden, Input, Submit } from "~/components/Form";
+import {
+  AddressAutocomplete,
+  CustomFormFields,
+  Hidden,
+  Input,
+  InputControlled,
+  Submit,
+} from "~/components/Form";
 import Country from "~/components/Form/Country";
 import { usePermissions } from "~/hooks";
 import { path } from "~/utils/path";
@@ -80,11 +87,17 @@ const CustomerLocationForm = ({
               <Hidden name="addressId" />
               <VStack spacing={4}>
                 <Input name="name" label="Name" />
-                <Input name="addressLine1" label="Address Line 1" />
-                <Input name="addressLine2" label="Address Line 2" />
-                <Input name="city" label="City" />
-                <Input name="stateProvince" label="State / Province" />
-                <Input name="postalCode" label="Postal Code" />
+                <AddressAutocomplete
+                  name="addressLine1"
+                  label="Address Line 1"
+                />
+                <InputControlled name="addressLine2" label="Address Line 2" />
+                <InputControlled name="city" label="City" />
+                <InputControlled
+                  name="stateProvince"
+                  label="State / Province"
+                />
+                <InputControlled name="postalCode" label="Postal Code" />
                 <Country name="countryCode" />
                 <CustomFormFields table="customerLocation" />
               </VStack>

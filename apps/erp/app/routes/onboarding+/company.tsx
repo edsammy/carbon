@@ -22,8 +22,14 @@ import { getLocalTimeZone } from "@internationalized/date";
 import { Link, useLoaderData } from "@remix-run/react";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { json, redirect, type ActionFunctionArgs } from "@vercel/remix";
-import { Currency, Hidden, Input, Submit } from "~/components/Form";
-import Country from "~/components/Form/Country";
+import { useEffect } from "react";
+import {
+  AddressAutocomplete,
+  Currency,
+  Hidden,
+  Input,
+  Submit,
+} from "~/components/Form";
 import { useOnboarding } from "~/hooks";
 import { insertEmployeeJob } from "~/modules/people";
 import { getLocationsList, upsertLocation } from "~/modules/resources";
@@ -195,6 +201,23 @@ export default function OnboardingCompany() {
     baseCurrencyCode: company?.baseCurrencyCode ?? "USD",
   };
 
+  // Debug: watch form values
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const form = document.querySelector("form");
+      if (form) {
+        const formData = new FormData(form);
+        const entries: Record<string, any> = {};
+        formData.forEach((value, key) => {
+          entries[key] = value;
+        });
+        console.log("📋 Current form values:", entries);
+      }
+    }, 2000); // Log every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <Card className="max-w-lg">
       <ValidatedForm
@@ -209,11 +232,7 @@ export default function OnboardingCompany() {
           <Hidden name="next" value={next} />
           <VStack spacing={4}>
             <Input autoFocus name="name" label="Company Name" />
-            <Input name="addressLine1" label="Address" />
-            <Input name="city" label="City" />
-            <Input name="stateProvince" label="State / Province" />
-            <Input name="postalCode" label="Postal Code" />
-            <Country name="countryCode" />
+            <AddressAutocomplete />
             <Input name="website" label="Website" />
             <Currency name="baseCurrencyCode" label="Base Currency" />
           </VStack>
