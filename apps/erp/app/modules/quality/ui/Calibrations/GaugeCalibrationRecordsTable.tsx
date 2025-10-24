@@ -404,7 +404,7 @@ const GaugeCalibrationRecordsTable = memo(
               deleteDisclosure.onClose();
             }}
             name={`record for ${
-              selectedGaugeCalibrationRecord.gaugeId ?? "gauge"
+              selectedGaugeCalibrationRecord.gaugeReadableId ?? "gauge"
             }`}
             text="Are you sure you want to delete this record?"
           />
