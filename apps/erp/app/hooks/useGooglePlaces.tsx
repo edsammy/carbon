@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { nanoid } from "nanoid";
 import { GOOGLE_PLACES_API_KEY } from "@carbon/auth";
 
 interface PlaceSuggestion {
@@ -39,6 +40,7 @@ export const useGooglePlaces = () => {
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sessionTokenRef = useRef<string>(nanoid());
 
   const getSuggestions = useCallback(async (input: string) => {
     if (!GOOGLE_PLACES_API_KEY) {
@@ -46,7 +48,7 @@ export const useGooglePlaces = () => {
       return;
     }
 
-    if (!input || input.length < 3) {
+    if (!input) {
       setSuggestions([]);
       setError(null);
       return;
@@ -68,6 +70,7 @@ export const useGooglePlaces = () => {
             input,
             includedPrimaryTypes: ["street_address"],
             languageCode: "en",
+            sessionToken: sessionTokenRef.current,
           }),
         }
       );
@@ -116,7 +119,7 @@ export const useGooglePlaces = () => {
 
       try {
         const response = await fetch(
-          `https://places.googleapis.com/v1/places/${placeId}`,
+          `https://places.googleapis.com/v1/places/${placeId}?sessionToken=${sessionTokenRef.current}`,
           {
             headers: {
               "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
@@ -207,6 +210,10 @@ export const useGooglePlaces = () => {
     async (placeId: string): Promise<AddressComponents | null> => {
       const addressComponents = await getPlaceDetails(placeId);
       setSuggestions([]); // Clear suggestions after selection
+
+      // Generate a new session token for the next autocomplete session
+      sessionTokenRef.current = nanoid();
+
       return addressComponents;
     },
     [getPlaceDetails]
