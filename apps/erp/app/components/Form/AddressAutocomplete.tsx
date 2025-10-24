@@ -180,6 +180,15 @@ const AddressAutocomplete = ({
     [setValue]
   );
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Tab") {
+        setOpen(false);
+      }
+    },
+    []
+  );
+
   const fields: AddressFields = {
     autocomplete: (
       <div className="relative w-full" ref={containerRef}>
@@ -189,6 +198,7 @@ const AddressAutocomplete = ({
           value={value || ""}
           onChange={handleChange}
           onFocus={handleInputFocus}
+          onKeyDown={handleKeyDown}
           autoComplete="off"
         />
         {open && suggestions.length > 0 && (
