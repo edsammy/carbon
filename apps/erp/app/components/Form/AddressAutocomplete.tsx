@@ -13,6 +13,15 @@ import { useGooglePlaces } from "~/hooks/useGooglePlaces";
 import { Input } from ".";
 import Country from "./Country";
 
+type AddressFields = {
+  autocomplete: React.ReactNode;
+  addressLine2: React.ReactNode;
+  city: React.ReactNode;
+  stateProvince: React.ReactNode;
+  postalCode: React.ReactNode;
+  country: React.ReactNode;
+};
+
 type AddressAutocompleteProps = {
   name?: string;
   label?: string;
@@ -29,6 +38,8 @@ type AddressAutocompleteProps = {
   showStateProvince?: boolean;
   showPostalCode?: boolean;
   showCountryCode?: boolean;
+  // Custom layout via children function
+  children?: (fields: AddressFields) => React.ReactNode;
 };
 
 const AddressAutocomplete = ({
@@ -45,6 +56,7 @@ const AddressAutocomplete = ({
   showStateProvince = true,
   showPostalCode = true,
   showCountryCode = true,
+  children,
 }: AddressAutocompleteProps) => {
   // Use provided name or default to addressLine1Name
   const fieldName = name ?? addressLine1Name;
@@ -53,6 +65,7 @@ const AddressAutocomplete = ({
   const { clearError } = useFormContext();
   const [open, setOpen] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Refs to access the input elements directly
@@ -73,7 +86,7 @@ const AddressAutocomplete = ({
   // Memoize the callback to prevent recreating the debounced function
   const handleInputChange = useCallback(
     (input: string) => {
-      if (input && !justSelected) {
+      if (input && !justSelected && userInteracted) {
         getSuggestions(input);
         setOpen(true);
       } else {
@@ -81,17 +94,19 @@ const AddressAutocomplete = ({
         setOpen(false);
       }
     },
-    [getSuggestions, clearSuggestions, justSelected]
+    [getSuggestions, clearSuggestions, justSelected, userInteracted]
   );
 
   // Debounce the API calls to avoid excessive requests
   const debouncedGetSuggestions = useDebounce(handleInputChange, 300);
 
-  // Watch for changes to trigger API calls
+  // Watch for changes to trigger API calls (only after user interaction)
   useEffect(() => {
-    debouncedGetSuggestions(value || "");
+    if (userInteracted) {
+      debouncedGetSuggestions(value || "");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, [value, userInteracted]);
 
   // Handle clicks outside the component
   useEffect(() => {
@@ -147,23 +162,25 @@ const AddressAutocomplete = ({
     }
   };
 
-  return (
-    <VStack spacing={4}>
+  // Build field objects
+  const fields: AddressFields = {
+    autocomplete: (
       <div className="relative w-full" ref={containerRef}>
         <Input
           name={fieldName}
           label={label}
           value={value || ""}
           onChange={(e) => {
+            setUserInteracted(true); // Mark that user has interacted
             setJustSelected(false); // Allow new searches when user types
             setValue(e.target.value);
           }}
           onFocus={() => {
+            setUserInteracted(true); // Mark that user has interacted
             if ((value || "").length >= 3 && !justSelected) {
               setOpen(true);
             }
           }}
-          autoComplete="off"
         />
         {open && suggestions.length > 0 && (
           <div className="absolute w-full mt-1" style={{ zIndex: 9999 }}>
@@ -193,26 +210,44 @@ const AddressAutocomplete = ({
           </div>
         )}
       </div>
+    ),
+    addressLine2: showAddressLine2 ? (
+      <Input
+        ref={addressLine2Ref}
+        name={addressLine2Name}
+        label="Address Line 2"
+      />
+    ) : null,
+    city: showCity ? (
+      <Input ref={cityRef} name={cityName} label="City" />
+    ) : null,
+    stateProvince: showStateProvince ? (
+      <Input
+        ref={stateProvinceRef}
+        name={stateProvinceName}
+        label="State / Province"
+      />
+    ) : null,
+    postalCode: showPostalCode ? (
+      <Input ref={postalCodeRef} name={postalCodeName} label="Postal Code" />
+    ) : null,
+    country: showCountryCode ? <Country name={countryCodeName} /> : null,
+  };
 
-      {showAddressLine2 && (
-        <Input
-          ref={addressLine2Ref}
-          name={addressLine2Name}
-          label="Address Line 2"
-        />
-      )}
-      {showCity && <Input ref={cityRef} name={cityName} label="City" />}
-      {showStateProvince && (
-        <Input
-          ref={stateProvinceRef}
-          name={stateProvinceName}
-          label="State / Province"
-        />
-      )}
-      {showPostalCode && (
-        <Input ref={postalCodeRef} name={postalCodeName} label="Postal Code" />
-      )}
-      {showCountryCode && <Country name={countryCodeName} />}
+  // If children function provided, use it for custom layout
+  if (children) {
+    return <>{children(fields)}</>;
+  }
+
+  // Default vertical layout
+  return (
+    <VStack spacing={4}>
+      {fields.autocomplete}
+      {fields.addressLine2}
+      {fields.city}
+      {fields.stateProvince}
+      {fields.postalCode}
+      {fields.country}
     </VStack>
   );
 };

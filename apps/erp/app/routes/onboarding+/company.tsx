@@ -22,7 +22,6 @@ import { getLocalTimeZone } from "@internationalized/date";
 import { Link, useLoaderData } from "@remix-run/react";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { json, redirect, type ActionFunctionArgs } from "@vercel/remix";
-import { useEffect } from "react";
 import {
   AddressAutocomplete,
   Currency,
@@ -200,23 +199,6 @@ export default function OnboardingCompany() {
     countryCode: company?.countryCode ?? "US",
     baseCurrencyCode: company?.baseCurrencyCode ?? "USD",
   };
-
-  // Debug: watch form values
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const form = document.querySelector("form");
-      if (form) {
-        const formData = new FormData(form);
-        const entries: Record<string, any> = {};
-        formData.forEach((value, key) => {
-          entries[key] = value;
-        });
-        console.log("📋 Current form values:", entries);
-      }
-    }, 2000); // Log every 2 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <Card className="max-w-lg">
