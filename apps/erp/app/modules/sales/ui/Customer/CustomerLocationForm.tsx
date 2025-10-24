@@ -19,10 +19,8 @@ import {
   CustomFormFields,
   Hidden,
   Input,
-  InputControlled,
   Submit,
 } from "~/components/Form";
-import Country from "~/components/Form/Country";
 import { usePermissions } from "~/hooks";
 import { path } from "~/utils/path";
 import { customerLocationValidator } from "../../sales.models";
@@ -87,18 +85,7 @@ const CustomerLocationForm = ({
               <Hidden name="addressId" />
               <VStack spacing={4}>
                 <Input name="name" label="Name" />
-                <AddressAutocomplete
-                  name="addressLine1"
-                  label="Address Line 1"
-                />
-                <InputControlled name="addressLine2" label="Address Line 2" />
-                <InputControlled name="city" label="City" />
-                <InputControlled
-                  name="stateProvince"
-                  label="State / Province"
-                />
-                <InputControlled name="postalCode" label="Postal Code" />
-                <Country name="countryCode" />
+                <AddressAutocomplete />
                 <CustomFormFields table="customerLocation" />
               </VStack>
             </ModalDrawerBody>
