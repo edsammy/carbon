@@ -64,13 +64,15 @@ export const weekly = schedules.task({
 
         const companiesToDelete =
           companies?.filter((company) => {
-            // Keep companies with a plan that is not canceled
-            if (planMap.get(company.id) !== "Canceled") {
+            if (planMap.get(company.id) === "Canceled") {
+              return true;
+            }
+
+            if (bypassList.includes(company.id)) {
               return false;
             }
 
-            // Keep companies in bypass list
-            if (bypassList.includes(company.id)) {
+            if (planMap.get(company.id)) {
               return false;
             }
 
