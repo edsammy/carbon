@@ -8,7 +8,7 @@ import {
   useDebounce,
   VStack,
 } from "@carbon/react";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGooglePlaces } from "~/hooks/useGooglePlaces";
 import { Input } from ".";
 import Country from "./Country";
@@ -66,9 +66,8 @@ const AddressAutocomplete = ({
   const [open, setOpen] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Refs to access the input elements directly
+  const containerRef = useRef<HTMLDivElement>(null);
   const addressLine2Ref = useRef<HTMLInputElement>(null);
   const cityRef = useRef<HTMLInputElement>(null);
   const stateProvinceRef = useRef<HTMLInputElement>(null);
@@ -83,7 +82,6 @@ const AddressAutocomplete = ({
     clearSuggestions,
   } = useGooglePlaces();
 
-  // Memoize the callback to prevent recreating the debounced function
   const handleInputChange = useCallback(
     (input: string) => {
       if (input && !justSelected && userInteracted) {
@@ -97,10 +95,8 @@ const AddressAutocomplete = ({
     [getSuggestions, clearSuggestions, justSelected, userInteracted]
   );
 
-  // Debounce the API calls to avoid excessive requests
   const debouncedGetSuggestions = useDebounce(handleInputChange, 300);
 
-  // Watch for changes to trigger API calls (only after user interaction)
   useEffect(() => {
     if (userInteracted) {
       debouncedGetSuggestions(value || "");
@@ -108,8 +104,9 @@ const AddressAutocomplete = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, userInteracted]);
 
-  // Handle clicks outside the component
   useEffect(() => {
+    if (!open) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
@@ -119,28 +116,22 @@ const AddressAutocomplete = ({
       }
     };
 
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  const handleSelect = async (placeId: string) => {
-    // Close dropdown and clear suggestions immediately
-    setOpen(false);
-    clearSuggestions();
-    setJustSelected(true);
+  const handleSelect = useCallback(
+    async (placeId: string) => {
+      setOpen(false);
+      clearSuggestions();
+      setJustSelected(true);
 
-    const address = await selectPlace(placeId);
+      const address = await selectPlace(placeId);
+      if (!address) return;
 
-    if (address) {
-      // Populate all address fields
       setValue(address.addressLine1);
 
-      // Set values directly on the input elements
+      // Populate remaining address fields via refs
       if (addressLine2Ref.current)
         addressLine2Ref.current.value = address.addressLine2;
       if (cityRef.current) cityRef.current.value = address.city;
@@ -150,7 +141,6 @@ const AddressAutocomplete = ({
         postalCodeRef.current.value = address.postalCode;
       if (countryRef.current) countryRef.current.value = address.countryCode;
 
-      // Clear validation errors for all populated fields
       clearError(
         fieldName,
         addressLine2Name,
@@ -159,10 +149,37 @@ const AddressAutocomplete = ({
         postalCodeName,
         countryCodeName
       );
-    }
-  };
+    },
+    [
+      clearSuggestions,
+      selectPlace,
+      setValue,
+      clearError,
+      fieldName,
+      addressLine2Name,
+      cityName,
+      stateProvinceName,
+      postalCodeName,
+      countryCodeName,
+    ]
+  );
 
-  // Build field objects
+  const handleInputFocus = useCallback(() => {
+    setUserInteracted(true);
+    if ((value || "").length >= 3 && !justSelected) {
+      setOpen(true);
+    }
+  }, [value, justSelected]);
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setUserInteracted(true);
+      setJustSelected(false);
+      setValue(e.target.value);
+    },
+    [setValue]
+  );
+
   const fields: AddressFields = {
     autocomplete: (
       <div className="relative w-full" ref={containerRef}>
@@ -170,20 +187,12 @@ const AddressAutocomplete = ({
           name={fieldName}
           label={label}
           value={value || ""}
-          onChange={(e) => {
-            setUserInteracted(true); // Mark that user has interacted
-            setJustSelected(false); // Allow new searches when user types
-            setValue(e.target.value);
-          }}
-          onFocus={() => {
-            setUserInteracted(true); // Mark that user has interacted
-            if ((value || "").length >= 3 && !justSelected) {
-              setOpen(true);
-            }
-          }}
+          onChange={handleChange}
+          onFocus={handleInputFocus}
+          autoComplete="off"
         />
         {open && suggestions.length > 0 && (
-          <div className="absolute w-full mt-1" style={{ zIndex: 9999 }}>
+          <div className="absolute w-full mt-1 z-[9999]">
             <div className="rounded-md border bg-popover text-popover-foreground shadow-md p-0">
               <Command shouldFilter={false}>
                 <CommandList>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import { GOOGLE_PLACES_API_KEY } from "@carbon/auth";
 
@@ -40,7 +40,7 @@ export const useGooglePlaces = () => {
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const sessionTokenRef = useRef<string>(nanoid());
+  const sessionTokenRef = useRef<string>("");
 
   const getSuggestions = useCallback(async (input: string) => {
     if (!GOOGLE_PLACES_API_KEY) {
@@ -52,6 +52,11 @@ export const useGooglePlaces = () => {
       setSuggestions([]);
       setError(null);
       return;
+    }
+
+    // Generate session token on first autocomplete request
+    if (!sessionTokenRef.current) {
+      sessionTokenRef.current = nanoid();
     }
 
     setLoading(true);
@@ -107,56 +112,13 @@ export const useGooglePlaces = () => {
     }
   }, []);
 
-  const getPlaceDetails = useCallback(
-    async (placeId: string): Promise<AddressComponents | null> => {
-      if (!GOOGLE_PLACES_API_KEY) {
-        setError("Google Places API key not configured");
-        return null;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(
-          `https://places.googleapis.com/v1/places/${placeId}?sessionToken=${sessionTokenRef.current}`,
-          {
-            headers: {
-              "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
-              "X-Goog-FieldMask": "addressComponents",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Google Places API error: ${response.status}`);
-        }
-
-        const data: PlaceDetailsResponse = await response.json();
-
-        if (!data.addressComponents) {
-          throw new Error("No address components found");
-        }
-
-        return parseAddressComponents(data.addressComponents);
-      } catch (err) {
-        console.error("Google Places API error:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch place details"
-        );
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
   const parseAddressComponents = (
-    components: Array<{ longText: string; shortText: string; types: string[] }>
+    components: Array<{
+      longText: string;
+      shortText: string;
+      types: string[];
+    }>
   ): AddressComponents => {
-    // console.debug("components");
-    // console.debug(components);
     if (!components) {
       return {
         addressLine1: "",
@@ -211,17 +173,62 @@ export const useGooglePlaces = () => {
     };
   };
 
+  const getPlaceDetails = async (
+    placeId: string
+  ): Promise<AddressComponents | null> => {
+    if (!GOOGLE_PLACES_API_KEY) {
+      setError("Google Places API key not configured");
+      return null;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `https://places.googleapis.com/v1/places/${placeId}?sessionToken=${sessionTokenRef.current}`,
+        {
+          headers: {
+            "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+            "X-Goog-FieldMask": "addressComponents",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Google Places API error: ${response.status}`);
+      }
+
+      const data: PlaceDetailsResponse = await response.json();
+
+      if (!data.addressComponents) {
+        throw new Error("No address components found");
+      }
+
+      return parseAddressComponents(data.addressComponents);
+    } catch (err) {
+      console.error("Google Places API error:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch place details"
+      );
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const selectPlace = useCallback(
     async (placeId: string): Promise<AddressComponents | null> => {
       const addressComponents = await getPlaceDetails(placeId);
-      setSuggestions([]); // Clear suggestions after selection
+      setSuggestions([]);
 
       // Generate a new session token for the next autocomplete session
       sessionTokenRef.current = nanoid();
 
       return addressComponents;
     },
-    [getPlaceDetails]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   const clearSuggestions = useCallback(() => {
