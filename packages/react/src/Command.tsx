@@ -85,6 +85,87 @@ const CommandInput = forwardRef<
 
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
+const commandInputTextFieldVariants = cva(
+  "flex w-full px-3 py-1 bg-transparent text-foreground transition-colors placeholder:text-muted-foreground disabled:opacity-50 rounded-md border border-input ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed shadow-sm",
+  {
+    variants: {
+      size: {
+        lg: "h-12 rounded-lg px-4 text-base",
+        md: "h-10 rounded-md px-4 text-sm",
+        sm: "h-8 rounded-md px-3 text-sm",
+        xs: "h-6 rounded px-2 text-sm",
+      },
+      isInvalid: {
+        true: "border-destructive ring-destructive focus-visible:ring-destructive",
+        false: "",
+      },
+      isReadOnly: {
+        true: "bg-muted text-muted-foreground",
+        false: "",
+      },
+      isDisabled: {
+        true: "bg-muted text-muted-foreground",
+        false: "",
+      },
+      borderless: {
+        true: "border-none px-0 outline-none ring-transparent focus:ring-transparent focus:ring-offset-0 focus-visible:ring-transparent focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none",
+        false: "",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+      isInvalid: false,
+      borderless: false,
+    },
+  }
+);
+
+interface CommandInputTextFieldProps
+  extends Omit<ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, "size">,
+    VariantProps<typeof commandInputTextFieldVariants> {
+  isInvalid?: boolean;
+  isDisabled?: boolean;
+  isReadOnly?: boolean;
+  borderless?: boolean;
+}
+
+const CommandInputTextField = forwardRef<
+  ElementRef<typeof CommandPrimitive.Input>,
+  CommandInputTextFieldProps
+>(
+  (
+    {
+      className,
+      size,
+      isInvalid = false,
+      isDisabled = false,
+      isReadOnly = false,
+      borderless = false,
+      ...props
+    },
+    ref
+  ) => (
+    <CommandPrimitive.Input
+      ref={ref}
+      className={cn(
+        commandInputTextFieldVariants({
+          size,
+          isInvalid,
+          isDisabled,
+          isReadOnly,
+          borderless,
+        }),
+        className
+      )}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      {...props}
+    />
+  )
+);
+
+CommandInputTextField.displayName = "CommandInputTextField";
+
 const CommandList = forwardRef<
   ElementRef<typeof CommandPrimitive.List>,
   ComponentPropsWithoutRef<typeof CommandPrimitive.List>
@@ -294,6 +375,7 @@ export {
   CommandEmpty,
   CommandGroup,
   CommandInput,
+  CommandInputTextField,
   CommandItem,
   CommandList,
   CommandLoading,
