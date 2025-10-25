@@ -1,10 +1,14 @@
-import { useControlField, useFormContext } from "@carbon/form";
+import { useControlField, useField, useFormContext } from "@carbon/form";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
+  CommandInputTextField,
   CommandItem,
   CommandList,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
   useDebounce,
   VStack,
 } from "@carbon/react";
@@ -52,6 +56,7 @@ const AddressAutocomplete = ({
 
   const [value, setValue] = useControlField<string>(fieldName);
   const { clearError } = useFormContext();
+  const { error } = useField(fieldName);
   const [open, setOpen] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
@@ -160,11 +165,11 @@ const AddressAutocomplete = ({
     }
   }, [value, justSelected]);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleValueChange = useCallback(
+    (newValue: string) => {
       setUserInteracted(true);
       setJustSelected(false);
-      setValue(e.target.value);
+      setValue(newValue);
     },
     [setValue]
   );
@@ -180,45 +185,46 @@ const AddressAutocomplete = ({
 
   const fields: AddressFields = {
     autocomplete: (
-      <div className="relative w-full" ref={containerRef}>
-        <Input
-          name={fieldName}
-          label={label}
-          value={value || ""}
-          onChange={handleChange}
-          onFocus={handleInputFocus}
-          onKeyDown={handleKeyDown}
-          autoComplete="off"
-        />
-        {open && suggestions.length > 0 && (
-          <div className="absolute w-full mt-1 z-[9999]">
-            <div className="rounded-md border bg-popover text-popover-foreground shadow-md p-0">
-              <Command shouldFilter={false}>
-                <CommandList>
-                  <CommandEmpty>
-                    {loading ? "Loading..." : "No addresses found"}
-                  </CommandEmpty>
-                  <CommandGroup>
-                    {suggestions.map((suggestion) => (
-                      <CommandItem
-                        key={suggestion.placeId}
-                        value={suggestion.placeId}
-                        className="cursor-pointer"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleSelect(suggestion.placeId);
-                        }}
-                      >
-                        {suggestion.text}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </div>
-          </div>
-        )}
-      </div>
+      <FormControl isInvalid={!!error}>
+        <FormLabel htmlFor={fieldName}>{label}</FormLabel>
+        <div className="relative w-full" ref={containerRef}>
+          <Command shouldFilter={false}>
+            <CommandInputTextField
+              id={fieldName}
+              name={fieldName}
+              value={value || ""}
+              onValueChange={handleValueChange}
+              onFocus={handleInputFocus}
+              onKeyDown={handleKeyDown}
+              autoComplete="off"
+            />
+            {open && suggestions.length > 0 && (
+              <CommandList className="absolute w-full top-10 z-[9999] rounded-md border bg-popover text-popover-foreground shadow-md p-0">
+                <CommandEmpty>
+                  {loading ? "Loading..." : "No addresses found"}
+                </CommandEmpty>
+                <CommandGroup>
+                  {suggestions.map((suggestion) => (
+                    <CommandItem
+                      key={suggestion.placeId}
+                      value={suggestion.placeId}
+                      className="cursor-pointer"
+                      onSelect={() => handleSelect(suggestion.placeId)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSelect(suggestion.placeId);
+                      }}
+                    >
+                      {suggestion.text}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            )}
+          </Command>
+        </div>
+        {error && <FormErrorMessage>{error}</FormErrorMessage>}
+      </FormControl>
     ),
     addressLine2: (
       <Input
