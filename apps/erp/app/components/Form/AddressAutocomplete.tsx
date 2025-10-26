@@ -16,46 +16,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useGooglePlaces } from "~/hooks/useGooglePlaces";
 import Country from "./Country";
 
-type AddressFields = {
-  autocomplete: React.ReactNode;
-  addressLine2: React.ReactNode;
-  city: React.ReactNode;
-  stateProvince: React.ReactNode;
-  postalCode: React.ReactNode;
-  country: React.ReactNode;
-};
-
 type AddressAutocompleteProps = {
-  name?: string;
-  label?: string;
-  // Optional field name overrides
-  addressLine1Name?: string;
-  addressLine2Name?: string;
-  cityName?: string;
-  stateProvinceName?: string;
-  postalCodeName?: string;
-  countryCodeName?: string;
-  // Custom layout via children function
-  children?: (fields: AddressFields) => React.ReactNode;
+  variant?: "vertical" | "grid";
 };
 
 const AddressAutocomplete = ({
-  name,
-  label = "Address Line 1",
-  addressLine1Name = "addressLine1",
-  addressLine2Name = "addressLine2",
-  cityName = "city",
-  stateProvinceName = "stateProvince",
-  postalCodeName = "postalCode",
-  countryCodeName = "countryCode",
-  children,
+  variant = "vertical",
 }: AddressAutocompleteProps) => {
-  // Use provided name or default to addressLine1Name
-  const fieldName = name ?? addressLine1Name;
+  const address1Field = "addressLine1";
 
-  const [value, setValue] = useControlField<string>(fieldName);
+  const [value, setValue] = useControlField<string>(address1Field);
   const { clearError } = useFormContext();
-  const { error } = useField(fieldName);
+  const { error } = useField(address1Field);
   const [open, setOpen] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
@@ -135,26 +107,15 @@ const AddressAutocomplete = ({
       if (countryRef.current) countryRef.current.value = address.countryCode;
 
       clearError(
-        fieldName,
-        addressLine2Name,
-        cityName,
-        stateProvinceName,
-        postalCodeName,
-        countryCodeName
+        address1Field,
+        "addressLine2",
+        "city",
+        "stateProvince",
+        "postalCode",
+        "countryCode"
       );
     },
-    [
-      clearSuggestions,
-      selectPlace,
-      setValue,
-      clearError,
-      fieldName,
-      addressLine2Name,
-      cityName,
-      stateProvinceName,
-      postalCodeName,
-      countryCodeName,
-    ]
+    [clearSuggestions, selectPlace, setValue, clearError, address1Field]
   );
 
   const handleInputFocus = useCallback(() => {
@@ -182,84 +143,91 @@ const AddressAutocomplete = ({
     []
   );
 
-  const fields: AddressFields = {
-    autocomplete: (
-      <FormControl isInvalid={!!error}>
-        <FormLabel htmlFor={fieldName}>{label}</FormLabel>
-        <div className="relative w-full" ref={containerRef}>
-          <Command shouldFilter={false}>
-            <CommandInputTextField
-              id={fieldName}
-              name={fieldName}
-              value={value || ""}
-              onValueChange={handleValueChange}
-              onFocus={handleInputFocus}
-              onKeyDown={handleKeyDown}
-              autoComplete="off"
-            />
-            {open && suggestions.length > 0 && (
-              <CommandList className="absolute w-full top-10 z-[9999] rounded-md border bg-popover text-popover-foreground shadow-md p-0">
-                <CommandEmpty>
-                  {loading ? "Loading..." : "No addresses found"}
-                </CommandEmpty>
-                <CommandGroup>
-                  {suggestions.map((suggestion) => (
-                    <CommandItem
-                      key={suggestion.placeId}
-                      value={suggestion.placeId}
-                      className="cursor-pointer"
-                      onSelect={() => handleSelect(suggestion.placeId)}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        handleSelect(suggestion.placeId);
-                      }}
-                    >
-                      {suggestion.text}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            )}
-          </Command>
-        </div>
-        {error && <FormErrorMessage>{error}</FormErrorMessage>}
-      </FormControl>
-    ),
-    addressLine2: (
-      <Input
-        ref={addressLine2Ref}
-        name={addressLine2Name}
-        label="Address Line 2"
-      />
-    ),
-    city: <Input ref={cityRef} name={cityName} label="City" />,
-    stateProvince: (
-      <Input
-        ref={stateProvinceRef}
-        name={stateProvinceName}
-        label="State / Province"
-      />
-    ),
-    postalCode: (
-      <Input ref={postalCodeRef} name={postalCodeName} label="Postal Code" />
-    ),
-    country: <Country name={countryCodeName} />,
-  };
+  const addressAutocompleteField = (
+    <FormControl isInvalid={!!error}>
+      <FormLabel htmlFor={address1Field}>Address Line 1</FormLabel>
+      <div className="relative w-full" ref={containerRef}>
+        <Command shouldFilter={false}>
+          <CommandInputTextField
+            id={address1Field}
+            name={address1Field}
+            value={value || ""}
+            onValueChange={handleValueChange}
+            onFocus={handleInputFocus}
+            onKeyDown={handleKeyDown}
+            autoComplete="off"
+          />
+          {open && suggestions.length > 0 && (
+            <CommandList className="absolute w-full top-10 z-[9999] rounded-md border bg-popover text-popover-foreground shadow-md p-0">
+              <CommandEmpty>
+                {loading ? "Loading..." : "No addresses found"}
+              </CommandEmpty>
+              <CommandGroup>
+                {suggestions.map((suggestion) => (
+                  <CommandItem
+                    key={suggestion.placeId}
+                    value={suggestion.placeId}
+                    className="cursor-pointer"
+                    onSelect={() => handleSelect(suggestion.placeId)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(suggestion.placeId);
+                    }}
+                  >
+                    {suggestion.text}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          )}
+        </Command>
+      </div>
+      {error && <FormErrorMessage>{error}</FormErrorMessage>}
+    </FormControl>
+  );
 
-  // If children function provided, use it for custom layout
-  if (children) {
-    return <>{children(fields)}</>;
+  const addressLine2Field = (
+    <Input ref={addressLine2Ref} name="addressLine2" label="Address Line 2" />
+  );
+
+  const cityField = <Input ref={cityRef} name="city" label="City" />;
+
+  const stateProvinceField = (
+    <Input
+      ref={stateProvinceRef}
+      name="stateProvince"
+      label="State / Province"
+    />
+  );
+
+  const postalCodeField = (
+    <Input ref={postalCodeRef} name="postalCode" label="Postal Code" />
+  );
+
+  const countryField = <Country name="countryCode" />;
+
+  if (variant === "grid") {
+    return (
+      <>
+        {addressAutocompleteField}
+        {addressLine2Field}
+        {cityField}
+        {stateProvinceField}
+        {postalCodeField}
+        {countryField}
+      </>
+    );
   }
 
   // Default vertical layout
   return (
     <VStack spacing={4}>
-      {fields.autocomplete}
-      {fields.addressLine2}
-      {fields.city}
-      {fields.stateProvince}
-      {fields.postalCode}
-      {fields.country}
+      {addressAutocompleteField}
+      {addressLine2Field}
+      {cityField}
+      {stateProvinceField}
+      {postalCodeField}
+      {countryField}
     </VStack>
   );
 };
